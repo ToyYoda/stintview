@@ -1,11 +1,12 @@
 <!doctype html>
-<html lang="de">
+<html lang="{{LANG}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>StintView – Outcast Endurance</title>
-  <meta name="description" content="Team-Telemetrie von Outcast Endurance: live Lenkung, Gas, Bremse, Spritverbrauch und Reifen des Teamkollegen, der gerade fährt – als Overlay am Monitor oder in VR.">
+  <title>{{title}}</title>
+  <meta name="description" content="{{description}}">
   <meta name="color-scheme" content="dark">
+{{ALT_LINKS}}
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg transform='skewX(-14) translate(8 0)'%3E%3Crect x='17' y='13' width='30' height='38' rx='10' fill='none' stroke='%23E5E5E5' stroke-width='8'/%3E%3C/g%3E%3Cpolygon points='6,50 56,16 60,20 11,54' fill='%23D10F0F'/%3E%3C/svg%3E">
   <style>
     :root {
@@ -70,6 +71,14 @@
     .nav a { color: var(--muted); }
     .nav a:hover { color: var(--text); text-decoration: none; }
     @media (max-width: 760px) { .nav .opt { display: none; } }
+    .nav { align-items: center; }
+    .lang { display: flex; gap: 2px; }
+    .nav .lang a {
+      padding: 3px 10px; font-size: 12.5px; letter-spacing: 0.08em; color: var(--muted); background: var(--panel-2);
+      clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+    }
+    .nav .lang a:hover { color: var(--text); }
+    .nav .lang a[aria-current="page"] { background: var(--red); color: #fff; }
 
     /* Buttons: parallelograms */
     .btn {
@@ -239,16 +248,17 @@
 
   <header class="top">
     <div class="wrap">
-      <a class="brand" href="#" aria-label="Outcast Endurance StintView – nach oben">
+      <a class="brand" href="#" aria-label="{{brandLabel}}">
         <svg aria-hidden="true"><use href="#emblem"/></svg>
         <span class="wordmark"><b>OUTCAST</b><span>ENDURANCE</span></span>
         <span class="product">STINTVIEW</span>
       </a>
-      <nav class="nav" aria-label="Seitennavigation">
-        <a class="opt" href="#funktionen">Funktionen</a>
-        <a class="opt" href="#so-funktionierts">So funktioniert's</a>
-        <a href="#anleitung">Anleitung</a>
-        <a href="{{REPO}}" target="_blank" rel="noopener">GitHub</a>
+      <nav class="nav" aria-label="{{navLabel}}">
+        <a class="opt" href="#funktionen">{{navFeatures}}</a>
+        <a class="opt" href="#so-funktionierts">{{navHow}}</a>
+        <a class="opt" href="#anleitung">{{navGuide}}</a>
+        <a class="opt" href="{{REPO}}" target="_blank" rel="noopener">GitHub</a>
+        {{LANG_SWITCH}}
       </nav>
     </div>
   </header>
@@ -257,57 +267,54 @@
     <div class="hero">
       <div class="wrap">
         <div>
-          <p class="kicker spaced">StintView · Team-Telemetrie</p>
-          <h1 class="display">Sieh, was im Auto passiert – <em>auch wenn du nicht fährst.</em></h1>
-          <p class="lead">
-            StintView zeigt dem ganzen Team von Outcast Endurance live Lenkung, Pedale, Spritverbrauch und Reifen
-            des Fahrers, der gerade im Auto sitzt. Als Overlay über iRacing – am Monitor oder in VR.
-          </p>
+          <p class="kicker spaced">{{heroKicker}}</p>
+          <h1 class="display">{{heroTitle}}</h1>
+          <p class="lead">{{heroLead}}</p>
           <div class="cta">
-            <a class="btn btn-primary" href="stintview.zip" download>
+            <a class="btn btn-primary" href="{{BASE}}stintview.zip" download>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>
-              ZIP herunterladen
+              {{btnDownload}}
             </a>
-            <a class="btn btn-ghost" href="#anleitung">Zur Anleitung</a>
+            <a class="btn btn-ghost" href="#anleitung">{{btnGuide}}</a>
           </div>
-          <p class="meta">Windows · kostenlos · Stand {{VERSION}}{{ZIP_SIZE}}</p>
+          <p class="meta">{{heroMeta}} {{VERSION}}{{ZIP_SIZE}}</p>
         </div>
-        <div class="showcase" aria-label="Beispielansicht der Anzeigen">
-          <img class="s-inputs" src="assets/inputs.png" alt="Anzeige Eingaben: Verlauf von Gas, Bremse und Lenkung, Pedalbalken, Lenkrad mit Winkel, Gang und Geschwindigkeit" width="900" height="352">
-          <img class="s-tyres" src="assets/tyres.png" alt="Anzeige Reifen: Karkasstemperaturen innen, Mitte, außen und Verschleiß je Rad" width="660" height="406">
-          <img class="s-fuel" src="assets/fuel.png" alt="Anzeige Sprit: Tankinhalt, Runden übrig, Verbrauch letzte Runde und Durchschnitt" width="560" height="374">
+        <div class="showcase" aria-label="{{showcaseLabel}}">
+          <img class="s-inputs" src="{{BASE}}assets/inputs.png" alt="{{altInputs}}" width="900" height="352">
+          <img class="s-tyres" src="{{BASE}}assets/tyres.png" alt="{{altTyres}}" width="660" height="406">
+          <img class="s-fuel" src="{{BASE}}assets/fuel.png" alt="{{altFuel}}" width="560" height="374">
         </div>
       </div>
     </div>
 
     <div class="livery-band">
-      <div class="livery" role="img" aria-label="Der Porsche 911 GT3 R von Outcast Endurance in Schwarz, Rot und Weiß, Startnummer 07"></div>
-      <p class="slogan spaced">Race together. Outperform. <em>Never belong.</em></p>
+      <div class="livery" role="img" aria-label="{{liveryLabel}}"></div>
+      <p class="slogan spaced">{{slogan}}</p>
     </div>
 
     <section id="funktionen">
       <div class="wrap">
         <div class="section-head">
-          <p class="kicker spaced">Funktionen</p>
-          <h2 class="display">Was iRacing dir beim Zuschauen nicht zeigt</h2>
-          <p>Wenn du deinem Teamkollegen im Langstreckenrennen zusiehst, siehst du Position und Rundenzeiten. StintView ergänzt genau das, was fehlt.</p>
+          <p class="kicker spaced">{{featKicker}}</p>
+          <h2 class="display">{{featTitle}}</h2>
+          <p>{{featLead}}</p>
         </div>
         <div class="features">
           <article class="card">
-            <div class="shot"><img src="assets/inputs.png" alt="" width="900" height="352" loading="lazy"></div>
-            <h3>Eingaben live</h3>
-            <p>Lenkwinkel, Gas und Bremse als laufender Verlauf der letzten fünf Sekunden – dazu Gang und Geschwindigkeit. Du siehst, wie früh gebremst und wie sauber rausbeschleunigt wird.</p>
+            <div class="shot"><img src="{{BASE}}assets/inputs.png" alt="" width="900" height="352" loading="lazy"></div>
+            <h3>{{f1Title}}</h3>
+            <p>{{f1Text}}</p>
           </article>
           <article class="card">
-            <div class="shot"><img src="assets/fuel.png" alt="" width="560" height="374" loading="lazy"></div>
-            <h3>Sprit pro Runde</h3>
-            <p>Tankinhalt, Runden bis leer und der Verbrauch der letzten Runde sowie im Schnitt über 3 und 5 Runden. Boxenstopp-Runden werden automatisch herausgerechnet.</p>
+            <div class="shot"><img src="{{BASE}}assets/fuel.png" alt="" width="560" height="374" loading="lazy"></div>
+            <h3>{{f2Title}}</h3>
+            <p>{{f2Text}}</p>
           </article>
           <article class="card">
-            <div class="shot"><img src="assets/tyres.png" alt="" width="660" height="406" loading="lazy"></div>
-            <h3>Reifen</h3>
-            <p>Karkasstemperatur innen, Mitte, außen und Verschleiß jedes Rads, dazu die Kilometer auf dem Satz und eine Schätzung, wie viel Profil jetzt noch übrig ist.</p>
-            <p class="note">iRacing misst Temperatur und Verschleiß nur beim Stopp in der Box. Die Live-Werte vom Dashboard gibt iRacing nicht an andere Programme heraus.</p>
+            <div class="shot"><img src="{{BASE}}assets/tyres.png" alt="" width="660" height="406" loading="lazy"></div>
+            <h3>{{f3Title}}</h3>
+            <p>{{f3Text}}</p>
+            <p class="note">{{f3Note}}</p>
           </article>
         </div>
       </div>
@@ -316,34 +323,34 @@
     <section id="so-funktionierts">
       <div class="wrap">
         <div class="section-head">
-          <p class="kicker spaced">Ablauf</p>
-          <h2 class="display">So funktioniert's</h2>
-          <p>Jedes Teammitglied lässt StintView im Hintergrund laufen. Wer sich ins Auto setzt, wird automatisch zur Quelle – ohne Umschalten, ohne Absprache.</p>
+          <p class="kicker spaced">{{howKicker}}</p>
+          <h2 class="display">{{howTitle}}</h2>
+          <p>{{howLead}}</p>
         </div>
         <div class="flow">
           <div class="node live">
-            <div class="tag spaced">● Im Auto</div>
+            <div class="tag spaced">{{n1Tag}}</div>
             <h3 class="display">Recorder</h3>
-            <p>Liest die Telemetrie direkt aus iRacing und sendet sie – aber nur, solange du selbst im Auto sitzt.</p>
+            <p>{{n1Text}}</p>
           </div>
           <div class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15m0 0-5-5m5 5-5 5"/></svg></div>
           <div class="node">
-            <div class="tag spaced">Team-Server</div>
+            <div class="tag spaced">{{n2Tag}}</div>
             <h3 class="display">Relay</h3>
-            <p>Verbindet das Team über das Internet. Beitritt mit Einladungscode – läuft beim Teamchef.</p>
+            <p>{{n2Text}}</p>
           </div>
           <div class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15m0 0-5-5m5 5-5 5"/></svg></div>
           <div class="node">
-            <div class="tag spaced">Alle im Team</div>
+            <div class="tag spaced">{{n3Tag}}</div>
             <h3 class="display">Overlay</h3>
-            <p>Zeigt die Daten des aktuellen Fahrers über iRacing an – als durchsichtiges Fenster am Monitor oder als Panels in SteamVR.</p>
+            <p>{{n3Text}}</p>
           </div>
         </div>
         <div class="facts">
-          <div class="fact"><span class="slash" aria-hidden="true"></span><div><strong>Immer nur der, der fährt</strong><span>Zuschauer senden nichts. Wer parallel in einer anderen Session fährt, wird dem Team nicht angezeigt.</span></div></div>
-          <div class="fact"><span class="slash" aria-hidden="true"></span><div><strong>Fahrerwechsel automatisch</strong><span>Steigt der Nächste ein, übernimmt er innerhalb von Sekunden. Sprit- und Reifenhistorie laufen weiter.</span></div></div>
-          <div class="fact"><span class="slash" aria-hidden="true"></span><div><strong>Unabhängig vom iRacing-Konto</strong><span>Kein Login bei iRacing, keine Freigaben. Unser Team, unser Server, unser Einladungscode.</span></div></div>
-          <div class="fact"><span class="slash" aria-hidden="true"></span><div><strong>Monitor und VR</strong><span>Durchsichtiges Overlay im randlosen Fenstermodus oder frei platzierbare Panels in SteamVR, z. B. mit der Bigscreen Beyond.</span></div></div>
+          <div class="fact"><span class="slash" aria-hidden="true"></span><div><strong>{{fact1Title}}</strong><span>{{fact1Text}}</span></div></div>
+          <div class="fact"><span class="slash" aria-hidden="true"></span><div><strong>{{fact2Title}}</strong><span>{{fact2Text}}</span></div></div>
+          <div class="fact"><span class="slash" aria-hidden="true"></span><div><strong>{{fact3Title}}</strong><span>{{fact3Text}}</span></div></div>
+          <div class="fact"><span class="slash" aria-hidden="true"></span><div><strong>{{fact4Title}}</strong><span>{{fact4Text}}</span></div></div>
         </div>
       </div>
     </section>
@@ -352,23 +359,23 @@
       <div class="wrap">
         <div class="dl-box">
           <div>
-            <p class="kicker spaced">Download</p>
-            <h2 class="display">Herunterladen</h2>
-            <p>Die ZIP enthält alles für Recorder, Overlay und Server. Einrichtung in etwa 15 Minuten – Schritt für Schritt in der Anleitung unten. Server-Adresse und Einladungscode bekommst du vom Teamchef.</p>
+            <p class="kicker spaced">{{dlKicker}}</p>
+            <h2 class="display">{{dlTitle}}</h2>
+            <p>{{dlText}}</p>
             <div class="cta">
-              <a class="btn btn-primary" href="stintview.zip" download>
+              <a class="btn btn-primary" href="{{BASE}}stintview.zip" download>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>
                 stintview.zip
               </a>
-              <a class="btn btn-ghost" href="{{REPO}}" target="_blank" rel="noopener">Quellcode</a>
+              <a class="btn btn-ghost" href="{{REPO}}" target="_blank" rel="noopener">{{btnSource}}</a>
             </div>
-            <p class="meta">Stand {{VERSION}}{{ZIP_SIZE}}</p>
+            <p class="meta">{{versionLabel}} {{VERSION}}{{ZIP_SIZE}}</p>
           </div>
-          <ul class="req" aria-label="Voraussetzungen">
-            <li><b class="spaced">System</b>Windows 10 oder 11</li>
-            <li><b class="spaced">Software</b>Node.js 22 (LTS) und pnpm – die Anleitung zeigt wie</li>
-            <li><b class="spaced">iRacing</b>Randloser Fenstermodus für das Monitor-Overlay</li>
-            <li><b class="spaced">VR</b>Optional, jedes Headset über SteamVR</li>
+          <ul class="req" aria-label="{{reqLabel}}">
+            <li><b class="spaced">{{reqSys}}</b>{{reqSysText}}</li>
+            <li><b class="spaced">{{reqSw}}</b>{{reqSwText}}</li>
+            <li><b class="spaced">{{reqIr}}</b>{{reqIrText}}</li>
+            <li><b class="spaced">{{reqVr}}</b>{{reqVrText}}</li>
           </ul>
         </div>
       </div>
@@ -377,12 +384,12 @@
     <section id="anleitung">
       <div class="wrap">
         <div class="section-head">
-          <p class="kicker spaced">Anleitung</p>
-          <h2 class="display">Von der ZIP bis zum ersten Stint</h2>
+          <p class="kicker spaced">{{guideKicker}}</p>
+          <h2 class="display">{{guideTitle}}</h2>
         </div>
         <div class="guide-layout">
-          <nav class="toc" aria-label="Inhalt der Anleitung">
-            <p class="spaced">Inhalt</p>
+          <nav class="toc" aria-label="{{tocAria}}">
+            <p class="spaced">{{tocLabel}}</p>
             <ol>
 {{TOC}}
             </ol>
@@ -398,15 +405,15 @@
   <footer>
     <div class="wrap">
       <div class="foot-top">
-        <a class="brand" href="#" aria-label="Nach oben">
+        <a class="brand" href="#" aria-label="{{toTop}}">
           <svg aria-hidden="true"><use href="#emblem"/></svg>
           <span class="wordmark"><b>OUTCAST</b><span>ENDURANCE</span></span>
         </a>
-        <span class="foot-slogan spaced">Race together. Outperform. <em>Never belong.</em></span>
+        <span class="foot-slogan spaced">{{slogan}}</span>
       </div>
       <div class="foot-small">
-        <span>StintView · Stand {{VERSION}} · <a href="{{REPO}}" target="_blank" rel="noopener">GitHub</a></span>
-        <span>Ein Projekt von Outcast Endurance. Kein offizielles Produkt von iRacing.com Motorsport Simulations.</span>
+        <span>StintView · {{versionLabel}} {{VERSION}} · <a href="{{REPO}}" target="_blank" rel="noopener">GitHub</a></span>
+        <span>{{footerProject}}</span>
       </div>
     </div>
   </footer>
@@ -417,12 +424,12 @@
         const text = btn.previousElementSibling.textContent;
         try {
           await navigator.clipboard.writeText(text);
-          btn.textContent = 'Kopiert';
+          btn.textContent = '{{copied}}';
           btn.classList.add('done');
         } catch {
-          btn.textContent = 'Markieren & Strg+C';
+          btn.textContent = '{{copyFail}}';
         }
-        setTimeout(() => { btn.textContent = 'Kopieren'; btn.classList.remove('done'); }, 1800);
+        setTimeout(() => { btn.textContent = '{{copy}}'; btn.classList.remove('done'); }, 1800);
       });
     });
   </script>
