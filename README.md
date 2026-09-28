@@ -1,112 +1,83 @@
 # StintView
 
 Live-Telemetrie des aktuell fahrenden Teammitglieds als Overlay über iRacing – für Endurance-Teams.
-Konzept und Hintergründe: [docs/konzept.md](docs/konzept.md).
+Konzept und Hintergründe: [docs/konzept.md](docs/konzept.md). **Für Teammitglieder:** Installer und Anleitung auf <https://toyyoda.github.io/stintview/> ([ANLEITUNG.md](ANLEITUNG.md) / [INSTALL.md](INSTALL.md)).
 
 ```
-Fahrer-PC ── Recorder ──wss──▶ Relay-Server ──wss──▶ Overlay (alle Teammitglieder)
+Fahrer-PC ── Recorder ──ws──▶ Relay-Server ──ws──▶ Overlay (alle Teammitglieder)
 ```
 
 | Teil | Pfad | Aufgabe |
 |---|---|---|
-| Recorder | `apps/recorder` | liest iRacing-Telemetrie, sendet nur, wenn der eigene Nutzer im Auto sitzt |
+| Desktop-App | `apps/overlay` | Electron-App (Tray, Einrichtung, Updates); startet Recorder und Relay als Hintergrundprozesse, zeigt das Overlay am Monitor und als SteamVR-Panels |
+| Recorder | `apps/recorder` | liest iRacing-Telemetrie, sendet nur, wenn der eigene Nutzer im Auto sitzt; auch als Kommandozeilen-Tool |
 | Relay | `apps/server` | Team-Räume, Einladungscodes, genau eine aktive Quelle pro Team |
-| Overlay | `apps/overlay` | Widgets Eingaben / Sprit / Reifen; Electron (Desktop), SteamVR-Panels oder Browser |
 | Protokoll | `packages/protocol` | Nachrichtentypen (MessagePack) |
 | Logik | `packages/telemetry` | Sprit pro Runde, Reifenmessungen, Verschleißprognose, Input-Downsampling |
+| Website | `site/` | Download-Seite (de/en), gebaut aus `ANLEITUNG.md` / `INSTALL.md` |
 
-## Einrichten
+## Entwickeln
 
 Voraussetzungen: Node 22, pnpm 9.
 
 ```bash
 pnpm install
+pnpm app            # Desktop-App mit Vite-Dev-Server (Recorder/Relay werden vorher gebündelt)
+pnpm test
+pnpm typecheck
 ```
 
-**Server starten** (lokal zum Testen; im Team auf einem erreichbaren Host, z. B. Fly.io/Hetzner):
+Die App legt Zugangsdaten, Einstellungen, VR-Layout und Protokolle in `%APPDATA%\StintView` ab.
+Für Tests ein getrenntes Profil verwenden: `STINTVIEW_HOME=<ordner>` leitet alles um.
 
-```bash
-pnpm relay
-```
+Aufbau der App (`apps/overlay/electron/`):
 
-Port `8787` (Umgebungsvariable `PORT`), Teams werden in `%APPDATA%\StintView\server\teams.json` gespeichert (`STINTVIEW_DATA`).
-
-**Team anlegen** (einmal, Teamchef):
-
-```bash
-pnpm recorder create-team --server http://localhost:8787 --team "Mein Team" --name "Philipp"
-```
-
-Gibt einen Einladungscode aus. **Teammitglieder treten bei:**
-
-```bash
-pnpm recorder join --server http://localhost:8787 --code ABCD-EFGH --name "Max"
-```
-
-Zugangsdaten landen in `%APPDATA%\StintView\config.json` (Recorder und Overlay nutzen dieselbe Datei). Mit iRacing-Konten hat das nichts zu tun.
-
-## Benutzen
-
-**Recorder** (auf jedem Fahrer-PC, läuft im Hintergrund):
-
-```bash
-pnpm recorder run
-```
-
-**Overlay** (Electron, durchsichtig über iRacing – iRacing im randlosen Fenstermodus):
-
-```bash
-pnpm overlay
-```
-
-`Strg+Umschalt+O` schaltet den Bearbeiten-Modus um (Widgets verschieben). Sonst gehen Klicks durch das Overlay.
-
-**VR-Overlay** (SteamVR – z. B. Bigscreen Beyond; iRacing im OpenVR- oder OpenXR-Modus):
-
-```bash
-pnpm vr
-```
-
-Startet SteamVR nicht selbst, sondern wartet, bis es läuft. Jedes Widget wird ein eigenes Panel, standardmäßig ca. 80 cm vor der Sitzposition knapp unter Augenhöhe (Sitzposition in iRacing/SteamVR zurücksetzen, falls die Panels woanders schweben). Platzieren per Tastatur – funktioniert auch mit Brille:
-
-| Taste | Wirkung |
+| Datei | Aufgabe |
 |---|---|
-| `Strg+Umschalt+V` | nächstes Panel auswählen (gelber Rahmen) |
-| `Strg+Umschalt+Pfeile` | links/rechts/hoch/runter |
-| `Strg+Umschalt+Bild↑/↓` | näher/weiter |
-| `Strg+Umschalt+Plus/Minus` | größer/kleiner |
-| `Strg+Umschalt+H` | alle ein-/ausblenden |
+| `app.cjs` | Einstieg: Tray-Menü, Einrichtungsfenster (`#/setup`), Hintergrundprozesse, Autostart, Updates |
+| `overlay-window.cjs` | durchsichtiges Monitor-Overlay (`Strg+Umschalt+O` = verschieben) |
+| `vr.cjs`, `openvr.cjs`, `d3d11.cjs` | SteamVR-Panels (OpenVR + D3D11-Texturen per koffi, kein nativer Build) |
+| `config.cjs` | Zugangsdaten (`config.json`), Einstellungen (`app.json`), Beitreten/Anlegen |
 
-Positionen: `%APPDATA%\StintView\vr.json` (dort auch einzelne Panels mit `"enabled": false` abschalten).
-Diagnose: `STINTVIEW_VR_STATS=1` (Uploads/s), `STINTVIEW_VR_DUMP=<ordner>` (Panels als PNG, geht ohne SteamVR), `STINTVIEW_VR_FPS=45`.
+Recorder und Relay bündelt `scripts/bundle.mjs` mit esbuild nach `dist-bundles/`; die App startet sie als Electron-`utilityProcess`, Nutzer brauchen also kein Node.js.
 
-**Overlay im Browser** (Entwicklung, zweiter Monitor, OpenKneeboard):
+### Installer
 
 ```bash
-pnpm overlay:web
+pnpm dist           # -> apps/overlay/release/StintView-Setup.exe (lokal, wird nicht veröffentlicht)
 ```
 
-Dann `http://127.0.0.1:5173/`. Einzelne Widgets: `#/widget/inputs`, `#/widget/fuel`, `#/widget/tyres`, `#/widget/header`.
+Veröffentlichen: Tag pushen, GitHub Actions baut auf Windows und legt ein Release an (`.github/workflows/release.yml`). Installierte Apps aktualisieren sich darüber selbst.
 
-## Ohne iRacing testen
+```bash
+git tag v0.2.1
+git push origin v0.2.1
+```
 
-Eine `.ibt`-Datei wie ein Live-Rennen abspielen:
+Der Installer ist nicht signiert (SmartScreen-Warnung beim ersten Start).
+Lokal unter Windows ohne Entwicklermodus scheitert electron-builder beim Entpacken von `winCodeSign` (macOS-Symlinks). Abhilfe: das Archiv aus `%LOCALAPPDATA%\electron-builder\Cache\winCodeSign` einmal mit `7za x … -xr!darwin` nach `winCodeSign-2.6.0` entpacken.
+
+### Ohne iRacing testen
+
+Eine `.ibt`-Datei wie ein Live-Rennen abspielen (Recorder als Kommandozeilen-Tool, nutzt dieselben Zugangsdaten):
 
 ```bash
 pnpm recorder replay "D:\iRacing\telemetry\datei.ibt" --start 60 --speed 4 --loop
 ```
 
-`--start` in Minuten ab Dateibeginn, `--speed` Zeitraffer. Zum Mitlesen ohne Overlay: `pnpm --filter @stintview/recorder exec tsx src/dev/listen.ts`.
+`--start` in Minuten ab Dateibeginn, `--speed` Zeitraffer. Weitere Befehle: `pnpm recorder --help` (u. a. `join`, `create-team`, `run`). Zum Mitlesen ohne Overlay: `pnpm --filter @stintview/recorder exec tsx src/dev/listen.ts`.
 
-## Tests
+Relay allein starten: `pnpm relay` (Port `8787` bzw. `PORT`, Teams in `%APPDATA%\StintView\server\teams.json` bzw. `STINTVIEW_DATA`).
 
-```bash
-pnpm test
-pnpm typecheck
-```
+Overlay im Browser (zweiter Monitor, OpenKneeboard): `pnpm app:web`, dann `http://127.0.0.1:5173/`. Einzelne Widgets: `#/widget/inputs`, `#/widget/fuel`, `#/widget/tyres`, `#/widget/header`.
+
+VR-Diagnose: `STINTVIEW_VR_DUMP=<ordner>` (Panels als PNG, geht ohne SteamVR), `STINTVIEW_VR_FPS=45`. Das Panel-Layout steht in `%APPDATA%\StintView\vr.json` (dort auch einzelne Panels mit `"enabled": false` abschalten).
+
+App fernsteuern (Tests): mit `--remote-debugging-port=9333` starten, dann `node apps/overlay/scripts/cdp.mjs eval "<js>"` bzw. `… shot bild.png`.
 
 ## Bekannte Grenzen
 
 - Reifen: iRacing liefert Karkasstemperatur und Verschleiß nur beim Stopp in der Box; Oberflächentemperatur und Druck gar nicht live. Das Widget zeigt die letzte Messung und schätzt den aktuellen Verschleiß aus den gefahrenen km.
 - VR nur über SteamVR. Headsets ohne SteamVR (z. B. Quest per Link/Air Link): OpenKneeboard mit den Einzel-Widget-URLs.
-- Recorder ist noch eine Konsolen-App (Tray-App und Autostart folgen).
+- Die App-Oberfläche ist nur auf Deutsch.
+- Verbindung zum Relay ist unverschlüsselt (`ws://`).

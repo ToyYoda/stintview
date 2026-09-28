@@ -1,0 +1,206 @@
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import type { AppState } from '../feed.ts';
+import './setup.css';
+
+const api = () => window.stintview!;
+
+/** Setup and status window of the desktop app (route #/setup). */
+export function SetupPage() {
+  const [state, setState] = useState<AppState | null>(null);
+
+  useEffect(() => {
+    document.body.classList.add('setup-body');
+    api().getState().then(setState);
+    api().onState(setState);
+  }, []);
+
+  if (!state) return null;
+  return (
+    <div className="setup">
+      <header className="setup-head">
+        <Emblem />
+        <div>
+          <div className="wordmark"><b>OUTCAST</b><span>ENDURANCE</span></div>
+          <div className="product">StintView <small>v{state.version}</small></div>
+        </div>
+      </header>
+      {state.configured ? <Dashboard state={state} onState={setState} /> : <Onboarding onState={setState} serverPort={state.settings.serverPort} />}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// First run: join or create a team
+// ---------------------------------------------------------------------------
+
+function Onboarding({ onState, serverPort }: { onState(s: AppState): void; serverPort: number }) {
+  const [tab, setTab] = useState<'join' | 'create'>('join');
+  return (
+    <>
+      <p className="intro">Willkommen! Verbinde StintView einmalig mit deinem Team. Server-Adresse und Einladungscode bekommst du vom Teamchef.</p>
+      <div className="tabs" role="tablist">
+        <button role="tab" aria-selected={tab === 'join'} className={tab === 'join' ? 'on' : ''} onClick={() => setTab('join')}>Team beitreten</button>
+        <button role="tab" aria-selected={tab === 'create'} className={tab === 'create' ? 'on' : ''} onClick={() => setTab('create')}>Team anlegen (Teamchef)</button>
+      </div>
+      {tab === 'join' ? <JoinForm onState={onState} /> : <CreateForm onState={onState} serverPort={serverPort} />}
+    </>
+  );
+}
+
+function useSubmit(action: () => Promise<AppState>, onState: (s: AppState) => void) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError('');
+    try {
+      onState(await action());
+    } catch (err) {
+      // Electron prefixes IPC errors with "Error invoking remote method '…': Error: "
+      setError(String((err as Error).message ?? err).replace(/^.*?Error: /, ''));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return { busy, error, submit };
+}
+
+function JoinForm({ onState }: { onState(s: AppState): void }) {
+  const [serverUrl, setServerUrl] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
+  const [memberName, setMemberName] = useState('');
+  const { busy, error, submit } = useSubmit(() => api().join({ serverUrl, inviteCode, memberName }), onState);
+  return (
+    <form className="card" onSubmit={submit}>
+      <Field label="Server-Adresse" hint="z. B. beispiel.dyndns.org:8787">
+        <input value={serverUrl} onChange={(e) => setServerUrl(e.target.value)} placeholder="beispiel.dyndns.org:8787" required autoFocus spellCheck={false} />
+      </Field>
+      <Field label="Einladungscode">
+        <input value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} placeholder="ABCD-EFGH" required spellCheck={false} className="mono" />
+      </Field>
+      <Field label="Dein Name" hint="So sieht dich dein Team.">
+        <input value={memberName} onChange={(e) => setMemberName(e.target.value)} placeholder="Max Mustermann" required maxLength={64} />
+      </Field>
+      {error && <p className="error" role="alert">{error}</p>}
+      <button className="btn" disabled={busy}>{busy ? 'Verbinde …' : 'Team beitreten'}</button>
+    </form>
+  );
+}
+
+function CreateForm({ onState, serverPort }: { onState(s: AppState): void; serverPort: number }) {
+  const [hostHere, setHostHere] = useState(true);
+  const [serverUrl, setServerUrl] = useState('');
+  const [teamName, setTeamName] = useState('Outcast Endurance');
+  const [memberName, setMemberName] = useState('');
+  const { busy, error, submit } = useSubmit(() => api().create({ serverUrl, teamName, memberName, hostHere }), onState);
+  return (
+    <form className="card" onSubmit={submit}>
+      <label className="check">
+        <input type="checkbox" checked={hostHere} onChange={(e) => setHostHere(e.target.checked)} />
+        <span>Team-Server auf diesem PC betreiben <small>(Port {serverPort}, muss während der Rennen laufen)</small></span>
+      </label>
+      {!hostHere && (
+        <Field label="Server-Adresse">
+          <input value={serverUrl} onChange={(e) => setServerUrl(e.target.value)} placeholder="beispiel.dyndns.org:8787" required spellCheck={false} />
+        </Field>
+      )}
+      <Field label="Teamname">
+        <input value={teamName} onChange={(e) => setTeamName(e.target.value)} required maxLength={64} />
+      </Field>
+      <Field label="Dein Name">
+        <input value={memberName} onChange={(e) => setMemberName(e.target.value)} required maxLength={64} autoFocus />
+      </Field>
+      {hostHere && (
+        <p className="hint">Windows fragt beim ersten Start des Servers, ob StintView Verbindungen annehmen darf – bitte erlauben. Damit dein Team dich erreicht, braucht dein Router eine Portfreigabe für TCP {serverPort}.</p>
+      )}
+      {error && <p className="error" role="alert">{error}</p>}
+      <button className="btn" disabled={busy}>{busy ? 'Lege an …' : 'Team anlegen'}</button>
+    </form>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Configured: status and switches
+// ---------------------------------------------------------------------------
+
+function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): void }) {
+  const { team, settings, status } = state;
+  const set = async (patch: Partial<AppState['settings']>) => onState(await api().updateSettings(patch));
+  const serverDot = status.server === 'connected' || status.server === 'standby' ? 'ok' : status.server === 'error' ? 'bad' : 'warn';
+
+  return (
+    <>
+      <section className="card">
+        <h2>Status</h2>
+        <ul className="status">
+          <li><Dot kind={serverDot} />Team-Server{status.server === 'error' ? `: ${status.serverText.replace(/^server error: /, '')}` : status.server === 'offline' ? ': keine Verbindung' : ': verbunden'}</li>
+          <li><Dot kind={status.iracing ? 'ok' : 'idle'} />iRacing{status.iracing ? ' läuft' : ' nicht aktiv'}</li>
+          <li><Dot kind={status.inCar ? (status.server === 'standby' ? 'warn' : 'ok') : 'idle'} />{status.inCar ? (status.server === 'standby' ? 'Im Auto – Standby (anderer Fahrer sendet noch)' : 'Du fährst – dein Team sieht deine Daten') : 'Nicht im Auto'}</li>
+          {settings.vr && <li><Dot kind={status.vr === 'connected' ? 'ok' : 'warn'} />SteamVR{status.vr === 'connected' ? ' verbunden' : ' – wartet auf SteamVR'}</li>}
+          {settings.server && <li><Dot kind={status.relay === 'running' ? 'ok' : 'bad'} />Team-Server auf diesem PC{status.relay === 'running' ? ' läuft' : ' gestoppt'}</li>}
+        </ul>
+        {status.update && <p className="hint">{status.update}</p>}
+      </section>
+
+      <section className="card">
+        <h2>Anzeigen</h2>
+        <Toggle checked={settings.overlay} onChange={(v) => set({ overlay: v })} label="Overlay am Monitor" hint="iRacing im randlosen Fenstermodus. Strg+Umschalt+O zum Verschieben." />
+        <Toggle checked={settings.vr} onChange={(v) => set({ vr: v })} label="VR-Overlay (SteamVR)" hint="Panels in der Brille. Strg+Umschalt+V wählt, Pfeiltasten verschieben." />
+      </section>
+
+      <section className="card">
+        <h2>Team</h2>
+        <dl className="team">
+          <dt>Team</dt><dd>{team?.teamName}</dd>
+          <dt>Du</dt><dd>{team?.memberName}</dd>
+          <dt>Server</dt><dd className="mono">{team?.serverUrl}</dd>
+          <dt>Einladungscode</dt><dd className="mono">{team?.inviteCode}</dd>
+        </dl>
+        <Toggle checked={settings.autostart} disabled={!state.autostartAvailable} onChange={(v) => set({ autostart: v })} label="Mit Windows starten" hint="StintView läuft dann unauffällig im Infobereich der Taskleiste." />
+        <Toggle checked={settings.server} onChange={(v) => set({ server: v })} label={`Team-Server auf diesem PC (Port ${settings.serverPort})`} hint="Nur für den Teamchef." />
+        <button className="btn ghost" onClick={async () => onState(await api().leave())}>Team verlassen …</button>
+      </section>
+
+      <p className="foot">Du kannst dieses Fenster schließen – StintView läuft im Infobereich der Taskleiste weiter.</p>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  return (
+    <label className="field">
+      <span>{label}</span>
+      {children}
+      {hint && <small>{hint}</small>}
+    </label>
+  );
+}
+
+function Toggle({ checked, onChange, label, hint, disabled }: { checked: boolean; onChange(v: boolean): void; label: string; hint?: string; disabled?: boolean }) {
+  return (
+    <label className={disabled ? 'toggle disabled' : 'toggle'}>
+      <input type="checkbox" role="switch" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
+      <span className="knob" aria-hidden="true" />
+      <span className="label">{label}{hint && <small>{hint}</small>}</span>
+    </label>
+  );
+}
+
+function Dot({ kind }: { kind: 'ok' | 'warn' | 'bad' | 'idle' }) {
+  return <span className={`sdot ${kind}`} aria-hidden="true" />;
+}
+
+function Emblem() {
+  return (
+    <svg className="emblem" viewBox="0 0 64 64" aria-hidden="true">
+      <circle cx="32" cy="32" r="29" fill="none" stroke="#e5e5e5" strokeOpacity="0.35" strokeWidth="2.5" />
+      <g transform="skewX(-14) translate(8 0)">
+        <rect x="18" y="15" width="28" height="34" rx="9" fill="none" stroke="#e5e5e5" strokeWidth="7" />
+      </g>
+      <polygon points="9,47 55,17 58,20.5 13,50.5" fill="#d10f0f" />
+    </svg>
+  );
+}

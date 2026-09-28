@@ -25,6 +25,14 @@ const { positionals, values } = parseArgs({
 });
 const [command = 'run', ...rest] = positionals;
 
+/** Status for the desktop app when running as its utility process (no-op on the command line). */
+export type RecorderEvent =
+  | { t: 'iracing'; connected: boolean }
+  | { t: 'server'; connected: boolean; text: string }
+  | { t: 'car'; inCar: boolean; driverName: string };
+const parentPort = (process as { parentPort?: { postMessage(m: RecorderEvent): void } }).parentPort;
+const report = (e: RecorderEvent) => parentPort?.postMessage(e);
+
 async function register(path: string, body: CreateTeamRequest | JoinTeamRequest) {
   if (!values.server) throw new Error('--server is required');
   const res = await fetch(new URL(path, values.server), {
@@ -44,13 +52,17 @@ async function record(source: TelemetrySource, label: string) {
 
   const conn = new Connection(wsUrl(config.serverUrl), config.token, {
     onOpen: () => recorder.stateMessages(),
-    onStatus: (s) => console.log(`[server] ${s}`),
+    onStatus: (s) => {
+      console.log(`[server] ${s}`);
+      report({ t: 'server', connected: s.startsWith('connected') || s.startsWith('standby'), text: s });
+    },
   });
   let inCar = false;
   const recorder = new Recorder((msg) => {
     if (msg.t === 'driving' && msg.driving !== inCar) {
       inCar = msg.driving;
       console.log(inCar ? `[car] ${msg.driverName || 'you'} in the car – streaming` : '[car] left the car – idle');
+      report({ t: 'car', inCar, driverName: msg.driverName });
     }
     conn.send(msg);
   });
@@ -77,7 +89,10 @@ async function main() {
       return register('/api/join', { inviteCode: values.code ?? '', memberName: values.name ?? '' });
     case 'run': {
       const { LiveSource } = await import('./irsdk/live.ts');
-      const source = new LiveSource((c) => console.log(c ? '[iracing] connected' : '[iracing] waiting for iRacing session…'));
+      const source = new LiveSource((c) => {
+        console.log(c ? '[iracing] connected' : '[iracing] waiting for iRacing session…');
+        report({ t: 'iracing', connected: c });
+      });
       return record(source, 'live iRacing telemetry');
     }
     case 'replay': {

@@ -1,0 +1,86 @@
+/* Setup window in the Outcast Endurance style (see site/template.html). */
+body.setup-body {
+  --o-white: #e5e5e5;
+  --o-red: #d10f0f;
+  --o-red-hi: #ec2323;
+  --o-panel: #1a1a1a;
+  --o-panel-2: #232323;
+  --o-line: rgba(229, 229, 229, 0.1);
+  --o-muted: #a4a4a4;
+  background: #0a0a0a;
+  color: var(--o-white);
+  overflow: auto;
+  user-select: text;
+  font: 14.5px/1.5 'Segoe UI', system-ui, sans-serif;
+}
+body.setup-body #root { height: auto; }
+
+.setup { max-width: 520px; margin: 0 auto; padding: 24px 22px 32px; }
+.setup-head { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+.setup .emblem { width: 48px; height: 48px; flex: none; }
+.setup .wordmark { display: flex; flex-direction: column; line-height: 1; }
+.setup .wordmark b { font-style: italic; font-weight: 900; font-size: 22px; }
+.setup .wordmark span { font-style: italic; font-size: 9.5px; letter-spacing: 0.42em; color: var(--o-red); margin-top: 3px; }
+.setup .product { margin-top: 6px; font-style: italic; font-weight: 700; color: var(--o-muted); letter-spacing: 0.04em; }
+.setup .product small { font-weight: 400; margin-left: 4px; }
+
+.setup .intro { color: var(--o-muted); margin: 0 0 16px; }
+.setup h2 { font-size: 13px; font-style: italic; text-transform: uppercase; letter-spacing: 0.2em; color: var(--o-red); margin: 0 0 12px; }
+
+.setup .tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+.setup .tabs button {
+  flex: 1; padding: 10px 12px; border: 0; cursor: pointer; background: var(--o-panel-2); color: var(--o-muted);
+  font: italic 700 13px 'Segoe UI', sans-serif; text-transform: uppercase; letter-spacing: 0.04em;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+}
+.setup .tabs button.on { background: var(--o-red); color: #fff; }
+
+.setup .card { background: var(--o-panel); border: 1px solid var(--o-line); border-top: 3px solid var(--o-red); border-radius: 6px; padding: 18px; margin-bottom: 14px; }
+
+.setup .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+.setup .field > span { font-weight: 600; }
+.setup .field small, .setup .toggle small, .setup .check small { color: var(--o-muted); font-size: 12.5px; }
+.setup input[type='text'], .setup input:not([type]) {
+  background: #0d0d0d; color: var(--o-white); border: 1px solid rgba(229, 229, 229, 0.18); border-radius: 4px;
+  padding: 9px 11px; font: inherit;
+}
+.setup input:focus { outline: 2px solid var(--o-red); outline-offset: 1px; border-color: transparent; }
+.setup .mono { font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; letter-spacing: 0.04em; }
+
+.setup .btn {
+  display: inline-block; padding: 11px 26px; border: 0; cursor: pointer; background: var(--o-red); color: #fff;
+  font: italic 800 14px 'Segoe UI', sans-serif; text-transform: uppercase; letter-spacing: 0.06em;
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+.setup .btn:hover:not(:disabled) { background: var(--o-red-hi); }
+.setup .btn:disabled { opacity: 0.6; cursor: default; }
+.setup .btn.ghost { background: var(--o-panel-2); color: var(--o-white); margin-top: 6px; }
+
+.setup .error { background: rgba(209, 15, 15, 0.14); border-left: 3px solid var(--o-red); padding: 8px 12px; margin: 0 0 14px; }
+.setup .hint { color: var(--o-muted); font-size: 13px; margin: 0 0 14px; }
+.setup .foot { color: #6f6f6f; font-size: 12.5px; text-align: center; }
+
+.setup .check { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 14px; cursor: pointer; }
+.setup .check input { margin-top: 4px; accent-color: var(--o-red); }
+
+.setup .status { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.setup .status li { display: flex; align-items: center; gap: 10px; }
+.setup .sdot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: #555; }
+.setup .sdot.ok { background: #3ddc84; }
+.setup .sdot.warn { background: #ffb000; }
+.setup .sdot.bad { background: var(--o-red-hi); }
+
+.setup .team { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 0 0 14px; }
+.setup .team dt { color: var(--o-muted); }
+.setup .team dd { margin: 0; user-select: all; }
+
+.setup .toggle { display: flex; align-items: flex-start; gap: 12px; padding: 8px 0; cursor: pointer; position: relative; }
+.setup .toggle.disabled { opacity: 0.5; cursor: default; }
+.setup .toggle input { position: absolute; opacity: 0; width: 42px; height: 24px; margin: 0; cursor: inherit; }
+.setup .toggle .knob { flex: none; width: 42px; height: 24px; border-radius: 12px; background: #3a3a3a; position: relative; transition: background 0.15s; }
+.setup .toggle .knob::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--o-white); transition: transform 0.15s; }
+.setup .toggle input:checked + .knob { background: var(--o-red); }
+.setup .toggle input:checked + .knob::after { transform: translateX(18px); }
+.setup .toggle input:focus-visible + .knob { outline: 2px solid var(--o-red-hi); outline-offset: 2px; }
+.setup .toggle .label { display: flex; flex-direction: column; font-weight: 600; }
+.setup .toggle .label small { font-weight: 400; }

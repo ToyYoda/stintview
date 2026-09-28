@@ -1,7 +1,8 @@
 // Builds the static download site into ../_site, one page per language:
-//   _site/index.html (de), _site/en/index.html (en), shared assets/ and stintview.zip (git archive of HEAD).
+//   _site/index.html (de), _site/en/index.html (en) and shared assets/.
+// Downloads point at the installer of the latest GitHub release.
 // Page texts: site/strings.mjs. Guides: ANLEITUNG.md (de), INSTALL.md (en).
-// Usage: node site/build.mjs [--no-zip]
+// Usage: node site/build.mjs
 import { execFileSync } from 'node:child_process';
 import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -14,6 +15,7 @@ const root = join(here, '..');
 const out = join(root, '_site');
 const REPO = 'https://github.com/ToyYoda/stintview';
 const SITE = 'https://toyyoda.github.io/stintview/';
+const DOWNLOAD_URL = `${REPO}/releases/latest/download/StintView-Setup.exe`;
 
 const slug = (s) =>
   s.toLowerCase()
@@ -62,12 +64,6 @@ mkdirSync(out, { recursive: true });
 for (const entry of readdirSync(out)) rmSync(join(out, entry), { recursive: true, force: true });
 cpSync(join(here, 'assets'), join(out, 'assets'), { recursive: true });
 
-let zipSize = '';
-if (!process.argv.includes('--no-zip')) {
-  const zip = join(out, 'stintview.zip');
-  git('archive', '-o', zip, 'HEAD');
-  zipSize = `${Math.round(statSync(zip).size / 1024)} KB`;
-}
 
 const template = readFileSync(join(here, 'template.html'), 'utf8');
 const langs = Object.keys(LANGUAGES);
@@ -100,7 +96,7 @@ for (const lang of langs) {
     TOC: toc,
     GUIDE: html,
     VERSION: `${git('log', '-1', `--format=%cd`, `--date=format:${dateFormat}`)} · ${sha}`,
-    ZIP_SIZE: zipSize ? ` · ${zipSize}` : '',
+    DOWNLOAD_URL,
     REPO,
   };
   const page = template.replace(/\{\{(\w+)\}\}/g, (m, key) => {
@@ -122,7 +118,6 @@ function checkLocalRefs(page, pageDir, lang) {
   const refs = [...page.matchAll(/(?:src|href)="([^"]+)"|url\("([^"]+)"\)/g)].map((m) => m[1] ?? m[2]);
   const missing = refs.filter((ref) => {
     if (/^(#|https?:|data:|mailto:)/.test(ref)) return false;
-    if (ref.endsWith('stintview.zip') && !zipSize) return false; // --no-zip
     const path = join(pageDir, ref.split('#')[0]);
     try {
       return !statSync(ref.endsWith('/') ? join(path, 'index.html') : path).isFile();
@@ -132,4 +127,4 @@ function checkLocalRefs(page, pageDir, lang) {
   });
   if (missing.length) throw new Error(`${lang}: broken local references: ${[...new Set(missing)].join(', ')}`);
 }
-console.log(`site built (${sha}${zipSize ? `, zip ${zipSize}` : ''})`);
+console.log(`site built (${sha})`);

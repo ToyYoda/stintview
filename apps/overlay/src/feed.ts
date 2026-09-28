@@ -7,11 +7,37 @@ import {
 
 export interface LocalConfig { serverUrl: string; token: string; teamName: string; memberName: string }
 
+/** Desktop app state, see electron/app.cjs appState(). */
+export interface AppState {
+  version: string;
+  configured: boolean;
+  team: { teamName: string; memberName: string; serverUrl: string; inviteCode: string } | null;
+  settings: { overlay: boolean; vr: boolean; autostart: boolean; server: boolean; serverPort: number };
+  status: {
+    line: string;
+    iracing: boolean;
+    server: 'offline' | 'connected' | 'standby' | 'error';
+    serverText: string;
+    inCar: boolean;
+    relay: 'off' | 'running' | 'error';
+    vr: 'off' | 'waiting' | 'connected';
+    overlay: boolean;
+    update: string;
+  };
+  autostartAvailable: boolean;
+}
+
 declare global {
   interface Window {
     stintview?: {
       getConfig(): Promise<LocalConfig | null>;
       onEditMode(cb: (edit: boolean) => void): void;
+      getState(): Promise<AppState>;
+      onState(cb: (state: AppState) => void): void;
+      join(data: { serverUrl: string; inviteCode: string; memberName: string }): Promise<AppState>;
+      create(data: { serverUrl: string; teamName: string; memberName: string; hostHere: boolean }): Promise<AppState>;
+      updateSettings(patch: Partial<AppState['settings']>): Promise<AppState>;
+      leave(): Promise<AppState>;
     };
   }
 }

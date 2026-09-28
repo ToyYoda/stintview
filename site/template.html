@@ -271,13 +271,13 @@
           <h1 class="display">{{heroTitle}}</h1>
           <p class="lead">{{heroLead}}</p>
           <div class="cta">
-            <a class="btn btn-primary" href="{{BASE}}stintview.zip" download>
+            <a class="btn btn-primary" href="{{DOWNLOAD_URL}}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>
               {{btnDownload}}
             </a>
             <a class="btn btn-ghost" href="#anleitung">{{btnGuide}}</a>
           </div>
-          <p class="meta">{{heroMeta}} {{VERSION}}{{ZIP_SIZE}}</p>
+          <p class="meta">{{heroMeta}} {{VERSION}}</p>
         </div>
         <div class="showcase" aria-label="{{showcaseLabel}}">
           <img class="s-inputs" src="{{BASE}}assets/inputs.png" alt="{{altInputs}}" width="900" height="352">
@@ -362,14 +362,15 @@
             <p class="kicker spaced">{{dlKicker}}</p>
             <h2 class="display">{{dlTitle}}</h2>
             <p>{{dlText}}</p>
+            <p class="note">{{dlNote}}</p>
             <div class="cta">
-              <a class="btn btn-primary" href="{{BASE}}stintview.zip" download>
+              <a class="btn btn-primary" href="{{DOWNLOAD_URL}}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>
-                stintview.zip
+                {{dlButton}}
               </a>
               <a class="btn btn-ghost" href="{{REPO}}" target="_blank" rel="noopener">{{btnSource}}</a>
             </div>
-            <p class="meta">{{versionLabel}} {{VERSION}}{{ZIP_SIZE}}</p>
+            <p class="meta">{{versionLabel}} {{VERSION}}</p>
           </div>
           <ul class="req" aria-label="{{reqLabel}}">
             <li><b class="spaced">{{reqSys}}</b>{{reqSysText}}</li>

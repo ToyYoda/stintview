@@ -1,0 +1,48 @@
+# Windows installer for the StintView desktop app.
+#   pnpm --filter @stintview/overlay dist      -> release/StintView-Setup.exe (local, not published)
+#   pnpm --filter @stintview/overlay release   -> build + upload to a GitHub release (CI, needs GH_TOKEN)
+appId: com.outcastendurance.stintview
+productName: StintView
+copyright: Outcast Endurance
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - electron/**
+  - dist/**
+  - dist-bundles/**
+  - package.json
+  - "!**/*.map"
+  # koffi ships prebuilt binaries for every platform; keep only 64-bit Windows.
+  - "!node_modules/koffi/build/koffi/{darwin,freebsd,linux,musl,openbsd}*/**"
+  - "!node_modules/koffi/build/koffi/win32_{arm64,ia32}/**"
+  - "!node_modules/koffi/{src,vendor,doc}/**"
+
+# Native .node files can't be loaded from inside the asar archive.
+asarUnpack:
+  - node_modules/koffi/**
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.ico
+  # Unsigned for now: Windows SmartScreen shows a warning on first launch.
+
+nsis:
+  oneClick: true
+  perMachine: false # per-user install, no admin rights needed
+  runAfterFinish: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: StintView
+  deleteAppDataOnUninstall: false # keep team credentials and layouts
+  artifactName: StintView-Setup.${ext}
+
+publish:
+  provider: github
+  owner: ToyYoda
+  repo: stintview
+  releaseType: release

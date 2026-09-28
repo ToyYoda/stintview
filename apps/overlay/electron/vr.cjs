@@ -1,18 +1,16 @@
 // VR host: renders each widget offscreen and shows it as a SteamVR overlay panel.
 // Works with any SteamVR game regardless of whether iRacing runs in OpenVR or OpenXR mode.
-const { app, BrowserWindow, globalShortcut, ipcMain } = require('electron');
+const { BrowserWindow, globalShortcut } = require('electron');
 const { mkdirSync, readFileSync, writeFileSync } = require('node:fs');
-const { homedir } = require('node:os');
 const path = require('node:path');
+const { dataDir } = require('./config.cjs');
 const { D3D11 } = require('./d3d11.cjs');
 const { OpenVR, panelTransform, TRANSIENT_ERRORS } = require('./openvr.cjs');
+const { PRELOAD, loadRoute } = require('./renderer.cjs');
 
 const FPS = Number(process.env.STINTVIEW_VR_FPS ?? 30);
 const ZOOM = 2; // render at 2x for sharp text in the headset
 const RETRY_MS = 5000;
-
-const dataDir = path.join(process.env.APPDATA ?? path.join(homedir(), 'AppData', 'Roaming'), 'StintView');
-const configPath = () => process.env.STINTVIEW_CONFIG ?? path.join(dataDir, 'config.json');
 const layoutPath = path.join(dataDir, 'vr.json');
 
 // Metres, relative to the seated origin set by recentering in iRacing.
@@ -37,31 +35,29 @@ function loadLayout() {
   }
 }
 
-function saveLayout() {
-  mkdirSync(dataDir, { recursive: true });
-  writeFileSync(layoutPath, JSON.stringify(layout, null, 2));
-}
-
-const layout = loadLayout();
-const ids = Object.keys(layout.panels).filter((id) => layout.panels[id].enabled);
-/** id -> { win, handle, width, height, lastFrame } */
+let layout = null;
+let ids = [];
+/** id -> { win, handle, textures, texW, texH, flip, width, height, failures, fitTimer } */
 const panels = new Map();
 let vr = null;
+let d3d = null;
+let retryTimer = null;
+let running = false;
 let selected = 0;
+let onChange = () => {};
 
 function log(msg) {
   console.log(`[vr] ${msg}`);
 }
 
+function saveLayout() {
+  mkdirSync(dataDir, { recursive: true });
+  writeFileSync(layoutPath, JSON.stringify(layout, null, 2));
+}
+
 // ---------------------------------------------------------------------------
 // Offscreen widget rendering
 // ---------------------------------------------------------------------------
-
-function widgetUrl(id) {
-  return process.env.VITE_DEV_URL
-    ? `${process.env.VITE_DEV_URL}#/widget/${id}`
-    : `file://${path.join(__dirname, '..', 'dist', 'index.html').replace(/\\/g, '/')}#/widget/${id}`;
-}
 
 async function createPanelWindow(id) {
   const win = new BrowserWindow({
@@ -75,30 +71,32 @@ async function createPanelWindow(id) {
       offscreen: true,
       backgroundThrottling: false,
       zoomFactor: ZOOM,
-      preload: path.join(__dirname, 'preload.cjs'),
+      preload: PRELOAD,
       contextIsolation: true,
       sandbox: true,
     },
   });
   win.webContents.setFrameRate(FPS);
-  const panel = { win, handle: null, width: 0, height: 0 };
+  const panel = { win, handle: null, width: 0, height: 0, fitTimer: null };
   panels.set(id, panel);
 
   win.webContents.on('paint', (_e, _dirty, image) => pushFrame(id, image));
-  await win.loadURL(widgetUrl(id));
+  await loadRoute(win, `/widget/${id}`);
   await new Promise((r) => setTimeout(r, 300));
+  if (win.isDestroyed()) return;
   await fitToWidget(win);
   // Widgets change size (e.g. hint lines appear/disappear); keep the panel tight.
-  setInterval(() => fitToWidget(win).catch(() => {}), 2000);
+  panel.fitTimer = setInterval(() => fitToWidget(win).catch(() => {}), 2000);
 }
 
 /** Sizes the offscreen window to the widget's rendered box. */
 async function fitToWidget(win) {
+  if (win.isDestroyed()) return;
   const rect = await win.webContents.executeJavaScript(`(() => {
     const r = document.querySelector('.single')?.getBoundingClientRect();
     return r ? { w: Math.ceil(r.width), h: Math.ceil(r.height) } : null;
   })()`);
-  if (!rect) return;
+  if (!rect || win.isDestroyed()) return;
   const [w, h] = [Math.max(50, rect.w * ZOOM), Math.max(20, rect.h * ZOOM)];
   const [cw, ch] = win.getContentSize();
   if (w === cw && h === ch) return;
@@ -106,15 +104,13 @@ async function fitToWidget(win) {
   win.webContents.invalidate();
 }
 
-let d3d = null;
-
 /**
  * Chromium paints premultiplied BGRA, which a B8G8R8A8 texture takes as is.
  * Two textures per panel alternate so we never overwrite one SteamVR is still copying.
  */
 function uploadTexture(panel, bitmap, width, height) {
   if (panel.texW !== width || panel.texH !== height) {
-    for (const t of panel.textures ?? []) d3d.release(t);
+    releaseTextures(panel);
     panel.textures = [d3d.createTexture(width, height), d3d.createTexture(width, height)];
     panel.texW = width;
     panel.texH = height;
@@ -124,6 +120,12 @@ function uploadTexture(panel, bitmap, width, height) {
   panel.flip ^= 1;
   d3d.upload(tex, bitmap, width);
   return tex;
+}
+
+function releaseTextures(panel) {
+  for (const t of panel.textures ?? []) d3d.release(t);
+  panel.textures = null;
+  panel.texW = panel.texH = 0;
 }
 
 /** Debug: STINTVIEW_VR_DUMP=<dir> saves each panel as PNG every few seconds (works without SteamVR). */
@@ -151,29 +153,19 @@ function pushFrame(id, image) {
       log(`${id}: ${width}x${height} uploaded – compositor has ${s.width}x${s.height}, visible=${s.visible}`);
     }
     panel.failures = 0;
-    stats.ok++;
   } catch (e) {
-    stats.dropped++;
     panel.failures = (panel.failures ?? 0) + 1;
     if (!TRANSIENT_ERRORS.has(e.code)) {
       log(`lost SteamVR (${id}: ${e.message}), waiting…`);
       return disconnectVr();
     }
-    // Uploads pile up while the compositor isn't drawing (e.g. headset in standby) until
-    // SteamVR rejects them for good. The backlog is per process: only reconnecting clears it.
+    // Uploads pile up while the compositor isn't drawing until SteamVR rejects them for
+    // good. The backlog is per process: only reconnecting clears it.
     if (panel.failures >= FPS * 2) {
       log(`${id}: uploads stuck (${e.message}), reconnecting`);
       disconnectVr();
     }
   }
-}
-
-const stats = { ok: 0, dropped: 0 };
-if (process.env.STINTVIEW_VR_STATS) {
-  setInterval(() => {
-    log(`uploads/s: ${stats.ok / 5} ok, ${stats.dropped / 5} dropped`);
-    stats.ok = stats.dropped = 0;
-  }, 5000);
 }
 
 // ---------------------------------------------------------------------------
@@ -189,7 +181,7 @@ function placePanel(id) {
 }
 
 function connectVr() {
-  if (vr) return;
+  if (vr || !running) return;
   try {
     const candidate = new OpenVR();
     candidate.init();
@@ -202,10 +194,12 @@ function connectVr() {
   connectVr.warned = false;
   for (const id of ids) openPanel(id);
   log(`connected to SteamVR, ${ids.length} panels`);
+  onChange();
 }
 
 function openPanel(id) {
   const panel = panels.get(id);
+  if (!panel) return;
   panel.handle = vr.createOverlay(`stintview.${id}`, `StintView ${id}`);
   panel.width = panel.height = 0; // re-log the first upload
   panel.failures = 0;
@@ -224,6 +218,7 @@ function disconnectVr() {
   }
   try { vr.shutdown(); } catch { /* runtime gone */ }
   vr = null;
+  onChange();
 }
 
 // ---------------------------------------------------------------------------
@@ -234,7 +229,7 @@ function highlight(id) {
   for (const [pid, panel] of panels) panel.win.webContents.send('edit-mode', pid === id);
   clearTimeout(highlight.timer);
   highlight.timer = setTimeout(() => {
-    for (const panel of panels.values()) panel.win.webContents.send('edit-mode', false);
+    for (const panel of panels.values()) if (!panel.win.isDestroyed()) panel.win.webContents.send('edit-mode', false);
   }, 2500);
 }
 
@@ -248,7 +243,7 @@ function adjust(fn) {
 
 const STEP = 0.02;
 const HOTKEYS = {
-  'Control+Shift+V': () => { selected = (selected + 1) % ids.length; highlight(ids[selected]); log(`selected ${ids[selected]}`); },
+  'Control+Shift+V': () => { selected = (selected + 1) % ids.length; highlight(ids[selected]); },
   'Control+Shift+Left': () => adjust((p) => { p.right -= STEP; }),
   'Control+Shift+Right': () => adjust((p) => { p.right += STEP; }),
   'Control+Shift+Up': () => adjust((p) => { p.down -= STEP; }),
@@ -269,30 +264,46 @@ const HOTKEYS = {
 
 // ---------------------------------------------------------------------------
 
-ipcMain.handle('get-config', () => {
-  try {
-    const { serverUrl, token, teamName, memberName } = JSON.parse(readFileSync(configPath(), 'utf8'));
-    return { serverUrl, token, teamName, memberName };
-  } catch {
-    return null;
-  }
-});
-
-app.disableHardwareAcceleration(); // offscreen rendering is software anyway; keeps GPU free for the sim
-
-app.whenReady().then(async () => {
+/** Starts rendering the panels and keeps (re)connecting to SteamVR while it runs. */
+async function startVr(changed = () => {}) {
+  if (running) return;
+  running = true;
+  onChange = changed;
+  layout = loadLayout();
+  ids = Object.keys(layout.panels).filter((id) => layout.panels[id].enabled);
+  selected = 0;
   d3d = new D3D11();
-  for (const id of ids) await createPanelWindow(id);
+  for (const id of ids) {
+    await createPanelWindow(id);
+    if (!running) return; // stopped while starting
+  }
   for (const [key, fn] of Object.entries(HOTKEYS)) {
     if (!globalShortcut.register(key, fn)) log(`hotkey ${key} unavailable`);
   }
   connectVr();
-  setInterval(connectVr, RETRY_MS);
-  log(`layout: ${layoutPath}`);
-});
+  retryTimer = setInterval(connectVr, RETRY_MS);
+  log(`started, layout: ${layoutPath}`);
+}
 
-app.on('will-quit', () => {
-  globalShortcut.unregisterAll();
+function stopVr() {
+  if (!running) return;
+  running = false;
+  clearInterval(retryTimer);
+  retryTimer = null;
+  for (const key of Object.keys(HOTKEYS)) globalShortcut.unregister(key);
   disconnectVr();
-});
-app.on('window-all-closed', () => {}); // offscreen windows only; quit via Ctrl+C / tray later
+  for (const panel of panels.values()) {
+    clearInterval(panel.fitTimer);
+    if (!panel.win.isDestroyed()) panel.win.destroy();
+    if (d3d) releaseTextures(panel);
+  }
+  panels.clear();
+  d3d?.destroy();
+  d3d = null;
+  log('stopped');
+  onChange();
+}
+
+const vrStatus = () => (!running ? 'off' : vr ? 'connected' : 'waiting');
+
+module.exports = { startVr, stopVr, vrStatus };

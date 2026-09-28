@@ -1,30 +1,37 @@
 {
   "name": "@stintview/overlay",
-  "version": "0.1.0",
+  "productName": "StintView",
+  "version": "0.2.0",
+  "description": "StintView – Team-Telemetrie für iRacing (Outcast Endurance)",
+  "author": "Outcast Endurance",
   "private": true,
   "type": "module",
-  "main": "electron/main.cjs",
+  "main": "electron/app.cjs",
   "scripts": {
     "web": "vite",
-    "build": "vite build",
-    "dev": "node electron/dev.mjs",
-    "start": "vite build && electron .",
-    "vr": "vite build && electron electron/vr.cjs",
-    "vr:dev": "node electron/dev.mjs vr",
+    "bundle": "node scripts/bundle.mjs",
+    "build": "vite build && node scripts/bundle.mjs",
+    "dev": "node scripts/bundle.mjs && node electron/dev.mjs",
+    "start": "vite build && node scripts/bundle.mjs && electron .",
+    "dist": "vite build && node scripts/bundle.mjs && electron-builder --win --publish never",
+    "release": "vite build && node scripts/bundle.mjs && electron-builder --win --publish always",
     "typecheck": "tsc -p ."
   },
   "dependencies": {
-    "@stintview/protocol": "workspace:*",
-    "@stintview/telemetry": "workspace:*",
-    "koffi": "^2.9.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "electron-updater": "^6",
+    "koffi": "^2.9.0"
   },
   "devDependencies": {
+    "@stintview/protocol": "workspace:*",
+    "@stintview/telemetry": "workspace:*",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "electron": "^33.2.1",
+    "electron-builder": "^25",
+    "esbuild": "^0.24",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "vite": "^5.4.11"
   }
 }

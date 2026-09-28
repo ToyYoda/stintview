@@ -3,146 +3,60 @@
 StintView zeigt dir während eines Teamrennens die Daten deines Teamkollegen, der gerade fährt:
 Lenkung, Gas, Bremse, Spritverbrauch pro Runde und Reifen – am Monitor oder in VR.
 
-Dafür laufen auf deinem PC zwei Programme:
+StintView ist ein kleines Programm, das im Infobereich der Taskleiste läuft. Es sendet deine Daten, *wenn du im Auto sitzt*, und zeigt die Daten des aktuellen Fahrers an.
+Mit deinem iRacing-Konto hat StintView nichts zu tun, in iRacing musst du nichts freischalten.
 
-- **Recorder** – sendet deine Daten, *wenn du im Auto sitzt*. Muss bei jedem Teamrennen laufen.
-- **Overlay** – zeigt die Daten des aktuellen Fahrers an.
-
-Du brauchst **kein Git** und nichts von iRacing freizuschalten. Mit deinem iRacing-Konto hat StintView nichts zu tun.
-
-Zeitbedarf: ca. 15 Minuten, einmalig.
+Zeitbedarf: ca. 3 Minuten, einmalig.
 
 ---
 
 ## Was du von deinem Teamchef bekommst
 
-1. Die Datei **`stintview.zip`**
-2. Die **Server-Adresse**, z. B. `http://beispiel.dyndns.org:8787`
-3. Einen **Einladungscode**, z. B. `ABCD-EFGH`
+1. Die **Server-Adresse**, z. B. `beispiel.dyndns.org:8787`
+2. Einen **Einladungscode**, z. B. `ABCD-EFGH`
 
 ---
 
-## Schritt 1: Node.js installieren
+## Schritt 1: Installieren
 
-StintView läuft mit Node.js (kostenlos).
+1. **`StintView-Setup.exe`** herunterladen: <https://github.com/ToyYoda/stintview/releases/latest/download/StintView-Setup.exe>
+2. Die Datei starten.
+3. Windows zeigt wahrscheinlich **„Der Computer wurde durch Windows geschützt“**. Das liegt daran, dass StintView (noch) nicht digital signiert ist. Klicke auf **Weitere Informationen** und dann **Trotzdem ausführen**.
 
-1. Öffne <https://nodejs.org/>.
-2. Lade die Version **„LTS“** herunter (muss **22** oder neuer sein), den **Windows Installer (.msi)**.
-3. Installer starten und mit **Weiter** durchklicken. Die Voreinstellungen passen. Das Häkchen bei „Tools for Native Modules“ brauchst du **nicht**.
+Die Installation braucht keine Administratorrechte und startet StintView danach automatisch.
 
-## Schritt 2: Eingabeaufforderung öffnen
+## Schritt 2: Dem Team beitreten
 
-Alle weiteren Befehle tippst (oder kopierst) du in die **Eingabeaufforderung**:
+Im StintView-Fenster unter **Team beitreten** ausfüllen:
 
-- Windows-Taste drücken, **`cmd`** eintippen, **Eingabeaufforderung** öffnen.
+- **Server-Adresse** und **Einladungscode** vom Teamchef
+- **Dein Name** – so sieht dich dein Team
 
-> Bitte die *Eingabeaufforderung* verwenden, nicht PowerShell – in PowerShell blockiert Windows oft die nötigen Skripte.
+Dann **Team beitreten** klicken. Unter *Status* erscheint **Team-Server: verbunden**.
 
-Prüfen, ob Node.js da ist:
-
-```
-node --version
-```
-
-Es muss eine Zahl ab `v22` erscheinen. Wenn „Befehl nicht gefunden“ kommt: Eingabeaufforderung schließen, neu öffnen und nochmal probieren (oder PC neu starten).
-
-## Schritt 3: pnpm installieren
-
-pnpm lädt die Bausteine, die StintView braucht. Einmalig:
-
-```
-npm install -g pnpm@9
-```
-
-Danach prüfen:
-
-```
-pnpm --version
-```
-
-Es muss eine Zahl ab `9` erscheinen.
-
-## Schritt 4: StintView entpacken
-
-1. `stintview.zip` mit Rechtsklick → **Alle extrahieren…** entpacken, z. B. nach **`C:\StintView`**.
-2. Prüfen: Im Ordner `C:\StintView` müssen direkt die Datei `package.json` und die Ordner `apps` und `packages` liegen.
-   Falls stattdessen noch ein Unterordner `stintview` darin ist, nimm im Folgenden diesen Pfad (z. B. `C:\StintView\stintview`).
-
-## Schritt 5: StintView einrichten
-
-In der Eingabeaufforderung in den Ordner wechseln:
-
-```
-cd /d C:\StintView
-```
-
-Bausteine herunterladen (dauert beim ersten Mal ein paar Minuten, ca. 300 MB):
-
-```
-pnpm install
-```
-
-Am Ende sollte `Done` stehen. Gelbe Warnungen sind normal.
-
-## Schritt 6: Dem Team beitreten
-
-Ersetze Adresse, Code und Namen durch deine Angaben (Anführungszeichen um den Namen lassen):
-
-```
-pnpm recorder join --server http://beispiel.dyndns.org:8787 --code ABCD-EFGH --name "Max Mustermann"
-```
-
-Bei Erfolg erscheint:
-
-```
-Team "…" – you are Max Mustermann.
-```
-
-Deine Zugangsdaten werden in `%APPDATA%\StintView\config.json` gespeichert. Diese Datei nicht weitergeben – sie ist dein persönlicher Schlüssel zum Team.
-
-**Einrichtung fertig.** Die Schritte 1–6 musst du nie wiederholen (außer bei Updates, siehe unten).
+**Fertig.** Du musst nie wieder etwas einrichten.
 
 ---
 
 ## Bei jedem Teamrennen
 
-Jeweils eine Eingabeaufforderung öffnen und zuerst in den Ordner wechseln:
+Nichts zu tun: StintView startet mit Windows und läuft im Infobereich der Taskleiste (unten rechts, das rote „O“; ggf. unter dem Pfeil **^** versteckt).
 
-```
-cd /d C:\StintView
-```
+- **Klick** auf das Symbol öffnet das StintView-Fenster mit Status und Schaltern.
+- **Rechtsklick** öffnet das Menü mit denselben Schaltern und **StintView beenden**.
 
-### A) Recorder starten – immer
+Sobald du im Auto sitzt, sieht dein Team deine Daten. Steigst du aus, hört StintView von selbst auf zu senden.
 
-```
-pnpm recorder run
-```
+### Overlay am Monitor
 
-Fenster offen lassen (minimieren ist ok). Die Reihenfolge mit iRacing ist egal – der Recorder wartet, bis iRacing läuft.
-Sobald du im Auto sitzt, erscheint `in the car – streaming`. Wenn du aussteigst, geht er von selbst in den Leerlauf.
-
-### B) Overlay starten – am Monitor
-
-Einstellung in iRacing: Grafikoptionen → **randloses Fenster (Borderless)**. Im Exklusiv-Vollbild ist das Overlay unsichtbar.
-
-In einer **zweiten** Eingabeaufforderung:
-
-```
-cd /d C:\StintView
-pnpm overlay
-```
+Schalter **Overlay am Monitor** (standardmäßig an). In iRacing unter Grafikoptionen **randloses Fenster (Borderless)** einstellen – im Exklusiv-Vollbild ist das Overlay unsichtbar.
 
 - **Strg+Umschalt+O** schaltet den Bearbeiten-Modus ein/aus: Anzeigen mit der Maus verschieben, danach wieder Strg+Umschalt+O.
 - Außerhalb des Bearbeiten-Modus gehen alle Klicks durch das Overlay zu iRacing.
 
-### C) Overlay starten – in VR (SteamVR-Brillen)
+### Overlay in VR (SteamVR-Brillen)
 
-Funktioniert mit allem, was über **SteamVR** läuft (z. B. Bigscreen Beyond, Valve Index, Vive, Pimax). SteamVR zuerst starten, dann in einer zweiten Eingabeaufforderung:
-
-```
-cd /d C:\StintView
-pnpm vr
-```
+Schalter **VR-Overlay (SteamVR)**. Funktioniert mit allem, was über **SteamVR** läuft (z. B. Bigscreen Beyond, Valve Index, Vive, Pimax). StintView verbindet sich automatisch, sobald SteamVR läuft.
 
 Die Anzeigen erscheinen ca. 80 cm vor dir, knapp unter Augenhöhe. Falls sie irgendwo im Raum schweben: in iRacing die Sitzposition zurücksetzen (Recenter).
 
@@ -158,10 +72,6 @@ Anzeigen verschieben – geht mit Brille auf der Tastatur:
 
 Meta Quest per Link/Air Link ohne SteamVR wird noch nicht unterstützt.
 
-### Beenden
-
-In der jeweiligen Eingabeaufforderung **Strg+C** drücken (oder das Fenster schließen).
-
 ---
 
 ## Was die Anzeigen zeigen
@@ -175,12 +85,7 @@ In der jeweiligen Eingabeaufforderung **Strg+C** drücken (oder das Fenster schl
 
 ## Updates
 
-Wenn dein Teamchef eine neue `stintview.zip` schickt:
-
-1. Alten Ordner `C:\StintView` löschen und die neue ZIP genauso entpacken (Schritt 4). Deine Teamzugangsdaten bleiben erhalten, sie liegen woanders.
-2. Einmal `cd /d C:\StintView` und `pnpm install` ausführen (Schritt 5).
-
-Schritte 1–3 und 6 sind nicht nötig.
+StintView aktualisiert sich selbst. Liegt ein Update bereit, steht im Menü **„Update … wird beim Beenden installiert“** – beim nächsten Neustart (oder nach *StintView beenden*) ist es drin.
 
 ---
 
@@ -188,46 +93,38 @@ Schritte 1–3 und 6 sind nicht nötig.
 
 | Meldung / Problem | Lösung |
 |---|---|
-| `'pnpm' ist nicht als interner oder externer Befehl …` | Eingabeaufforderung neu öffnen. Sonst Schritt 3 wiederholen. |
-| `… Ausführung von Skripts auf diesem System deaktiviert` | Du bist in PowerShell – bitte die Eingabeaufforderung (`cmd`) nehmen. |
-| `Not set up yet – run create-team or join first` | Schritt 6 fehlt. |
-| `unknown invite code` | Code vertippt – beim Teamchef nachfragen. |
-| `disconnected, retrying …` in Dauerschleife | Server nicht erreichbar: Adresse prüfen, Teamchef fragen, ob der Server läuft. |
-| `server error: server speaks protocol v…` | Deine Version passt nicht zum Server – neue ZIP holen (Updates). |
-| `standby: another teammate is still streaming …` | Normal beim Fahrerwechsel: du wirst angezeigt, sobald dein Vorgänger ausgestiegen ist. |
-| `standby: the team is streaming another iRacing session …` | Du fährst gerade in einer anderen Session als das Teamrennen – du wirst dem Team nicht angezeigt. |
-| Overlay zeigt „Nicht eingerichtet“ | Schritt 6 fehlt oder wurde unter einem anderen Windows-Benutzer ausgeführt. |
+| „Der Computer wurde durch Windows geschützt“ | **Weitere Informationen → Trotzdem ausführen** (siehe Schritt 1). |
+| Virenscanner blockiert die Installation | Kommt bei nicht signierten Programmen vereinzelt vor. Datei nur von der offiziellen Adresse oben laden und im Virenscanner freigeben. |
+| „Server nicht erreichbar“ beim Beitreten | Adresse prüfen (inkl. `:8787`). Teamchef fragen, ob sein Server läuft. |
+| „Unbekannter Einladungscode“ | Code vertippt – beim Teamchef nachfragen. |
+| Status: **Keine Verbindung zum Team-Server** | Server nicht erreichbar oder nicht gestartet. StintView verbindet sich automatisch neu. |
+| Status: **server speaks protocol v…** | Deine Version passt nicht zum Server – StintView beenden und neu starten (Update), sonst Setup neu herunterladen. |
+| Status: **Im Auto – Standby** | Normal beim Fahrerwechsel: du wirst angezeigt, sobald dein Vorgänger ausgestiegen ist. Bleibt es dabei, fährst du in einer anderen Session als das Team. |
 | Overlay am Monitor unsichtbar | iRacing auf randloses Fenster stellen. |
-| VR: `SteamVR not available … retrying` | SteamVR starten – StintView verbindet sich dann automatisch. |
+| VR: **wartet auf SteamVR** | SteamVR starten – StintView verbindet sich dann automatisch. |
+| Das StintView-Symbol fehlt | StintView über das Startmenü starten. |
 
-Bei anderen Problemen: Foto oder Kopie der Meldung aus der Eingabeaufforderung an den Teamchef schicken.
+Bei anderen Problemen: im Menü **Protokolle öffnen** und die Dateien `recorder.log` bzw. `server.log` an den Teamchef schicken.
+
+Deinstallieren: Windows-Einstellungen → Apps → **StintView**. Deine Teamzugangsdaten bleiben unter `%APPDATA%\StintView` erhalten.
 
 ---
 
 ## Für den Teamchef
 
-**ZIP erstellen** (ohne `node_modules` und ohne Zugangsdaten), im Projektordner:
+Der Teamchef betreibt den Team-Server – das geht direkt in StintView:
 
-```
-git archive -o stintview.zip HEAD
-```
+1. StintView installieren (Schritt 1).
+2. Im Fenster **Team anlegen (Teamchef)** wählen, **Team-Server auf diesem PC betreiben** angehakt lassen, Teamname und Namen eintragen, **Team anlegen**.
+3. Windows fragt, ob StintView **Verbindungen annehmen** darf – **erlauben**.
+4. Unter *Team* stehen jetzt der **Einladungscode** und der Server. An die Teammitglieder gehen der Einladungscode und deine **öffentliche Adresse** mit Port, z. B. `beispiel.dyndns.org:8787`.
 
-Alternativ auf GitHub „Code → Download ZIP“, falls die Teammitglieder Zugriff auf das Repository haben.
+Damit dein Team dich aus dem Internet erreicht:
 
-**Server starten** – auf dem Server-PC in einer eigenen Eingabeaufforderung, die während des ganzen Rennens offen bleibt:
+- **Portfreigabe im Router:** TCP **8787** auf deinen PC weiterleiten.
+- Am besten einen **DynDNS-Namen** einrichten, damit die Adresse gleich bleibt, auch wenn sich deine IP ändert.
+- Dein PC mit StintView muss während des ganzen Rennens laufen – auch wenn gerade jemand anderes fährt.
 
-```
-cd /d C:\StintView
-pnpm relay
-```
+Die Teamdaten liegen in `%APPDATA%\StintView\server\teams.json`. Diese Datei sichern – ohne sie müssen alle neu beitreten.
 
-Es erscheint `StintView relay listening on :8787`.
-
-**Team anlegen** – einmalig, in einer zweiten Eingabeaufforderung (der Server muss laufen):
-
-```
-cd /d C:\StintView
-pnpm recorder create-team --server http://localhost:8787 --team "Teamname" --name "Dein Name"
-```
-
-Der ausgegebene Einladungscode und die öffentliche Adresse (Router-Portfreigabe TCP 8787, Windows-Firewall, am besten ein DynDNS-Name) gehen an die Teammitglieder. Die Teamdaten liegen in `%APPDATA%\StintView\server\teams.json` und bleiben bei Updates erhalten. Diese Datei sichern – ohne sie müssen alle neu beitreten.
+**Neue Version veröffentlichen** (im Projektordner): `git tag v0.2.1` und `git push origin v0.2.1`. GitHub baut dann `StintView-Setup.exe` und veröffentlicht sie; alle installierten StintViews aktualisieren sich selbst.

@@ -5,3 +5,6 @@ dist-electron/
 .data/
 __pycache__/
 _site/
+release/
+dist-bundles/
+tools/live_vars.txt
