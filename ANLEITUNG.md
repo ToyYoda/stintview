@@ -214,11 +214,20 @@ git archive -o stintview.zip HEAD
 
 Alternativ auf GitHub „Code → Download ZIP“, falls die Teammitglieder Zugriff auf das Repository haben.
 
-**Server und Team** – einmalig auf dem Server-PC (siehe README):
+**Server starten** – auf dem Server-PC in einer eigenen Eingabeaufforderung, die während des ganzen Rennens offen bleibt:
 
 ```
-pnpm server
+cd /d C:\StintView
+pnpm relay
+```
+
+Es erscheint `StintView relay listening on :8787`.
+
+**Team anlegen** – einmalig, in einer zweiten Eingabeaufforderung (der Server muss laufen):
+
+```
+cd /d C:\StintView
 pnpm recorder create-team --server http://localhost:8787 --team "Teamname" --name "Dein Name"
 ```
 
-Der ausgegebene Einladungscode und die öffentliche Adresse (Router-Portfreigabe TCP 8787, Windows-Firewall, am besten ein DynDNS-Name) gehen an die Teammitglieder. Der Server-PC muss während des ganzen Rennens laufen.
+Der ausgegebene Einladungscode und die öffentliche Adresse (Router-Portfreigabe TCP 8787, Windows-Firewall, am besten ein DynDNS-Name) gehen an die Teammitglieder. Die Teamdaten liegen in `%APPDATA%\StintView\server\teams.json` und bleiben bei Updates erhalten. Diese Datei sichern – ohne sie müssen alle neu beitreten.

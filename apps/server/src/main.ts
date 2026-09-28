@@ -1,5 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { resolve } from 'node:path';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import { WebSocketServer, type WebSocket } from 'ws';
 import {
   PROTOCOL_VERSION, isTelemetry, pack, unpack,
@@ -9,7 +10,10 @@ import { Room, type Peer } from './room.ts';
 import { TeamStore } from './store.ts';
 
 const PORT = Number(process.env.PORT ?? 8787);
-const store = new TeamStore(process.env.STINTVIEW_DATA ?? resolve('.data/teams.json'));
+// Outside the program folder so replacing it on update keeps the teams.
+const dataFile = process.env.STINTVIEW_DATA ??
+  join(process.env.APPDATA ?? join(homedir(), 'AppData', 'Roaming'), 'StintView', 'server', 'teams.json');
+const store = new TeamStore(dataFile);
 const rooms = new Map<string, Room>();
 
 // ---------------------------------------------------------------------------
@@ -134,4 +138,4 @@ function log(msg: string) {
   console.log(`${new Date().toISOString()} ${msg}`);
 }
 
-http.listen(PORT, () => log(`StintView relay listening on :${PORT} (ws path /ws)`));
+http.listen(PORT, () => log(`StintView relay listening on :${PORT} (ws path /ws), teams: ${dataFile}`));

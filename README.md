@@ -26,10 +26,10 @@ pnpm install
 **Server starten** (lokal zum Testen; im Team auf einem erreichbaren Host, z. B. Fly.io/Hetzner):
 
 ```bash
-pnpm server
+pnpm relay
 ```
 
-Port `8787` (Umgebungsvariable `PORT`), Teams werden in `apps/server/.data/teams.json` gespeichert (`STINTVIEW_DATA`).
+Port `8787` (Umgebungsvariable `PORT`), Teams werden in `%APPDATA%\StintView\server\teams.json` gespeichert (`STINTVIEW_DATA`).
 
 **Team anlegen** (einmal, Teamchef):
 
