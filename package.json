@@ -1,0 +1,21 @@
+{
+  "name": "stintview",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "server": "pnpm --filter @stintview/server dev",
+    "recorder": "pnpm --filter @stintview/recorder start",
+    "overlay": "pnpm --filter @stintview/overlay dev",
+    "overlay:web": "pnpm --filter @stintview/overlay web",
+    "vr": "pnpm --filter @stintview/overlay vr",
+    "test": "vitest run",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
