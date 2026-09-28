@@ -73,6 +73,7 @@ const template = readFileSync(join(here, 'template.html'), 'utf8');
 const langs = Object.keys(LANGUAGES);
 const pageUrl = (lang) => SITE + (LANGUAGES[lang].dir ? `${LANGUAGES[lang].dir}/` : '');
 
+const built = [];
 for (const lang of langs) {
   const { dir, guide, dateFormat } = LANGUAGES[lang];
   const t = STRINGS[lang];
@@ -110,6 +111,25 @@ for (const lang of langs) {
   const target = join(out, dir);
   mkdirSync(target, { recursive: true });
   writeFileSync(join(target, 'index.html'), page);
+  built.push({ page, target, lang });
   console.log(`built ${lang}: ${join(target, 'index.html')}`);
+}
+// Check only once every page exists, since the pages link to each other.
+for (const { page, target, lang } of built) checkLocalRefs(page, target, lang);
+
+/** Fails the build if a page references a local file that doesn't exist (e.g. a wrong relative path). */
+function checkLocalRefs(page, pageDir, lang) {
+  const refs = [...page.matchAll(/(?:src|href)="([^"]+)"|url\("([^"]+)"\)/g)].map((m) => m[1] ?? m[2]);
+  const missing = refs.filter((ref) => {
+    if (/^(#|https?:|data:|mailto:)/.test(ref)) return false;
+    if (ref.endsWith('stintview.zip') && !zipSize) return false; // --no-zip
+    const path = join(pageDir, ref.split('#')[0]);
+    try {
+      return !statSync(ref.endsWith('/') ? join(path, 'index.html') : path).isFile();
+    } catch {
+      return true;
+    }
+  });
+  if (missing.length) throw new Error(`${lang}: broken local references: ${[...new Set(missing)].join(', ')}`);
 }
 console.log(`site built (${sha}${zipSize ? `, zip ${zipSize}` : ''})`);
