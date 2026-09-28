@@ -4,3 +4,4 @@ dist-electron/
 *.log
 .data/
 __pycache__/
+_site/

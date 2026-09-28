@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>StintView – Team-Telemetrie für iRacing-Langstreckenrennen</title>
+  <meta name="description" content="Sieh live Lenkung, Gas, Bremse, Spritverbrauch und Reifen deines Teamkollegen, der gerade fährt – als Overlay am Monitor oder in VR.">
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='12' fill='none' stroke='%23ffb000' stroke-width='4'/%3E%3Cpath d='M4 16h24M16 16v12' stroke='%23ffb000' stroke-width='4'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --bg: #08090c;
+      --bg-2: #0d0f14;
+      --panel: #12151b;
+      --panel-2: #181c24;
+      --line: rgba(255, 255, 255, 0.08);
+      --line-2: rgba(255, 255, 255, 0.14);
+      --text: #e9ebef;
+      --muted: #9aa3b1;
+      --faint: #6b7483;
+      --accent: #ffb000;
+      --accent-ink: #1a1200;
+      --green: #3ddc84;
+      --red: #ff4d4d;
+      --radius: 14px;
+      --mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, monospace;
+      --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --max: 1120px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased;
+    }
+    img { max-width: 100%; height: auto; display: block; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { max-width: var(--max); margin: 0 auto; padding: 0 16px; }
+    @media (min-width: 720px) { .wrap { padding: 0 32px; } }
+
+    /* Header */
+    .top {
+      position: sticky; top: 0; z-index: 10;
+      background: color-mix(in srgb, var(--bg) 82%, transparent);
+      backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
+    }
+    .top .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 16px; }
+    .brand { display: flex; align-items: center; gap: 10px; color: var(--text); font-weight: 700; letter-spacing: 0.02em; }
+    .brand:hover { text-decoration: none; }
+    .brand svg { width: 26px; height: 26px; }
+    .nav { display: flex; gap: 22px; font-size: 15px; }
+    .nav a { color: var(--muted); }
+    .nav a:hover { color: var(--text); text-decoration: none; }
+    @media (max-width: 640px) { .nav .opt { display: none; } }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; gap: 10px; padding: 13px 22px; border-radius: 10px;
+      font-weight: 650; font-size: 16px; border: 1px solid transparent; transition: transform .12s, background .12s;
+    }
+    .btn:hover { text-decoration: none; transform: translateY(-1px); }
+    .btn-primary { background: var(--accent); color: var(--accent-ink); }
+    .btn-primary:hover { background: #ffc233; }
+    .btn-ghost { border-color: var(--line-2); color: var(--text); }
+    .btn-ghost:hover { background: var(--panel); }
+    .btn svg { width: 18px; height: 18px; }
+
+    /* Hero */
+    .hero { position: relative; overflow: hidden; padding: 72px 0 64px; }
+    .hero::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background:
+        radial-gradient(800px 400px at 85% 20%, rgba(255, 176, 0, 0.10), transparent 60%),
+        radial-gradient(600px 400px at 10% 90%, rgba(61, 220, 132, 0.06), transparent 60%);
+    }
+    .hero .wrap { position: relative; display: grid; gap: 48px; align-items: center; }
+    @media (min-width: 960px) { .hero .wrap { grid-template-columns: 1fr 1.05fr; } }
+    .eyebrow { font: 600 13px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin: 0 0 16px; }
+    h1 { font-size: clamp(34px, 5.2vw, 56px); line-height: 1.08; margin: 0 0 20px; letter-spacing: -0.02em; }
+    h1 em { font-style: normal; color: var(--accent); }
+    .lead { font-size: 19px; color: var(--muted); margin: 0 0 32px; max-width: 34em; }
+    .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+    .meta { font-size: 14px; color: var(--faint); }
+
+    .showcase { display: grid; grid-template-columns: 1.08fr 1fr; gap: 14px; align-items: start; }
+    .showcase img {
+      width: 100%; height: auto; border-radius: 10px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--line);
+    }
+    .showcase .s-inputs { grid-column: 1 / -1; }
+
+    /* Sections */
+    section { padding: 80px 0; border-top: 1px solid var(--line); }
+    .section-head { max-width: 680px; margin-bottom: 40px; }
+    h2 { font-size: clamp(26px, 3.4vw, 36px); line-height: 1.2; margin: 0 0 12px; letter-spacing: -0.01em; }
+    .section-head p { color: var(--muted); margin: 0; font-size: 17px; }
+
+    .features { display: grid; gap: 20px; }
+    @media (min-width: 900px) { .features { grid-template-columns: repeat(3, 1fr); } }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; }
+    .card .shot { background: #000; border-radius: 10px; padding: 12px; margin-bottom: 18px; display: grid; place-items: center; aspect-ratio: 16 / 10; }
+    .card .shot img { width: 100%; height: 100%; object-fit: contain; }
+    .card .shot { overflow: hidden; }
+    .card h3 { margin: 0 0 8px; font-size: 19px; display: flex; align-items: center; gap: 10px; }
+    .card p { margin: 0; color: var(--muted); font-size: 15px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+    .note { margin-top: 12px !important; font-size: 13.5px !important; color: var(--faint) !important; border-left: 2px solid var(--line-2); padding-left: 10px; }
+
+    /* Flow diagram */
+    .flow { display: grid; gap: 14px; align-items: stretch; }
+    @media (min-width: 900px) { .flow { grid-template-columns: 1fr auto 1fr auto 1fr; } }
+    .node { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+    .node .tag { font: 600 12px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); margin-bottom: 10px; }
+    .node h3 { margin: 0 0 8px; font-size: 18px; }
+    .node p { margin: 0; color: var(--muted); font-size: 15px; }
+    .node.live { border-color: color-mix(in srgb, var(--green) 45%, transparent); }
+    .node.live .tag { color: var(--green); }
+    .arrow { display: grid; place-items: center; color: var(--accent); }
+    .arrow svg { width: 40px; height: 40px; }
+    @media (max-width: 899px) { .arrow svg { transform: rotate(90deg); } }
+
+    .facts { display: grid; gap: 16px; margin-top: 40px; }
+    @media (min-width: 720px) { .facts { grid-template-columns: repeat(2, 1fr); } }
+    .fact { display: flex; gap: 14px; align-items: flex-start; }
+    .fact svg { width: 22px; height: 22px; flex: none; margin-top: 3px; color: var(--accent); }
+    .fact strong { display: block; }
+    .fact span { color: var(--muted); font-size: 15px; }
+
+    /* Download band */
+    .download { background: linear-gradient(180deg, var(--bg-2), var(--bg)); }
+    .dl-box {
+      display: grid; gap: 28px; align-items: center; background: var(--panel); border: 1px solid var(--line);
+      border-radius: 18px; padding: 32px;
+    }
+    @media (min-width: 860px) { .dl-box { grid-template-columns: 1.2fr 1fr; padding: 44px; } }
+    .dl-box h2 { margin-bottom: 8px; }
+    .dl-box p { color: var(--muted); margin: 0 0 24px; }
+    .req { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+    .req li { display: flex; gap: 12px; align-items: baseline; padding: 12px 14px; background: var(--panel-2); border-radius: 10px; font-size: 15px; }
+    .req b { font: 600 13px var(--mono); color: var(--accent); min-width: 88px; }
+
+    /* Guide */
+    .guide-layout { display: grid; gap: 40px; }
+    @media (min-width: 960px) { .guide-layout { grid-template-columns: 240px 1fr; } }
+    .toc { position: sticky; top: 84px; align-self: start; font-size: 14.5px; }
+    .toc p { font: 600 12px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); margin: 0 0 12px; }
+    .toc ol { list-style: none; margin: 0; padding: 0; border-left: 1px solid var(--line); }
+    .toc a { display: block; padding: 6px 0 6px 14px; color: var(--muted); margin-left: -1px; border-left: 1px solid transparent; }
+    .toc a:hover { color: var(--text); border-left-color: var(--accent); text-decoration: none; }
+    @media (max-width: 959px) { .toc { position: static; } .toc ol { columns: 2; } }
+
+    .guide { min-width: 0; max-width: 760px; }
+    .guide > :first-child { margin-top: 0; }
+    .guide h2 { font-size: 26px; margin: 56px 0 16px; padding-top: 8px; }
+    .guide hr + h2, .guide h2:first-of-type { margin-top: 8px; }
+    .guide h3 { font-size: 19px; margin: 32px 0 10px; }
+    .guide .anchor { color: var(--faint); margin-left: -0.9em; padding-right: 0.3em; opacity: 0; font-weight: 400; }
+    .guide h2:hover .anchor, .guide h3:hover .anchor { opacity: 1; text-decoration: none; }
+    .guide p, .guide li { color: #cfd4dc; }
+    .guide ol, .guide ul { padding-left: 1.3em; }
+    .guide li { margin: 6px 0; }
+    .guide strong { color: var(--text); }
+    .guide hr { border: 0; border-top: 1px solid var(--line); margin: 48px 0; }
+    .guide blockquote { margin: 16px 0; padding: 12px 16px; background: rgba(255, 176, 0, 0.07); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; }
+    .guide blockquote p { margin: 0; }
+    .guide :not(pre) > code { font: 0.9em var(--mono); background: var(--panel-2); border: 1px solid var(--line); padding: 1px 6px; border-radius: 5px; color: var(--text); }
+    .code { position: relative; margin: 14px 0; }
+    .code pre {
+      margin: 0; padding: 16px 96px 16px 18px; overflow-x: auto; background: #050608; border: 1px solid var(--line-2);
+      border-radius: 10px; font: 14.5px/1.55 var(--mono); color: #f1f3f6;
+    }
+    .copy {
+      position: absolute; top: 10px; right: 10px; font: 600 12.5px var(--sans); color: var(--muted); background: var(--panel-2);
+      border: 1px solid var(--line-2); border-radius: 7px; padding: 6px 10px; cursor: pointer;
+    }
+    .copy:hover { color: var(--text); }
+    .copy.done { color: var(--green); border-color: color-mix(in srgb, var(--green) 50%, transparent); }
+    .table-wrap { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line); border-radius: 10px; }
+    .guide table { border-collapse: collapse; width: 100%; font-size: 15px; }
+    .guide th, .guide td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    .guide th { background: var(--panel); color: var(--text); font-weight: 600; }
+    .guide tr:last-child td { border-bottom: 0; }
+
+    footer { border-top: 1px solid var(--line); padding: 40px 0 56px; color: var(--faint); font-size: 14px; }
+    footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 32px; justify-content: space-between; }
+    footer a { color: var(--muted); }
+
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .btn { transition: none; } }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="#">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="12" fill="none" stroke="#ffb000" stroke-width="3.5"/><path d="M4.5 16h23M16 16v11.5" stroke="#ffb000" stroke-width="3.5"/></svg>
+        StintView
+      </a>
+      <nav class="nav" aria-label="Seitennavigation">
+        <a class="opt" href="#funktionen">Funktionen</a>
+        <a class="opt" href="#so-funktionierts">So funktioniert's</a>
+        <a href="#anleitung">Anleitung</a>
+        <a href="{{REPO}}" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="hero">
+      <div class="wrap">
+        <div>
+          <p class="eyebrow">Team-Telemetrie für iRacing</p>
+          <h1>Sieh, was im Auto passiert – <em>auch wenn du nicht fährst.</em></h1>
+          <p class="lead">
+            StintView zeigt deinem ganzen Team live die Lenkung, Pedale, den Spritverbrauch und die Reifen des Fahrers,
+            der gerade im Auto sitzt. Als Overlay über iRacing – am Monitor oder in VR.
+          </p>
+          <div class="cta">
+            <a class="btn btn-primary" href="stintview.zip" download>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>
+              ZIP herunterladen
+            </a>
+            <a class="btn btn-ghost" href="#anleitung">Zur Anleitung</a>
+          </div>
+          <p class="meta">Windows · kostenlos · Stand {{VERSION}}{{ZIP_SIZE}}</p>
+        </div>
+        <div class="showcase" aria-label="Beispielansicht der Anzeigen">
+          <img class="s-inputs" src="assets/inputs.png" alt="Anzeige Eingaben: Verlauf von Gas, Bremse und Lenkung, Pedalbalken, Lenkrad mit Winkel, Gang und Geschwindigkeit" width="900" height="352">
+          <img class="s-tyres" src="assets/tyres.png" alt="Anzeige Reifen: Karkasstemperaturen innen, Mitte, außen und Verschleiß je Rad" width="660" height="406">
+          <img class="s-fuel" src="assets/fuel.png" alt="Anzeige Sprit: Tankinhalt, Runden übrig, Verbrauch letzte Runde und Durchschnitt" width="560" height="374">
+        </div>
+      </div>
+    </div>
+
+    <section id="funktionen">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Was iRacing dir beim Zuschauen nicht zeigt</h2>
+          <p>Wenn du deinem Teamkollegen im Langstreckenrennen zusiehst, siehst du Position und Rundenzeiten. StintView ergänzt genau das, was fehlt.</p>
+        </div>
+        <div class="features">
+          <article class="card">
+            <div class="shot"><img src="assets/inputs.png" alt="" width="900" height="352" loading="lazy"></div>
+            <h3><span class="dot" style="background: var(--green)"></span>Eingaben live</h3>
+            <p>Lenkwinkel, Gas und Bremse als laufender Verlauf der letzten fünf Sekunden – dazu Gang und Geschwindigkeit. Du siehst, wie früh gebremst und wie sauber rausbeschleunigt wird.</p>
+          </article>
+          <article class="card">
+            <div class="shot"><img src="assets/fuel.png" alt="" width="560" height="374" loading="lazy"></div>
+            <h3><span class="dot" style="background: var(--accent)"></span>Sprit pro Runde</h3>
+            <p>Tankinhalt, Runden bis leer und der Verbrauch der letzten Runde sowie im Schnitt über 3 und 5 Runden. Boxenstopp-Runden werden automatisch herausgerechnet.</p>
+          </article>
+          <article class="card">
+            <div class="shot"><img src="assets/tyres.png" alt="" width="660" height="406" loading="lazy"></div>
+            <h3><span class="dot" style="background: var(--red)"></span>Reifen</h3>
+            <p>Karkasstemperatur innen, Mitte, außen und Verschleiß jedes Rads, dazu die Kilometer auf dem Satz und eine Schätzung, wie viel Profil jetzt noch übrig ist.</p>
+            <p class="note">iRacing misst Temperatur und Verschleiß nur beim Stopp in der Box. Live-Oberflächentemperaturen gibt iRacing nicht heraus.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="so-funktionierts">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>So funktioniert's</h2>
+          <p>Jedes Teammitglied lässt StintView im Hintergrund laufen. Wer sich ins Auto setzt, wird automatisch zur Quelle – ohne Umschalten, ohne Absprache.</p>
+        </div>
+        <div class="flow">
+          <div class="node live">
+            <div class="tag">● Fahrer im Auto</div>
+            <h3>Recorder</h3>
+            <p>Liest die Telemetrie direkt aus iRacing und sendet sie – aber nur, solange du selbst im Auto sitzt.</p>
+          </div>
+          <div class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15m0 0-5-5m5 5-5 5"/></svg></div>
+          <div class="node">
+            <div class="tag">Team-Server</div>
+            <h3>Relay</h3>
+            <p>Verbindet das Team über das Internet. Beitritt mit Einladungscode – läuft beim Teamchef.</p>
+          </div>
+          <div class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15m0 0-5-5m5 5-5 5"/></svg></div>
+          <div class="node">
+            <div class="tag">Alle im Team</div>
+            <h3>Overlay</h3>
+            <p>Zeigt die Daten des aktuellen Fahrers über iRacing an – als durchsichtiges Fenster am Monitor oder als Panels in SteamVR.</p>
+          </div>
+        </div>
+        <div class="facts">
+          <div class="fact">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
+            <div><strong>Immer nur der, der fährt</strong><span>Zuschauer senden nichts. Wer parallel in einer anderen Session fährt, wird dem Team nicht angezeigt.</span></div>
+          </div>
+          <div class="fact">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
+            <div><strong>Fahrerwechsel automatisch</strong><span>Steigt der Nächste ein, übernimmt er innerhalb von Sekunden. Sprit- und Reifenhistorie laufen weiter.</span></div>
+          </div>
+          <div class="fact">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
+            <div><strong>Unabhängig vom iRacing-Konto</strong><span>Kein Login bei iRacing, keine Freigaben. Euer Team, euer Server, euer Einladungscode.</span></div>
+          </div>
+          <div class="fact">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
+            <div><strong>Monitor und VR</strong><span>Durchsichtiges Overlay im randlosen Fenstermodus oder frei platzierbare Panels in SteamVR, z. B. mit der Bigscreen Beyond.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="download" id="download">
+      <div class="wrap">
+        <div class="dl-box">
+          <div>
+            <h2>Herunterladen</h2>
+            <p>Die ZIP enthält alles für Recorder, Overlay und Server. Einrichtung in etwa 15 Minuten – Schritt für Schritt in der Anleitung unten. Server-Adresse und Einladungscode bekommst du von deinem Teamchef.</p>
+            <div class="cta">
+              <a class="btn btn-primary" href="stintview.zip" download>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>
+                stintview.zip
+              </a>
+              <a class="btn btn-ghost" href="{{REPO}}" target="_blank" rel="noopener">Quellcode auf GitHub</a>
+            </div>
+            <p class="meta">Stand {{VERSION}}{{ZIP_SIZE}}</p>
+          </div>
+          <ul class="req" aria-label="Voraussetzungen">
+            <li><b>System</b>Windows 10 oder 11</li>
+            <li><b>Software</b>Node.js 22 (LTS) und pnpm – die Anleitung zeigt wie</li>
+            <li><b>iRacing</b>Randloser Fenstermodus für das Monitor-Overlay</li>
+            <li><b>VR</b>Optional, jedes Headset über SteamVR</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="anleitung">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Anleitung</h2>
+          <p>Von der ZIP bis zum ersten Teamrennen.</p>
+        </div>
+        <div class="guide-layout">
+          <nav class="toc" aria-label="Inhalt der Anleitung">
+            <p>Inhalt</p>
+            <ol>
+{{TOC}}
+            </ol>
+          </nav>
+          <article class="guide">
+{{GUIDE}}
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>StintView · Stand {{VERSION}} · <a href="{{REPO}}" target="_blank" rel="noopener">GitHub</a></span>
+      <span>Ein privates Team-Projekt. Kein offizielles Produkt von iRacing.com Motorsport Simulations.</span>
+    </div>
+  </footer>
+
+  <script>
+    document.querySelectorAll('.copy').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const text = btn.previousElementSibling.textContent;
+        try {
+          await navigator.clipboard.writeText(text);
+          btn.textContent = 'Kopiert';
+          btn.classList.add('done');
+        } catch {
+          btn.textContent = 'Markieren & Strg+C';
+        }
+        setTimeout(() => { btn.textContent = 'Kopieren'; btn.classList.remove('done'); }, 1800);
+      });
+    });
+  </script>
+</body>
+</html>
