@@ -3,29 +3,33 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>StintView – Team-Telemetrie für iRacing-Langstreckenrennen</title>
-  <meta name="description" content="Sieh live Lenkung, Gas, Bremse, Spritverbrauch und Reifen deines Teamkollegen, der gerade fährt – als Overlay am Monitor oder in VR.">
+  <title>StintView – Outcast Endurance</title>
+  <meta name="description" content="Team-Telemetrie von Outcast Endurance: live Lenkung, Gas, Bremse, Spritverbrauch und Reifen des Teamkollegen, der gerade fährt – als Overlay am Monitor oder in VR.">
   <meta name="color-scheme" content="dark">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='12' fill='none' stroke='%23ffb000' stroke-width='4'/%3E%3Cpath d='M4 16h24M16 16v12' stroke='%23ffb000' stroke-width='4'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg transform='skewX(-14) translate(8 0)'%3E%3Crect x='17' y='13' width='30' height='38' rx='10' fill='none' stroke='%23E5E5E5' stroke-width='8'/%3E%3C/g%3E%3Cpolygon points='6,50 56,16 60,20 11,54' fill='%23D10F0F'/%3E%3C/svg%3E">
   <style>
     :root {
-      --bg: #08090c;
-      --bg-2: #0d0f14;
-      --panel: #12151b;
-      --panel-2: #181c24;
-      --line: rgba(255, 255, 255, 0.08);
-      --line-2: rgba(255, 255, 255, 0.14);
-      --text: #e9ebef;
-      --muted: #9aa3b1;
-      --faint: #6b7483;
-      --accent: #ffb000;
-      --accent-ink: #1a1200;
+      /* Outcast Endurance palette */
+      --white: #e5e5e5;
+      --red: #d10f0f;
+      --red-hi: #ec2323;
+      --graphite: #1a1a1a;
+
+      --bg: #0a0a0a;
+      --bg-2: #101010;
+      --panel: var(--graphite);
+      --panel-2: #232323;
+      --line: rgba(229, 229, 229, 0.09);
+      --line-2: rgba(229, 229, 229, 0.16);
+      --text: var(--white);
+      --muted: #a4a4a4;
+      --faint: #6f6f6f;
       --green: #3ddc84;
-      --red: #ff4d4d;
-      --radius: 14px;
+      --radius: 6px;
       --mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, monospace;
-      --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      --max: 1120px;
+      --sans: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+      --max: 1160px;
+      --cut: 12px;
     }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; scroll-padding-top: 80px; }
@@ -34,168 +38,211 @@
       font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased;
     }
     img { max-width: 100%; height: auto; display: block; }
-    a { color: var(--accent); text-decoration: none; }
+    a { color: var(--red-hi); text-decoration: none; }
     a:hover { text-decoration: underline; }
     .wrap { max-width: var(--max); margin: 0 auto; padding: 0 16px; }
     @media (min-width: 720px) { .wrap { padding: 0 32px; } }
 
+    /* Type: bold italic caps like the livery */
+    .display { font-style: italic; font-weight: 900; text-transform: uppercase; letter-spacing: -0.01em; }
+    .spaced { font-style: italic; font-weight: 600; text-transform: uppercase; letter-spacing: 0.32em; }
+    .kicker { display: flex; align-items: center; gap: 14px; color: var(--red); font-size: 13px; margin: 0 0 18px; }
+    .kicker::before, .kicker::after { content: ""; height: 1px; width: 36px; background: var(--red); }
+    .kicker::after { flex: 0 0 36px; }
+    @media (max-width: 480px) { .spaced { letter-spacing: 0.18em; } .kicker::after { display: none; } }
+
     /* Header */
     .top {
       position: sticky; top: 0; z-index: 10;
-      background: color-mix(in srgb, var(--bg) 82%, transparent);
+      background: color-mix(in srgb, var(--bg) 85%, transparent);
       backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
     }
-    .top .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 16px; }
-    .brand { display: flex; align-items: center; gap: 10px; color: var(--text); font-weight: 700; letter-spacing: 0.02em; }
+    .top .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 16px; }
+    .brand { display: flex; align-items: center; gap: 12px; color: var(--text); }
     .brand:hover { text-decoration: none; }
-    .brand svg { width: 26px; height: 26px; }
-    .nav { display: flex; gap: 22px; font-size: 15px; }
+    .brand svg { width: 38px; height: 38px; flex: none; }
+    .wordmark { display: flex; flex-direction: column; line-height: 1; }
+    .wordmark b { font-style: italic; font-weight: 900; font-size: 20px; letter-spacing: -0.01em; }
+    .wordmark span { font-style: italic; font-size: 9px; letter-spacing: 0.42em; color: var(--red); margin-top: 3px; }
+    .product { margin-left: 4px; padding-left: 14px; border-left: 1px solid var(--line-2); font-weight: 700; font-style: italic; letter-spacing: 0.04em; color: var(--muted); font-size: 14px; }
+    @media (max-width: 480px) { .product { display: none; } }
+    .nav { display: flex; gap: 24px; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
     .nav a { color: var(--muted); }
     .nav a:hover { color: var(--text); text-decoration: none; }
-    @media (max-width: 640px) { .nav .opt { display: none; } }
+    @media (max-width: 760px) { .nav .opt { display: none; } }
 
-    /* Buttons */
+    /* Buttons: parallelograms */
     .btn {
-      display: inline-flex; align-items: center; gap: 10px; padding: 13px 22px; border-radius: 10px;
-      font-weight: 650; font-size: 16px; border: 1px solid transparent; transition: transform .12s, background .12s;
+      display: inline-flex; align-items: center; gap: 10px; padding: 14px 28px;
+      font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: 0.06em; font-size: 15px;
+      clip-path: polygon(var(--cut) 0, 100% 0, calc(100% - var(--cut)) 100%, 0 100%);
+      transition: background .12s, color .12s;
     }
-    .btn:hover { text-decoration: none; transform: translateY(-1px); }
-    .btn-primary { background: var(--accent); color: var(--accent-ink); }
-    .btn-primary:hover { background: #ffc233; }
-    .btn-ghost { border-color: var(--line-2); color: var(--text); }
-    .btn-ghost:hover { background: var(--panel); }
+    .btn:hover { text-decoration: none; }
+    .btn-primary { background: var(--red); color: #fff; }
+    .btn-primary:hover { background: var(--red-hi); }
+    .btn-ghost { background: var(--panel-2); color: var(--text); }
+    .btn-ghost:hover { background: #2e2e2e; }
     .btn svg { width: 18px; height: 18px; }
 
     /* Hero */
-    .hero { position: relative; overflow: hidden; padding: 72px 0 64px; }
-    .hero::before {
-      content: ""; position: absolute; inset: 0; pointer-events: none;
-      background:
-        radial-gradient(800px 400px at 85% 20%, rgba(255, 176, 0, 0.10), transparent 60%),
-        radial-gradient(600px 400px at 10% 90%, rgba(61, 220, 132, 0.06), transparent 60%);
+    .hero { position: relative; overflow: hidden; padding: 76px 0 64px; }
+    .hero::before, .hero::after {
+      content: ""; position: absolute; pointer-events: none; transform: skewX(-24deg);
+      background: linear-gradient(90deg, transparent, rgba(209, 15, 15, 0.55) 30%, rgba(209, 15, 15, 0.08));
     }
+    .hero::before { top: 8%; right: -6%; width: 46%; height: 18px; opacity: 0.55; }
+    .hero::after { top: 14%; right: 4%; width: 30%; height: 6px; opacity: 0.8; }
     .hero .wrap { position: relative; display: grid; gap: 48px; align-items: center; }
-    @media (min-width: 960px) { .hero .wrap { grid-template-columns: 1fr 1.05fr; } }
-    .eyebrow { font: 600 13px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin: 0 0 16px; }
-    h1 { font-size: clamp(34px, 5.2vw, 56px); line-height: 1.08; margin: 0 0 20px; letter-spacing: -0.02em; }
-    h1 em { font-style: normal; color: var(--accent); }
+    @media (min-width: 980px) { .hero .wrap { grid-template-columns: 1fr 1.05fr; } }
+    h1 { font-size: clamp(34px, 5vw, 56px); line-height: 1.04; margin: 0 0 22px; }
+    h1 em { font-style: italic; color: var(--red); }
     .lead { font-size: 19px; color: var(--muted); margin: 0 0 32px; max-width: 34em; }
     .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
     .meta { font-size: 14px; color: var(--faint); }
 
-    .showcase { display: grid; grid-template-columns: 1.08fr 1fr; gap: 14px; align-items: start; }
-    .showcase img {
-      width: 100%; height: auto; border-radius: 10px;
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--line);
-    }
+    .showcase { display: grid; grid-template-columns: 1.08fr 1fr; gap: 12px; align-items: start; }
+    .showcase img { width: 100%; border-radius: 8px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--line); }
     .showcase .s-inputs { grid-column: 1 / -1; }
 
+    /* Livery band */
+    .livery-band { position: relative; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: #000; overflow: hidden; }
+    .livery {
+      max-width: 1100px; margin: 0 auto; aspect-ratio: 960 / 270;
+      background: url("assets/livery.webp") no-repeat;
+      /* crop the side view (x 570-1530, y 245-515) out of the 1536x1024 design sheet */
+      background-size: 160% auto; background-position: 98.96% 32.49%;
+      -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+      mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+    }
+    .slogan { text-align: center; padding: 6px 16px 34px; font-size: clamp(12px, 1.6vw, 16px); color: var(--muted); }
+    .slogan em { color: var(--red); font-style: italic; }
+
     /* Sections */
-    section { padding: 80px 0; border-top: 1px solid var(--line); }
-    .section-head { max-width: 680px; margin-bottom: 40px; }
-    h2 { font-size: clamp(26px, 3.4vw, 36px); line-height: 1.2; margin: 0 0 12px; letter-spacing: -0.01em; }
+    section { padding: 84px 0; border-top: 1px solid var(--line); }
+    .section-head { max-width: 700px; margin-bottom: 40px; }
+    h2 { font-size: clamp(26px, 3.4vw, 38px); line-height: 1.12; margin: 0 0 12px; }
     .section-head p { color: var(--muted); margin: 0; font-size: 17px; }
+    .slash { display: inline-block; width: 18px; height: 5px; background: var(--red); transform: skewX(-30deg); margin-right: 12px; vertical-align: middle; }
 
-    .features { display: grid; gap: 20px; }
+    .features { display: grid; gap: 18px; }
     @media (min-width: 900px) { .features { grid-template-columns: repeat(3, 1fr); } }
-    .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; }
-    .card .shot { background: #000; border-radius: 10px; padding: 12px; margin-bottom: 18px; display: grid; place-items: center; aspect-ratio: 16 / 10; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; border-top: 3px solid var(--red); }
+    .card .shot { background: #000; border-radius: 4px; padding: 12px; margin-bottom: 18px; display: grid; place-items: center; aspect-ratio: 16 / 10; overflow: hidden; }
     .card .shot img { width: 100%; height: 100%; object-fit: contain; }
-    .card .shot { overflow: hidden; }
-    .card h3 { margin: 0 0 8px; font-size: 19px; display: flex; align-items: center; gap: 10px; }
+    .card h3 { margin: 0 0 8px; font-size: 19px; font-style: italic; font-weight: 800; text-transform: uppercase; letter-spacing: 0.02em; }
     .card p { margin: 0; color: var(--muted); font-size: 15px; }
-    .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
-    .note { margin-top: 12px !important; font-size: 13.5px !important; color: var(--faint) !important; border-left: 2px solid var(--line-2); padding-left: 10px; }
+    .note { margin-top: 12px !important; font-size: 13.5px !important; color: var(--faint) !important; border-left: 2px solid var(--red); padding-left: 10px; }
 
-    /* Flow diagram */
+    /* Flow */
     .flow { display: grid; gap: 14px; align-items: stretch; }
     @media (min-width: 900px) { .flow { grid-template-columns: 1fr auto 1fr auto 1fr; } }
     .node { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
-    .node .tag { font: 600 12px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); margin-bottom: 10px; }
-    .node h3 { margin: 0 0 8px; font-size: 18px; }
+    .node .tag { font-size: 11.5px; color: var(--faint); margin-bottom: 10px; }
+    .node h3 { margin: 0 0 8px; font-size: 20px; }
     .node p { margin: 0; color: var(--muted); font-size: 15px; }
-    .node.live { border-color: color-mix(in srgb, var(--green) 45%, transparent); }
-    .node.live .tag { color: var(--green); }
-    .arrow { display: grid; place-items: center; color: var(--accent); }
+    .node.live { border-color: color-mix(in srgb, var(--red) 55%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--red) 25%, transparent); }
+    .node.live .tag { color: var(--red); }
+    .arrow { display: grid; place-items: center; color: var(--red); }
     .arrow svg { width: 40px; height: 40px; }
     @media (max-width: 899px) { .arrow svg { transform: rotate(90deg); } }
 
-    .facts { display: grid; gap: 16px; margin-top: 40px; }
+    .facts { display: grid; gap: 18px; margin-top: 40px; }
     @media (min-width: 720px) { .facts { grid-template-columns: repeat(2, 1fr); } }
     .fact { display: flex; gap: 14px; align-items: flex-start; }
-    .fact svg { width: 22px; height: 22px; flex: none; margin-top: 3px; color: var(--accent); }
-    .fact strong { display: block; }
+    .fact .slash { margin-top: 10px; flex: none; }
+    .fact strong { display: block; font-style: italic; text-transform: uppercase; letter-spacing: 0.02em; }
     .fact span { color: var(--muted); font-size: 15px; }
 
-    /* Download band */
+    /* Download */
     .download { background: linear-gradient(180deg, var(--bg-2), var(--bg)); }
     .dl-box {
-      display: grid; gap: 28px; align-items: center; background: var(--panel); border: 1px solid var(--line);
-      border-radius: 18px; padding: 32px;
+      position: relative; overflow: hidden; display: grid; gap: 28px; align-items: center;
+      background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 32px;
+    }
+    .dl-box::after {
+      content: ""; position: absolute; right: -40px; top: -20px; width: 260px; height: 140%;
+      background: linear-gradient(90deg, rgba(209, 15, 15, 0.14), transparent); transform: skewX(-24deg); pointer-events: none;
     }
     @media (min-width: 860px) { .dl-box { grid-template-columns: 1.2fr 1fr; padding: 44px; } }
-    .dl-box h2 { margin-bottom: 8px; }
+    .dl-box > * { position: relative; z-index: 1; }
     .dl-box p { color: var(--muted); margin: 0 0 24px; }
-    .req { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
-    .req li { display: flex; gap: 12px; align-items: baseline; padding: 12px 14px; background: var(--panel-2); border-radius: 10px; font-size: 15px; }
-    .req b { font: 600 13px var(--mono); color: var(--accent); min-width: 88px; }
+    .req { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+    .req li { display: flex; gap: 12px; align-items: baseline; padding: 12px 14px; background: var(--panel-2); border-radius: 4px; font-size: 15px; }
+    .req b { font-size: 11.5px; color: var(--red); min-width: 92px; }
 
     /* Guide */
     .guide-layout { display: grid; gap: 40px; }
-    @media (min-width: 960px) { .guide-layout { grid-template-columns: 240px 1fr; } }
-    .toc { position: sticky; top: 84px; align-self: start; font-size: 14.5px; }
-    .toc p { font: 600 12px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); margin: 0 0 12px; }
+    @media (min-width: 980px) { .guide-layout { grid-template-columns: 240px 1fr; } }
+    .toc { position: sticky; top: 88px; align-self: start; font-size: 14.5px; }
+    .toc p { font-size: 11.5px; color: var(--faint); margin: 0 0 12px; }
     .toc ol { list-style: none; margin: 0; padding: 0; border-left: 1px solid var(--line); }
-    .toc a { display: block; padding: 6px 0 6px 14px; color: var(--muted); margin-left: -1px; border-left: 1px solid transparent; }
-    .toc a:hover { color: var(--text); border-left-color: var(--accent); text-decoration: none; }
-    @media (max-width: 959px) { .toc { position: static; } .toc ol { columns: 2; } }
+    .toc a { display: block; padding: 6px 0 6px 14px; color: var(--muted); margin-left: -1px; border-left: 2px solid transparent; }
+    .toc a:hover { color: var(--text); border-left-color: var(--red); text-decoration: none; }
+    @media (max-width: 979px) { .toc { position: static; } .toc ol { columns: 2; } }
 
     .guide { min-width: 0; max-width: 760px; }
     .guide > :first-child { margin-top: 0; }
-    .guide h2 { font-size: 26px; margin: 56px 0 16px; padding-top: 8px; }
-    .guide hr + h2, .guide h2:first-of-type { margin-top: 8px; }
-    .guide h3 { font-size: 19px; margin: 32px 0 10px; }
+    .guide h2 { font-size: 26px; margin: 56px 0 16px; padding-top: 8px; font-style: italic; font-weight: 800; }
+    .guide h2:first-child { margin-top: 0; }
+    .guide h3 { font-size: 19px; margin: 32px 0 10px; font-style: italic; }
     .guide .anchor { color: var(--faint); margin-left: -0.9em; padding-right: 0.3em; opacity: 0; font-weight: 400; }
     .guide h2:hover .anchor, .guide h3:hover .anchor { opacity: 1; text-decoration: none; }
-    .guide p, .guide li { color: #cfd4dc; }
+    .guide p, .guide li { color: #cfcfcf; }
     .guide ol, .guide ul { padding-left: 1.3em; }
     .guide li { margin: 6px 0; }
+    .guide li::marker { color: var(--red); }
     .guide strong { color: var(--text); }
     .guide hr { border: 0; border-top: 1px solid var(--line); margin: 48px 0; }
-    .guide blockquote { margin: 16px 0; padding: 12px 16px; background: rgba(255, 176, 0, 0.07); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; }
+    .guide blockquote { margin: 16px 0; padding: 12px 16px; background: rgba(209, 15, 15, 0.08); border-left: 3px solid var(--red); border-radius: 0 4px 4px 0; }
     .guide blockquote p { margin: 0; }
-    .guide :not(pre) > code { font: 0.9em var(--mono); background: var(--panel-2); border: 1px solid var(--line); padding: 1px 6px; border-radius: 5px; color: var(--text); }
+    .guide :not(pre) > code { font: 0.9em var(--mono); background: var(--panel-2); border: 1px solid var(--line); padding: 1px 6px; border-radius: 4px; color: var(--text); }
     .code { position: relative; margin: 14px 0; }
     .code pre {
-      margin: 0; padding: 16px 96px 16px 18px; overflow-x: auto; background: #050608; border: 1px solid var(--line-2);
-      border-radius: 10px; font: 14.5px/1.55 var(--mono); color: #f1f3f6;
+      margin: 0; padding: 16px 104px 16px 18px; overflow-x: auto; background: #050505; border: 1px solid var(--line-2);
+      border-left: 3px solid var(--red); border-radius: 4px; font: 14.5px/1.55 var(--mono); color: #f1f1f1;
     }
     .copy {
-      position: absolute; top: 10px; right: 10px; font: 600 12.5px var(--sans); color: var(--muted); background: var(--panel-2);
-      border: 1px solid var(--line-2); border-radius: 7px; padding: 6px 10px; cursor: pointer;
+      position: absolute; top: 10px; right: 10px; font: 700 12px var(--sans); text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--muted); background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 4px; padding: 6px 10px; cursor: pointer;
     }
-    .copy:hover { color: var(--text); }
+    .copy:hover { color: var(--text); border-color: var(--red); }
     .copy.done { color: var(--green); border-color: color-mix(in srgb, var(--green) 50%, transparent); }
-    .table-wrap { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line); border-radius: 10px; }
+    .table-wrap { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line); border-radius: 4px; }
     .guide table { border-collapse: collapse; width: 100%; font-size: 15px; }
     .guide th, .guide td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
-    .guide th { background: var(--panel); color: var(--text); font-weight: 600; }
+    .guide th { background: var(--panel); color: var(--text); font-weight: 700; }
     .guide tr:last-child td { border-bottom: 0; }
 
-    footer { border-top: 1px solid var(--line); padding: 40px 0 56px; color: var(--faint); font-size: 14px; }
-    footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 32px; justify-content: space-between; }
+    footer { border-top: 1px solid var(--line); padding: 44px 0 56px; color: var(--faint); font-size: 14px; }
+    footer .wrap { display: grid; gap: 22px; }
+    .foot-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+    .foot-slogan { font-size: 12px; color: var(--muted); }
+    .foot-slogan em { color: var(--red); font-style: italic; }
+    .foot-small { display: flex; flex-wrap: wrap; gap: 8px 28px; justify-content: space-between; }
     footer a { color: var(--muted); }
 
-    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+    :focus-visible { outline: 2px solid var(--red-hi); outline-offset: 3px; }
     @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .btn { transition: none; } }
   </style>
 </head>
 <body>
+  <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+    <symbol id="emblem" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="29" fill="none" stroke="#e5e5e5" stroke-opacity="0.35" stroke-width="2.5"/>
+      <g transform="skewX(-14) translate(8 0)">
+        <rect x="18" y="15" width="28" height="34" rx="9" fill="none" stroke="#e5e5e5" stroke-width="7"/>
+      </g>
+      <polygon points="9,47 55,17 58,20.5 13,50.5" fill="#d10f0f"/>
+    </symbol>
+  </svg>
+
   <header class="top">
     <div class="wrap">
-      <a class="brand" href="#">
-        <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="12" fill="none" stroke="#ffb000" stroke-width="3.5"/><path d="M4.5 16h23M16 16v11.5" stroke="#ffb000" stroke-width="3.5"/></svg>
-        StintView
+      <a class="brand" href="#" aria-label="Outcast Endurance StintView – nach oben">
+        <svg aria-hidden="true"><use href="#emblem"/></svg>
+        <span class="wordmark"><b>OUTCAST</b><span>ENDURANCE</span></span>
+        <span class="product">STINTVIEW</span>
       </a>
       <nav class="nav" aria-label="Seitennavigation">
         <a class="opt" href="#funktionen">Funktionen</a>
@@ -210,15 +257,15 @@
     <div class="hero">
       <div class="wrap">
         <div>
-          <p class="eyebrow">Team-Telemetrie für iRacing</p>
-          <h1>Sieh, was im Auto passiert – <em>auch wenn du nicht fährst.</em></h1>
+          <p class="kicker spaced">StintView · Team-Telemetrie</p>
+          <h1 class="display">Sieh, was im Auto passiert – <em>auch wenn du nicht fährst.</em></h1>
           <p class="lead">
-            StintView zeigt deinem ganzen Team live die Lenkung, Pedale, den Spritverbrauch und die Reifen des Fahrers,
-            der gerade im Auto sitzt. Als Overlay über iRacing – am Monitor oder in VR.
+            StintView zeigt dem ganzen Team von Outcast Endurance live Lenkung, Pedale, Spritverbrauch und Reifen
+            des Fahrers, der gerade im Auto sitzt. Als Overlay über iRacing – am Monitor oder in VR.
           </p>
           <div class="cta">
             <a class="btn btn-primary" href="stintview.zip" download>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>
               ZIP herunterladen
             </a>
             <a class="btn btn-ghost" href="#anleitung">Zur Anleitung</a>
@@ -233,28 +280,34 @@
       </div>
     </div>
 
+    <div class="livery-band">
+      <div class="livery" role="img" aria-label="Der Porsche 911 GT3 R von Outcast Endurance in Schwarz, Rot und Weiß, Startnummer 07"></div>
+      <p class="slogan spaced">Race together. Outperform. <em>Never belong.</em></p>
+    </div>
+
     <section id="funktionen">
       <div class="wrap">
         <div class="section-head">
-          <h2>Was iRacing dir beim Zuschauen nicht zeigt</h2>
+          <p class="kicker spaced">Funktionen</p>
+          <h2 class="display">Was iRacing dir beim Zuschauen nicht zeigt</h2>
           <p>Wenn du deinem Teamkollegen im Langstreckenrennen zusiehst, siehst du Position und Rundenzeiten. StintView ergänzt genau das, was fehlt.</p>
         </div>
         <div class="features">
           <article class="card">
             <div class="shot"><img src="assets/inputs.png" alt="" width="900" height="352" loading="lazy"></div>
-            <h3><span class="dot" style="background: var(--green)"></span>Eingaben live</h3>
+            <h3>Eingaben live</h3>
             <p>Lenkwinkel, Gas und Bremse als laufender Verlauf der letzten fünf Sekunden – dazu Gang und Geschwindigkeit. Du siehst, wie früh gebremst und wie sauber rausbeschleunigt wird.</p>
           </article>
           <article class="card">
             <div class="shot"><img src="assets/fuel.png" alt="" width="560" height="374" loading="lazy"></div>
-            <h3><span class="dot" style="background: var(--accent)"></span>Sprit pro Runde</h3>
+            <h3>Sprit pro Runde</h3>
             <p>Tankinhalt, Runden bis leer und der Verbrauch der letzten Runde sowie im Schnitt über 3 und 5 Runden. Boxenstopp-Runden werden automatisch herausgerechnet.</p>
           </article>
           <article class="card">
             <div class="shot"><img src="assets/tyres.png" alt="" width="660" height="406" loading="lazy"></div>
-            <h3><span class="dot" style="background: var(--red)"></span>Reifen</h3>
+            <h3>Reifen</h3>
             <p>Karkasstemperatur innen, Mitte, außen und Verschleiß jedes Rads, dazu die Kilometer auf dem Satz und eine Schätzung, wie viel Profil jetzt noch übrig ist.</p>
-            <p class="note">iRacing misst Temperatur und Verschleiß nur beim Stopp in der Box. Live-Oberflächentemperaturen gibt iRacing nicht heraus.</p>
+            <p class="note">iRacing misst Temperatur und Verschleiß nur beim Stopp in der Box. Die Live-Werte vom Dashboard gibt iRacing nicht an andere Programme heraus.</p>
           </article>
         </div>
       </div>
@@ -263,45 +316,34 @@
     <section id="so-funktionierts">
       <div class="wrap">
         <div class="section-head">
-          <h2>So funktioniert's</h2>
+          <p class="kicker spaced">Ablauf</p>
+          <h2 class="display">So funktioniert's</h2>
           <p>Jedes Teammitglied lässt StintView im Hintergrund laufen. Wer sich ins Auto setzt, wird automatisch zur Quelle – ohne Umschalten, ohne Absprache.</p>
         </div>
         <div class="flow">
           <div class="node live">
-            <div class="tag">● Fahrer im Auto</div>
-            <h3>Recorder</h3>
+            <div class="tag spaced">● Im Auto</div>
+            <h3 class="display">Recorder</h3>
             <p>Liest die Telemetrie direkt aus iRacing und sendet sie – aber nur, solange du selbst im Auto sitzt.</p>
           </div>
-          <div class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15m0 0-5-5m5 5-5 5"/></svg></div>
+          <div class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15m0 0-5-5m5 5-5 5"/></svg></div>
           <div class="node">
-            <div class="tag">Team-Server</div>
-            <h3>Relay</h3>
+            <div class="tag spaced">Team-Server</div>
+            <h3 class="display">Relay</h3>
             <p>Verbindet das Team über das Internet. Beitritt mit Einladungscode – läuft beim Teamchef.</p>
           </div>
-          <div class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15m0 0-5-5m5 5-5 5"/></svg></div>
+          <div class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15m0 0-5-5m5 5-5 5"/></svg></div>
           <div class="node">
-            <div class="tag">Alle im Team</div>
-            <h3>Overlay</h3>
+            <div class="tag spaced">Alle im Team</div>
+            <h3 class="display">Overlay</h3>
             <p>Zeigt die Daten des aktuellen Fahrers über iRacing an – als durchsichtiges Fenster am Monitor oder als Panels in SteamVR.</p>
           </div>
         </div>
         <div class="facts">
-          <div class="fact">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
-            <div><strong>Immer nur der, der fährt</strong><span>Zuschauer senden nichts. Wer parallel in einer anderen Session fährt, wird dem Team nicht angezeigt.</span></div>
-          </div>
-          <div class="fact">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
-            <div><strong>Fahrerwechsel automatisch</strong><span>Steigt der Nächste ein, übernimmt er innerhalb von Sekunden. Sprit- und Reifenhistorie laufen weiter.</span></div>
-          </div>
-          <div class="fact">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
-            <div><strong>Unabhängig vom iRacing-Konto</strong><span>Kein Login bei iRacing, keine Freigaben. Euer Team, euer Server, euer Einladungscode.</span></div>
-          </div>
-          <div class="fact">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
-            <div><strong>Monitor und VR</strong><span>Durchsichtiges Overlay im randlosen Fenstermodus oder frei platzierbare Panels in SteamVR, z. B. mit der Bigscreen Beyond.</span></div>
-          </div>
+          <div class="fact"><span class="slash" aria-hidden="true"></span><div><strong>Immer nur der, der fährt</strong><span>Zuschauer senden nichts. Wer parallel in einer anderen Session fährt, wird dem Team nicht angezeigt.</span></div></div>
+          <div class="fact"><span class="slash" aria-hidden="true"></span><div><strong>Fahrerwechsel automatisch</strong><span>Steigt der Nächste ein, übernimmt er innerhalb von Sekunden. Sprit- und Reifenhistorie laufen weiter.</span></div></div>
+          <div class="fact"><span class="slash" aria-hidden="true"></span><div><strong>Unabhängig vom iRacing-Konto</strong><span>Kein Login bei iRacing, keine Freigaben. Unser Team, unser Server, unser Einladungscode.</span></div></div>
+          <div class="fact"><span class="slash" aria-hidden="true"></span><div><strong>Monitor und VR</strong><span>Durchsichtiges Overlay im randlosen Fenstermodus oder frei platzierbare Panels in SteamVR, z. B. mit der Bigscreen Beyond.</span></div></div>
         </div>
       </div>
     </section>
@@ -310,22 +352,23 @@
       <div class="wrap">
         <div class="dl-box">
           <div>
-            <h2>Herunterladen</h2>
-            <p>Die ZIP enthält alles für Recorder, Overlay und Server. Einrichtung in etwa 15 Minuten – Schritt für Schritt in der Anleitung unten. Server-Adresse und Einladungscode bekommst du von deinem Teamchef.</p>
+            <p class="kicker spaced">Download</p>
+            <h2 class="display">Herunterladen</h2>
+            <p>Die ZIP enthält alles für Recorder, Overlay und Server. Einrichtung in etwa 15 Minuten – Schritt für Schritt in der Anleitung unten. Server-Adresse und Einladungscode bekommst du vom Teamchef.</p>
             <div class="cta">
               <a class="btn btn-primary" href="stintview.zip" download>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>
                 stintview.zip
               </a>
-              <a class="btn btn-ghost" href="{{REPO}}" target="_blank" rel="noopener">Quellcode auf GitHub</a>
+              <a class="btn btn-ghost" href="{{REPO}}" target="_blank" rel="noopener">Quellcode</a>
             </div>
             <p class="meta">Stand {{VERSION}}{{ZIP_SIZE}}</p>
           </div>
           <ul class="req" aria-label="Voraussetzungen">
-            <li><b>System</b>Windows 10 oder 11</li>
-            <li><b>Software</b>Node.js 22 (LTS) und pnpm – die Anleitung zeigt wie</li>
-            <li><b>iRacing</b>Randloser Fenstermodus für das Monitor-Overlay</li>
-            <li><b>VR</b>Optional, jedes Headset über SteamVR</li>
+            <li><b class="spaced">System</b>Windows 10 oder 11</li>
+            <li><b class="spaced">Software</b>Node.js 22 (LTS) und pnpm – die Anleitung zeigt wie</li>
+            <li><b class="spaced">iRacing</b>Randloser Fenstermodus für das Monitor-Overlay</li>
+            <li><b class="spaced">VR</b>Optional, jedes Headset über SteamVR</li>
           </ul>
         </div>
       </div>
@@ -334,12 +377,12 @@
     <section id="anleitung">
       <div class="wrap">
         <div class="section-head">
-          <h2>Anleitung</h2>
-          <p>Von der ZIP bis zum ersten Teamrennen.</p>
+          <p class="kicker spaced">Anleitung</p>
+          <h2 class="display">Von der ZIP bis zum ersten Stint</h2>
         </div>
         <div class="guide-layout">
           <nav class="toc" aria-label="Inhalt der Anleitung">
-            <p>Inhalt</p>
+            <p class="spaced">Inhalt</p>
             <ol>
 {{TOC}}
             </ol>
@@ -354,8 +397,17 @@
 
   <footer>
     <div class="wrap">
-      <span>StintView · Stand {{VERSION}} · <a href="{{REPO}}" target="_blank" rel="noopener">GitHub</a></span>
-      <span>Ein privates Team-Projekt. Kein offizielles Produkt von iRacing.com Motorsport Simulations.</span>
+      <div class="foot-top">
+        <a class="brand" href="#" aria-label="Nach oben">
+          <svg aria-hidden="true"><use href="#emblem"/></svg>
+          <span class="wordmark"><b>OUTCAST</b><span>ENDURANCE</span></span>
+        </a>
+        <span class="foot-slogan spaced">Race together. Outperform. <em>Never belong.</em></span>
+      </div>
+      <div class="foot-small">
+        <span>StintView · Stand {{VERSION}} · <a href="{{REPO}}" target="_blank" rel="noopener">GitHub</a></span>
+        <span>Ein Projekt von Outcast Endurance. Kein offizielles Produkt von iRacing.com Motorsport Simulations.</span>
+      </div>
     </div>
   </footer>
 
