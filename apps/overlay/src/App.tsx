@@ -34,11 +34,15 @@ export function App() {
   // Browser: always movable. Electron: toggled by hotkey (desktop) or panel selection (VR).
   const [edit, setEdit] = useState(!window.stintview && !location.hash.startsWith('#/widget/'));
   const [positions, setPositions] = useState(loadPositions);
+  const [hotkey, setHotkey] = useState<string | null>(null);
 
   useEffect(() => {
     const onHash = () => setRoute(location.hash);
     addEventListener('hashchange', onHash);
-    window.stintview?.onEditMode(setEdit);
+    window.stintview?.onEditMode((on, key) => {
+      setEdit(on);
+      setHotkey(key);
+    });
     return () => removeEventListener('hashchange', onHash);
   }, []);
 
@@ -61,7 +65,12 @@ export function App() {
 
   return (
     <div className={edit ? 'overlay edit' : 'overlay'}>
-      {edit && window.stintview && <div className="edit-banner">Bearbeiten – Widgets ziehen · Strg+Umschalt+O beendet</div>}
+      {edit && window.stintview && (
+        <div className="edit-banner">
+          Anzeigen mit der Maus ziehen{hotkey ? ` · ${hotkey} beendet` : ''}
+          <button type="button" onClick={() => window.stintview?.setEditMode(false)}>Fertig</button>
+        </div>
+      )}
       {(Object.keys(widgets) as WidgetId[]).map((id) => (
         <Draggable key={id} pos={positions[id]} enabled={edit} onMove={(x, y) => move(id, x, y)}>
           {widgets[id]}

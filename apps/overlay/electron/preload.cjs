@@ -3,7 +3,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('stintview', {
   // Overlay widgets
   getConfig: () => ipcRenderer.invoke('get-config'),
-  onEditMode: (cb) => ipcRenderer.on('edit-mode', (_e, on) => cb(on)),
+  onEditMode: (cb) => ipcRenderer.on('edit-mode', (_e, on, hotkey) => cb(on, hotkey)),
+  setEditMode: (on) => ipcRenderer.invoke('app:edit', on),
   // Setup window
   getState: () => ipcRenderer.invoke('app:state'),
   onState: (cb) => ipcRenderer.on('app-state', (_e, state) => cb(state)),

@@ -35,7 +35,7 @@ Aufbau der App (`apps/overlay/electron/`):
 | Datei | Aufgabe |
 |---|---|
 | `app.cjs` | Einstieg: Tray-Menü, Einrichtungsfenster (`#/setup`), Hintergrundprozesse, Autostart, Updates |
-| `overlay-window.cjs` | durchsichtiges Monitor-Overlay (`Strg+Umschalt+O` = verschieben) |
+| `overlay-window.cjs` | durchsichtiges Monitor-Overlay; Verschieben per Knopf oder erstem freien Kürzel aus `Strg+Umschalt+O`, `Strg+Alt+O`, `Strg+Umschalt+F9` |
 | `vr.cjs`, `openvr.cjs`, `d3d11.cjs` | SteamVR-Panels (OpenVR + D3D11-Texturen per koffi, kein nativer Build) |
 | `config.cjs` | Zugangsdaten (`config.json`), Einstellungen (`app.json`), Beitreten/Anlegen |
 
@@ -73,7 +73,7 @@ Overlay im Browser (zweiter Monitor, OpenKneeboard): `pnpm app:web`, dann `http:
 
 VR-Diagnose: `STINTVIEW_VR_DUMP=<ordner>` (Panels als PNG, geht ohne SteamVR), `STINTVIEW_VR_FPS=45`. Das Panel-Layout steht in `%APPDATA%\StintView\vr.json` (dort auch einzelne Panels mit `"enabled": false` abschalten).
 
-App fernsteuern (Tests): mit `--remote-debugging-port=9333` starten, dann `node apps/overlay/scripts/cdp.mjs eval "<js>"` bzw. `… shot bild.png`.
+App fernsteuern (Tests): mit `--remote-debugging-port=9333` starten, dann `node apps/overlay/scripts/cdp.mjs eval "<js>"`, `… drag "x1,y1,x2,y2"` bzw. `… shot bild.png` (optional mit Route, z. B. `"index.html#/"` fürs Overlay). Neben einer installierten StintView testen: `STINTVIEW_HOME=<ordner>` setzen, dann hat die Instanz ein eigenes Profil.
 
 ## Bekannte Grenzen
 

@@ -51,7 +51,8 @@ Sobald du im Auto sitzt, sieht dein Team deine Daten. Steigst du aus, hört Stin
 
 Schalter **Overlay am Monitor** (standardmäßig an). In iRacing unter Grafikoptionen **randloses Fenster (Borderless)** einstellen – im Exklusiv-Vollbild ist das Overlay unsichtbar.
 
-- **Strg+Umschalt+O** schaltet den Bearbeiten-Modus ein/aus: Anzeigen mit der Maus verschieben, danach wieder Strg+Umschalt+O.
+- **Anzeigen verschieben:** Knopf **Anzeigen verschieben** im StintView-Fenster (oder im Menü), dann die Anzeigen mit der Maus ziehen und im gelben Banner oben auf **Fertig** klicken.
+- Schneller per Tastenkürzel: **Strg+Umschalt+O**. Ist das schon von einem anderen Programm belegt (z. B. AMD Radeon Software), nimmt StintView **Strg+Alt+O** oder **Strg+Umschalt+F9** – welches aktiv ist, steht im StintView-Fenster.
 - Außerhalb des Bearbeiten-Modus gehen alle Klicks durch das Overlay zu iRacing.
 
 ### Overlay in VR (SteamVR-Brillen)
@@ -101,6 +102,7 @@ StintView aktualisiert sich selbst. Liegt ein Update bereit, steht im Menü **�
 | Status: **server speaks protocol v…** | Deine Version passt nicht zum Server – StintView beenden und neu starten (Update), sonst Setup neu herunterladen. |
 | Status: **Im Auto – Standby** | Normal beim Fahrerwechsel: du wirst angezeigt, sobald dein Vorgänger ausgestiegen ist. Bleibt es dabei, fährst du in einer anderen Session als das Team. |
 | Overlay am Monitor unsichtbar | iRacing auf randloses Fenster stellen. |
+| Strg+Umschalt+O verschiebt nichts (bei AMD öffnet sich stattdessen deren Leistungs-Overlay) | Das Kürzel gehört einem anderen Programm. Das aktive StintView-Kürzel steht im Fenster – oder den Knopf **Anzeigen verschieben** nutzen. |
 | VR: **wartet auf SteamVR** | SteamVR starten – StintView verbindet sich dann automatisch. |
 | Das StintView-Symbol fehlt | StintView über das Startmenü starten. |
 

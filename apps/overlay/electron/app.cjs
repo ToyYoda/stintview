@@ -6,13 +6,18 @@ const path = require('node:path');
 const {
   clearConfig, configPath, dataDir, loadConfig, loadSettings, logDir, normalizeUrl, register, saveSettings,
 } = require('./config.cjs');
-const { EDIT_HOTKEY, overlayRunning, startOverlay, stopOverlay, toggleEdit } = require('./overlay-window.cjs');
+const {
+  editHotkey, editing, onOverlayChange, overlayRunning, setEditMode, startOverlay, stopOverlay, toggleEdit,
+} = require('./overlay-window.cjs');
 const { PRELOAD, loadRoute } = require('./renderer.cjs');
 const { startVr, stopVr, vrStatus } = require('./vr.cjs');
 
 const BUNDLES = path.join(__dirname, '..', 'dist-bundles');
 const ICON = path.join(__dirname, 'icons', 'tray.png');
 const RESTART_MS = 5000;
+
+// A separate profile (tests, second profile) also needs its own Chromium data and instance lock.
+if (process.env.STINTVIEW_HOME) app.setPath('userData', path.join(dataDir, 'electron'));
 
 if (!app.requestSingleInstanceLock()) {
   // Already running: the first instance opens its window (see 'second-instance').
@@ -174,7 +179,10 @@ function buildMenu() {
     ...(status.update ? [{ label: status.update, enabled: false }] : []),
     { type: 'separator' },
     { label: 'Overlay am Monitor', type: 'checkbox', checked: settings.overlay, enabled: configured, click: (i) => updateSettings({ overlay: i.checked }) },
-    { label: `Anzeigen verschieben (${EDIT_HOTKEY.replace('Control', 'Strg').replace('Shift', 'Umschalt')})`, enabled: overlayRunning(), click: toggleEdit },
+    {
+      label: `Anzeigen verschieben${editHotkey() ? ` (${editHotkey()})` : ''}`,
+      type: 'checkbox', checked: editing(), enabled: overlayRunning(), click: toggleEdit,
+    },
     {
       label: `VR-Overlay (SteamVR)${vr === 'waiting' ? ' – wartet auf SteamVR' : ''}`,
       type: 'checkbox', checked: settings.vr, enabled: configured, click: (i) => updateSettings({ vr: i.checked }),
@@ -217,7 +225,7 @@ function appState() {
     configured: Boolean(config),
     team: config ? { teamName: config.teamName, memberName: config.memberName, serverUrl: config.serverUrl, inviteCode: config.inviteCode } : null,
     settings,
-    status: { ...status, line: statusLine(), vr: vrStatus(), overlay: overlayRunning() },
+    status: { ...status, line: statusLine(), vr: vrStatus(), overlay: overlayRunning(), editing: editing(), editHotkey: editHotkey() },
     autostartAvailable: app.isPackaged,
   };
 }
@@ -255,6 +263,12 @@ ipcMain.handle('app:create', async (_e, { serverUrl, teamName, memberName, hostH
 ipcMain.handle('app:settings', (_e, patch) => {
   const allowed = ['overlay', 'vr', 'autostart', 'server'];
   updateSettings(Object.fromEntries(Object.entries(patch ?? {}).filter(([k]) => allowed.includes(k))));
+  return appState();
+});
+
+/** Edit mode of the desktop overlay (drag widgets); on = undefined toggles. */
+ipcMain.handle('app:edit', (_e, on) => {
+  if (on === undefined) toggleEdit(); else setEditMode(on);
   return appState();
 });
 
@@ -299,6 +313,7 @@ function setupUpdates() {
 app.on('second-instance', openSetup);
 
 app.whenReady().then(() => {
+  onOverlayChange(() => refresh());
   tray = new Tray(nativeImage.createFromPath(ICON));
   tray.on('click', openSetup);
   startRecorder();

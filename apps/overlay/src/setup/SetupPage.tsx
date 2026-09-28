@@ -145,7 +145,15 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
 
       <section className="card">
         <h2>Anzeigen</h2>
-        <Toggle checked={settings.overlay} onChange={(v) => set({ overlay: v })} label="Overlay am Monitor" hint="iRacing im randlosen Fenstermodus. Strg+Umschalt+O zum Verschieben." />
+        <Toggle checked={settings.overlay} onChange={(v) => set({ overlay: v })} label="Overlay am Monitor" hint="iRacing im randlosen Fenstermodus." />
+        {status.overlay && (
+          <div className="edit-row">
+            <button className="btn ghost" onClick={async () => onState(await api().setEditMode(!status.editing))}>
+              {status.editing ? 'Verschieben beenden' : 'Anzeigen verschieben'}
+            </button>
+            <small>{status.editHotkey ? `oder ${status.editHotkey}` : 'Kein Tastenkürzel frei – bitte diesen Knopf nutzen.'}</small>
+          </div>
+        )}
         <Toggle checked={settings.vr} onChange={(v) => set({ vr: v })} label="VR-Overlay (SteamVR)" hint="Panels in der Brille. Strg+Umschalt+V wählt, Pfeiltasten verschieben." />
       </section>
 

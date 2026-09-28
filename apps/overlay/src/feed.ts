@@ -22,6 +22,8 @@ export interface AppState {
     relay: 'off' | 'running' | 'error';
     vr: 'off' | 'waiting' | 'connected';
     overlay: boolean;
+    editing: boolean;
+    editHotkey: string | null;
     update: string;
   };
   autostartAvailable: boolean;
@@ -31,7 +33,8 @@ declare global {
   interface Window {
     stintview?: {
       getConfig(): Promise<LocalConfig | null>;
-      onEditMode(cb: (edit: boolean) => void): void;
+      onEditMode(cb: (edit: boolean, hotkey: string | null) => void): void;
+      setEditMode(on?: boolean): Promise<AppState>;
       getState(): Promise<AppState>;
       onState(cb: (state: AppState) => void): void;
       join(data: { serverUrl: string; inviteCode: string; memberName: string }): Promise<AppState>;

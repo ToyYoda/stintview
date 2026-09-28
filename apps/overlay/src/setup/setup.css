@@ -55,6 +55,9 @@ body.setup-body #root { height: auto; }
 .setup .btn:hover:not(:disabled) { background: var(--o-red-hi); }
 .setup .btn:disabled { opacity: 0.6; cursor: default; }
 .setup .btn.ghost { background: var(--o-panel-2); color: var(--o-white); margin-top: 6px; }
+.setup .edit-row { display: flex; align-items: center; gap: 12px; margin: 0 0 8px 54px; }
+.setup .edit-row .btn { margin-top: 0; padding: 8px 18px; }
+.setup .edit-row small { color: var(--o-muted); font-size: 12.5px; }
 
 .setup .error { background: rgba(209, 15, 15, 0.14); border-left: 3px solid var(--o-red); padding: 8px 12px; margin: 0 0 14px; }
 .setup .hint { color: var(--o-muted); font-size: 13px; margin: 0 0 14px; }
