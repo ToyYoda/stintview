@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { YELLOW_FLAGS } from '@stintview/protocol';
 import type { FeedState } from '../feed.ts';
 
-/** Keep the yellow banner up this long after the flag clears (local yellows last ~10 s). */
-const YELLOW_HOLD_MS = 20_000;
+/** Keep the banner up this long after the warning clears (local yellows last ~10 s). */
+const HOLD_MS = 20_000;
 const RESULT_MS = 7000;
 
 interface CameraState {
@@ -27,7 +27,9 @@ export function CameraBar({ state, interactive }: { state: FeedState; interactiv
   const [camera, setCamera] = useState<CameraState | null>(null);
   const [result, setResult] = useState<(CameraResult & { at: number }) | null>(null);
   const [hotkeys, setHotkeys] = useState<Hotkeys>({ incident: null, back: null });
-  const [yellowUntil, setYellowUntil] = useState(0);
+  const [holdUntil, setHoldUntil] = useState(0);
+  /** Last car named by the driver's "Unfall voraus" (kept while the banner is held). */
+  const [lastHazard, setLastHazard] = useState<{ carIdx: number; text: string } | null>(null);
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -46,13 +48,29 @@ export function CameraBar({ state, interactive }: { state: FeedState; interactiv
 
   const driving = Boolean(state.active?.driverName);
   const yellowNow = driving && Boolean((state.status?.flags ?? 0) & YELLOW_FLAGS);
+  // The driver's recorder watches the cars ahead (iRacing's spotter call isn't in the SDK).
+  const hazard = driving && state.hazard?.active ? state.hazard : null;
+  const warningNow = yellowNow || hazard !== null;
   useEffect(() => {
-    if (yellowNow) setYellowUntil(Date.now() + YELLOW_HOLD_MS);
-  }, [yellowNow, state.status]);
+    if (warningNow) setHoldUntil(Date.now() + HOLD_MS);
+  }, [warningNow, state.status, state.hazard]);
+  useEffect(() => {
+    if (!hazard) return;
+    const what = hazard.reason === 'offtrack' ? 'neben der Strecke' : 'steht';
+    setLastHazard({ carIdx: hazard.carIdx, text: `#${hazard.carNumber} ${hazard.driverName} · ${hazard.distance} m · ${what}` });
+  }, [hazard?.carIdx, hazard?.distance, hazard?.reason]);
+  useEffect(() => {
+    // Forget the car once the banner is gone, so a later yellow doesn't show a stale one.
+    if (!warningNow && now >= holdUntil && lastHazard) setLastHazard(null);
+  }, [warningNow, now, holdUntil, lastHazard]);
+  useEffect(() => {
+    // Hotkey jumps go to the same car as the button.
+    api?.setHazard?.(warningNow || now < holdUntil ? lastHazard?.carIdx ?? null : null);
+  }, [lastHazard, warningNow, holdUntil > now]);
 
   if (!api?.onCamera || !driving) return null;
   const session = state.session;
-  const yellow = yellowNow || now < yellowUntil;
+  const yellow = warningNow || now < holdUntil;
   const sameSession = Boolean(camera && session && camera.sessionId === session.sessionId);
   const away = Boolean(camera?.available && sameSession && camera.camCarIdx >= 0 && camera.camCarIdx !== session?.carIdx);
   const showResult = result && now - result.at < RESULT_MS;
@@ -62,7 +80,7 @@ export function CameraBar({ state, interactive }: { state: FeedState; interactiv
   const hover = (on: boolean) => interactive && api.setInteractive(on);
   const button = (label: string, key: string | null, action: 'incident' | 'back') =>
     interactive ? (
-      <button type="button" className="cam-btn" onClick={() => api.camera(action)} onPointerEnter={() => hover(true)} onPointerLeave={() => hover(false)}>
+      <button type="button" className="cam-btn" onClick={() => api.camera(action, action === 'incident' ? lastHazard?.carIdx : undefined)} onPointerEnter={() => hover(true)} onPointerLeave={() => hover(false)}>
         {label}
       </button>
     ) : (
@@ -72,8 +90,9 @@ export function CameraBar({ state, interactive }: { state: FeedState; interactiv
   return (
     <div className="camera-bar">
       {yellow && (
-        <div className={yellowNow ? 'cam-row yellow live' : 'cam-row yellow'}>
-          <span className="cam-flag">Gelb voraus</span>
+        <div className={warningNow ? 'cam-row yellow live' : 'cam-row yellow'}>
+          <span className="cam-flag">{lastHazard ? 'Unfall voraus' : 'Gelb voraus'}</span>
+          {lastHazard && <span className="cam-hint">{lastHazard.text}</span>}
           {canJump
             ? button('Zum Unfall', hotkeys.incident, 'incident')
             : <span className="cam-hint">{camera?.available ? 'Du schaust eine andere iRacing-Session' : 'Zum Springen in iRacing zuschauen'}</span>}

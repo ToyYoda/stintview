@@ -159,7 +159,26 @@ export interface Weather {
   events: WeatherEvent[];
 }
 
-export type Telemetry = Inputs | Status | Fuel | Tyres | SessionInfo | Weather;
+/**
+ * "Incident ahead" as seen from the driver's car – like the iRacing spotter's call, which the
+ * SDK doesn't expose: a car ahead that is stopped/very slow or crawling off track.
+ * Sent on change and every 2 s while active. Added without a protocol version bump.
+ */
+export interface Hazard {
+  t: 'hazard';
+  active: boolean;
+  sessionTime: number;
+  carIdx: number;
+  carNumber: number;
+  driverName: string;
+  /** Metres ahead of the team car. */
+  distance: number;
+  reason: 'offtrack' | 'slow';
+  /** m/s, null if unknown */
+  speed: number | null;
+}
+
+export type Telemetry = Inputs | Status | Fuel | Tyres | SessionInfo | Weather | Hazard;
 export type TelemetryType = Telemetry['t'];
 
 // ---------------------------------------------------------------------------
@@ -202,7 +221,7 @@ export interface Snapshot {
 export type ClientMessage = Hello | DrivingState | Telemetry;
 export type ServerMessage = Welcome | ErrorMsg | Standby | ActiveDriver | Snapshot | Telemetry;
 
-const TELEMETRY_TYPES = new Set<string>(['inputs', 'status', 'fuel', 'tyres', 'session', 'weather']);
+const TELEMETRY_TYPES = new Set<string>(['inputs', 'status', 'fuel', 'tyres', 'session', 'weather', 'hazard']);
 
 export function isTelemetry(msg: { t: string }): msg is Telemetry {
   return TELEMETRY_TYPES.has(msg.t);

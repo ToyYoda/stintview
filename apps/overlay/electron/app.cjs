@@ -10,7 +10,7 @@ const {
   editHotkey, editing, onOverlayChange, overlayRunning, setEditMode, setOverlayPanels, startOverlay, stopOverlay, toggleEdit,
 } = require('./overlay-window.cjs');
 const { PRELOAD, loadRoute } = require('./renderer.cjs');
-const { cameraCommand, cameraInfo, onRecorderMessage, setTeamCar, startCamera, stopCamera } = require('./camera.cjs');
+const { cameraCommand, cameraInfo, onRecorderMessage, setHazardCar, setTeamCar, startCamera, stopCamera } = require('./camera.cjs');
 const { startVr, stopVr, vrStatus } = require('./vr.cjs');
 
 const BUNDLES = path.join(__dirname, '..', 'dist-bundles');
@@ -295,7 +295,9 @@ ipcMain.handle('app:edit', (_e, on) => {
 
 // Spectator camera: renderers report the team car and trigger jumps (same as the hotkeys).
 ipcMain.on('app:team-car', (_e, team) => setTeamCar(team));
-ipcMain.handle('app:camera', (_e, action) => cameraCommand(action === 'back' ? 'back' : 'incident'));
+ipcMain.on('app:hazard', (_e, carIdx) => setHazardCar(Number.isInteger(carIdx) ? carIdx : null));
+ipcMain.handle('app:camera', (_e, action, target) =>
+  cameraCommand(action === 'back' ? 'back' : 'incident', Number.isInteger(target) ? target : undefined));
 ipcMain.handle('app:camera-info', () => cameraInfo());
 
 ipcMain.handle('app:leave', async () => {

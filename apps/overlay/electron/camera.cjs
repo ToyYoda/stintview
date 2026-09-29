@@ -13,6 +13,8 @@ let sendToRecorder = () => false;
 /** Team car as last reported by a renderer that follows the team feed. */
 let team = null;
 let state = null; // last CameraState from the recorder
+/** Car named by the driver's "Unfall voraus", reported by the overlay; hotkeys jump there. */
+let hazardCar = null;
 const keys = { incident: null, back: null };
 
 const display = (h) => h && h.replace('Control', 'Strg').replace('Shift', 'Umschalt');
@@ -21,16 +23,19 @@ function broadcast(channel, payload) {
   for (const w of BrowserWindow.getAllWindows()) if (!w.isDestroyed()) w.webContents.send(channel, payload);
 }
 
-function command(action) {
+/** `targetCarIdx`: car named by the driver's "Unfall voraus"; without it the recorder searches. */
+function command(action, targetCarIdx) {
   if (!team || team.carIdx < 0) return broadcast('camera', { t: 'camera-result', ok: false, text: 'Noch keine Daten vom Team-Auto' });
-  if (!sendToRecorder({ t: 'camera', action, team })) broadcast('camera', { t: 'camera-result', ok: false, text: 'Recorder läuft nicht' });
+  const msg = { t: 'camera', action, team, ...(targetCarIdx !== undefined ? { targetCarIdx } : {}) };
+  if (!sendToRecorder(msg)) broadcast('camera', { t: 'camera-result', ok: false, text: 'Recorder läuft nicht' });
 }
 
 function startCamera(post) {
   sendToRecorder = post;
   for (const action of Object.keys(HOTKEYS)) {
     if (keys[action]) continue;
-    keys[action] = HOTKEYS[action].find((h) => globalShortcut.register(h, () => command(action))) ?? null;
+    const run = () => command(action, action === 'incident' && hazardCar !== null ? hazardCar : undefined);
+    keys[action] = HOTKEYS[action].find((h) => globalShortcut.register(h, run)) ?? null;
   }
 }
 
@@ -53,5 +58,6 @@ module.exports = {
   onRecorderMessage,
   cameraCommand: command,
   setTeamCar: (t) => { team = t; },
+  setHazardCar: (idx) => { hazardCar = idx; },
   cameraInfo: () => ({ state, hotkeys: { incident: display(keys.incident), back: display(keys.back) } }),
 };

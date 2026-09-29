@@ -24,14 +24,26 @@ export interface IncidentCandidate {
   speed: number | null;
 }
 
+export interface IncidentOptions {
+  /** Only look this far ahead (m). */
+  maxAhead?: number;
+  /** Slower than this (m/s) counts as stopped/slow. */
+  slowMps?: number;
+  /** If set, an off-track car only counts when also slower than this (m/s) – filters track-limit excursions. */
+  offtrackMaxMps?: number | null;
+}
+
 /**
  * Finds the car closest ahead of the team car that looks involved in an incident:
  * off track, or on track but (almost) stopped. `prev` is the snapshot ~1 s earlier.
  */
 export function findIncidentCar(
   now: CarSnapshot[], prev: CarSnapshot[] | null, dt: number,
-  teamIdx: number, trackLength: number, maxAhead = MAX_AHEAD_M,
+  teamIdx: number, trackLength: number, opts: IncidentOptions = {},
 ): IncidentCandidate | null {
+  const maxAhead = opts.maxAhead ?? MAX_AHEAD_M;
+  const slowMps = opts.slowMps ?? SLOW_MPS;
+  const offtrackMax = opts.offtrackMaxMps ?? null;
   const team = now[teamIdx];
   if (!team || team.pct < 0 || trackLength <= 0) return null;
   let best: IncidentCandidate | null = null;
@@ -42,15 +54,75 @@ export function findIncidentCar(
     if (distanceAhead <= 0 || distanceAhead > maxAhead) return;
     const p = prev?.[idx];
     const speed = p && p.pct >= 0 && dt > 0 ? (((((c.pct - p.pct) % 1) + 1.5) % 1) - 0.5) * trackLength / dt : null;
-    const reason = c.surface === TrkLoc.OffTrack ? 'offtrack' : speed !== null && Math.abs(speed) < SLOW_MPS ? 'slow' : null;
+    const slow = speed !== null && Math.abs(speed) < slowMps;
+    const offtrack = c.surface === TrkLoc.OffTrack && (offtrackMax === null || (speed !== null && Math.abs(speed) < offtrackMax));
+    const reason = offtrack ? 'offtrack' : slow ? 'slow' : null;
     if (!reason) return;
     if (!best || distanceAhead < best.distanceAhead) best = { carIdx: idx, distanceAhead, reason, speed };
   });
   return best;
 }
 
+/** Rolling snapshots of all cars (~4/s) for speed estimates. */
+export class CarTracker {
+  private snapshots: { t: number; cars: CarSnapshot[] }[] = [];
+
+  reset() {
+    this.snapshots = [];
+  }
+
+  update(f: Frame) {
+    const t = f.num('SessionTime');
+    const last = this.snapshots.at(-1);
+    if (last && t < last.t) this.snapshots = [];
+    if (last && t >= last.t && t - last.t < 0.25) return false;
+    this.snapshots.push({ t, cars: readCars(f) });
+    if (this.snapshots.length > 12) this.snapshots.shift();
+    return true;
+  }
+
+  /** Newest snapshot and one ~1 s older (for speeds). */
+  pair() {
+    const now = this.snapshots.at(-1) ?? null;
+    const prev = now ? this.snapshots.find((s) => now.t - s.t >= 0.9 && now.t - s.t <= 3) ?? null : null;
+    return { now, prev, dt: now && prev ? now.t - prev.t : 0 };
+  }
+
+  find(teamIdx: number, trackLength: number, opts?: IncidentOptions) {
+    const { now, prev, dt } = this.pair();
+    return now ? findIncidentCar(now.cars, prev?.cars ?? null, dt, teamIdx, trackLength, opts) : null;
+  }
+}
+
+export interface SessionCars {
+  drivers: Map<number, { number: number; name: string }>;
+  farChaseGroup: number;
+  trackLength: number;
+  sessionId: string;
+}
+
+/** Car numbers/names, camera group and track length from the session YAML. */
+export function parseSessionCars(text: string): SessionCars {
+  let y: Yaml = {};
+  try {
+    y = parse(text, { strict: false, uniqueKeys: false }) ?? {};
+  } catch { /* keep defaults */ }
+  const drivers = new Map<number, { number: number; name: string }>();
+  for (const d of y.DriverInfo?.Drivers ?? []) {
+    if (d.CarIdx === undefined) continue;
+    drivers.set(d.CarIdx, { number: d.CarNumberRaw ?? -1, name: d.UserName ?? d.TeamName ?? '' });
+  }
+  return {
+    drivers,
+    farChaseGroup: y.CameraInfo?.Groups?.find((g) => PREFERRED_GROUP.test(g.GroupName ?? ''))?.GroupNum ?? 0,
+    trackLength: parseTrackLength(y.WeekendInfo?.TrackLength),
+    sessionId: `${y.WeekendInfo?.SessionID ?? 0}/${y.WeekendInfo?.SubSessionID ?? 0}`,
+  };
+}
+
 export interface TeamCar { carIdx: number; carNumber: number; sessionId: string }
-export type CameraCommand = { t: 'camera'; action: 'incident' | 'back'; team: TeamCar };
+/** `targetCarIdx`: jump straight to this car (reported by the driver), else search. */
+export type CameraCommand = { t: 'camera'; action: 'incident' | 'back'; team: TeamCar; targetCarIdx?: number };
 
 export interface CameraState {
   t: 'camera-state';
@@ -75,11 +147,8 @@ interface Yaml {
  * Runs next to the recorder on the same shared memory; never acts while driving.
  */
 export class Spectator {
-  private drivers = new Map<number, { number: number; name: string }>();
-  private farChaseGroup = 0;
-  private trackLength = 0;
-  private sessionId = '';
-  private snapshots: { t: number; cars: CarSnapshot[] }[] = [];
+  private session: SessionCars = { drivers: new Map(), farChaseGroup: 0, trackLength: 0, sessionId: '' };
+  private cars = new CarTracker();
   private cam = { idx: -1, group: 0, camera: 0 };
   /** Camera before the jump, restored by "back". */
   private before: { group: number; camera: number } | null = null;
@@ -90,45 +159,27 @@ export class Spectator {
   constructor(private readonly report: (m: CameraState) => void) {}
 
   onSessionInfo(text: string) {
-    let y: Yaml = {};
-    try {
-      y = parse(text, { strict: false, uniqueKeys: false }) ?? {};
-    } catch { /* keep defaults */ }
-    this.drivers.clear();
-    for (const d of y.DriverInfo?.Drivers ?? []) {
-      if (d.CarIdx === undefined) continue;
-      this.drivers.set(d.CarIdx, { number: d.CarNumberRaw ?? -1, name: d.UserName ?? d.TeamName ?? '' });
-    }
-    this.farChaseGroup = y.CameraInfo?.Groups?.find((g) => PREFERRED_GROUP.test(g.GroupName ?? ''))?.GroupNum ?? 0;
-    this.trackLength = parseTrackLength(y.WeekendInfo?.TrackLength);
-    this.sessionId = `${y.WeekendInfo?.SessionID ?? 0}/${y.WeekendInfo?.SubSessionID ?? 0}`;
-    this.snapshots = [];
+    this.session = parseSessionCars(text);
+    this.cars.reset();
   }
 
   setConnected(connected: boolean) {
     this.connected = connected;
-    if (!connected) this.snapshots = [];
+    if (!connected) this.cars.reset();
     this.publish();
   }
 
   onFrame(f: Frame, inCar: boolean) {
     this.inCar = inCar;
-    const t = f.num('SessionTime');
     this.cam = { idx: f.num('CamCarIdx'), group: f.num('CamGroupNumber'), camera: f.num('CamCameraNumber') };
-    // ~4 snapshots per second are plenty for speed estimates.
-    const last = this.snapshots.at(-1);
-    if (!last || t - last.t >= 0.25 || t < last.t) {
-      if (last && t < last.t) this.snapshots = [];
-      this.snapshots.push({ t, cars: readCars(f) });
-      if (this.snapshots.length > 12) this.snapshots.shift();
-    }
+    this.cars.update(f);
     this.publish();
   }
 
   command(cmd: CameraCommand): CameraResult {
     if (!this.connected) return { t: 'camera-result', ok: false, text: 'iRacing läuft nicht' };
     if (this.inCar) return { t: 'camera-result', ok: false, text: 'Du fährst gerade – Kamera wird nicht umgeschaltet' };
-    if (cmd.team.sessionId !== this.sessionId) {
+    if (cmd.team.sessionId !== this.session.sessionId) {
       return { t: 'camera-result', ok: false, text: 'Du schaust in iRacing nicht dieselbe Session wie dein Team' };
     }
     if (cmd.action === 'back') {
@@ -139,27 +190,31 @@ export class Spectator {
       return { t: 'camera-result', ok: true, text: 'Kamera zurück beim Team-Auto' };
     }
 
-    const now = this.snapshots.at(-1);
-    const prev = this.snapshots.find((s) => now && now.t - s.t >= 0.9 && now.t - s.t <= 3) ?? null;
-    const hit = now ? findIncidentCar(now.cars, prev?.cars ?? null, now && prev ? now.t - prev.t : 0, cmd.team.carIdx, this.trackLength) : null;
     if (this.cam.idx === cmd.team.carIdx || !this.before) this.before = { group: this.cam.group, camera: this.cam.camera };
+    // The driver's recorder already named the car ("Unfall voraus"): go straight there.
+    const target = cmd.targetCarIdx !== undefined ? this.session.drivers.get(cmd.targetCarIdx) : undefined;
+    if (target && target.number >= 0) {
+      switchCamera(target.number, this.session.farChaseGroup, 0);
+      return { t: 'camera-result', ok: true, text: `#${target.number} ${target.name}` };
+    }
+    const hit = this.cars.find(cmd.team.carIdx, this.session.trackLength);
     if (hit) {
-      const d = this.drivers.get(hit.carIdx);
-      switchCamera(d?.number ?? -1, this.farChaseGroup, 0);
+      const d = this.session.drivers.get(hit.carIdx);
+      switchCamera(d?.number ?? -1, this.session.farChaseGroup, 0);
       const what = hit.reason === 'offtrack' ? 'neben der Strecke' : 'steht/langsam';
       return { t: 'camera-result', ok: true, text: `#${d?.number ?? '?'} ${d?.name ?? ''} – ${what}, ${Math.round(hit.distanceAhead)} m voraus` };
     }
     // Nothing found near the team car: fall back to iRacing's own incident focus.
-    switchCamera(CamFocus.AtIncident, this.farChaseGroup, 0);
+    switchCamera(CamFocus.AtIncident, this.session.farChaseGroup, 0);
     return { t: 'camera-result', ok: true, text: 'Kein stehendes Auto vor deinem Fahrer gefunden – iRacing zeigt den letzten Unfall' };
   }
 
   private publish() {
-    const d = this.drivers.get(this.cam.idx);
+    const d = this.session.drivers.get(this.cam.idx);
     const state: CameraState = {
       t: 'camera-state',
       available: this.connected && !this.inCar,
-      sessionId: this.sessionId,
+      sessionId: this.session.sessionId,
       camCarIdx: this.cam.idx,
       camCarNumber: d?.number ?? -1,
       camCarName: d?.name ?? '',

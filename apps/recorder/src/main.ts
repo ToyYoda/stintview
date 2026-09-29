@@ -6,6 +6,7 @@ import { IbtSource } from './irsdk/ibt.ts';
 import type { TelemetrySource } from './irsdk/layout.ts';
 import { Recorder } from './recorder.ts';
 import { Spectator, type CameraCommand, type CameraResult, type CameraState } from './spectator.ts';
+import { HazardDetector } from './hazard.ts';
 
 const USAGE = `StintView recorder
 
@@ -53,7 +54,7 @@ async function register(path: string, body: CreateTeamRequest | JoinTeamRequest)
   console.log(`Saved to ${configPath()}`);
 }
 
-async function record(source: TelemetrySource, label: string, spectator?: Spectator) {
+async function record(source: TelemetrySource, label: string, spectator?: Spectator, hazard?: HazardDetector) {
   const config = loadConfig();
   if (!config) throw new Error(`Not set up yet – run create-team or join first.\n\n${USAGE}`);
 
@@ -80,10 +81,13 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
     (f) => {
       recorder.onFrame(f);
       spectator?.onFrame(f, recorder.isDriving);
+      const warning = hazard?.onFrame(f, recorder.isDriving);
+      if (warning) conn.send(warning);
     },
     (yaml) => {
       recorder.onSessionInfo(yaml);
       spectator?.onSessionInfo(yaml);
+      hazard?.onSessionInfo(yaml);
     },
   );
   // Camera commands from the desktop app (teammate watching the team car in iRacing).
@@ -115,7 +119,7 @@ async function main() {
         report({ t: 'iracing', connected: c });
         spectator.setConnected(c);
       });
-      return record(source, 'live iRacing telemetry', spectator);
+      return record(source, 'live iRacing telemetry', spectator, new HazardDetector((line) => console.log(line)));
     }
     case 'replay': {
       const file = rest[0];

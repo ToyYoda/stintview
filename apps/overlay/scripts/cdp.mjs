@@ -42,7 +42,17 @@ if (cmd === 'eval') {
   await mouse('mouseReleased', x2, y2, 0);
   console.log(`dragged ${x1},${y1} -> ${x2},${y2}`);
 } else if (cmd === 'shot') {
-  const r = await call('Page.captureScreenshot', { format: 'png' });
+  // optional 4th argument: CSS selector – capture only that element
+  const selector = process.argv[5];
+  let clip;
+  if (selector) {
+    const q = await call('Runtime.evaluate', {
+      expression: `(() => { const r = document.querySelector(${JSON.stringify(selector)})?.getBoundingClientRect(); return r && { x: r.x - 8, y: r.y - 8, width: r.width + 16, height: r.height + 16, scale: 1 }; })()`,
+      returnByValue: true,
+    });
+    clip = q.result.value ?? undefined;
+  }
+  const r = await call('Page.captureScreenshot', { format: 'png', ...(clip ? { clip } : {}) });
   writeFileSync(arg, Buffer.from(r.data, 'base64'));
   console.log(`saved ${arg}`);
 }

@@ -10,7 +10,8 @@ contextBridge.exposeInMainWorld('stintview', {
   onPanels: (cb) => ipcRenderer.on('panels', (_e, ids) => cb(ids)),
   // Spectator camera
   setTeamCar: (team) => ipcRenderer.send('app:team-car', team),
-  camera: (action) => ipcRenderer.invoke('app:camera', action),
+  setHazard: (carIdx) => ipcRenderer.send('app:hazard', carIdx),
+  camera: (action, targetCarIdx) => ipcRenderer.invoke('app:camera', action, targetCarIdx),
   getCameraInfo: () => ipcRenderer.invoke('app:camera-info'),
   onCamera: (cb) => ipcRenderer.on('camera', (_e, m) => cb(m)),
   // Setup window

@@ -59,7 +59,7 @@ Switch **Overlay am Monitor** (on by default). In iRacing's graphics options, ch
 
 ### Jumping to an incident as a spectator
 
-When your driver gets a **yellow** (incident ahead), the overlay header shows **GELB VORAUS** (yellow ahead) with the button **Zum Unfall** (to the incident). Clicking it points the camera in *your* iRacing (chase camera "Far Chase") at the car ahead of your driver that is off track or stopped – so you can tell them on Discord what's going on. **Zurück zu …** (back to …) returns to your driver.
+When a car up to about 1.5 km ahead of your driver is stopped or crawling off track, the overlay header shows **UNFALL VORAUS** (incident ahead) with car, distance and state (e.g. "#44 Name · 800 m · steht") and the button **Zum Unfall** (to the incident). StintView detects this itself on your driver's PC (similar to the iRacing spotter); a yellow flag also triggers **GELB VORAUS**. Clicking points the camera in *your* iRacing (chase camera "Far Chase") straight at that car – so you can tell your driver on Discord what's going on. **Zurück zu …** (back to …) returns to your driver.
 
 - Requirement: you are watching the team session in iRacing (not driving yourself). Nothing is ever changed for the driver.
 - Hotkeys (also in VR): **Ctrl+Shift+J** = to the incident, **Ctrl+Shift+K** = back (fallback hotkeys are shown in the StintView window).

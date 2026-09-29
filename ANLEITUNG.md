@@ -57,7 +57,7 @@ Schalter **Overlay am Monitor** (standardmäßig an). In iRacing unter Grafikopt
 
 ### Als Zuschauer zum Unfall springen
 
-Bekommt dein Fahrer **Gelb** (Unfall voraus), erscheint in der Kopfzeile des Overlays **GELB VORAUS** mit dem Knopf **Zum Unfall**. Ein Klick schaltet die Kamera in *deinem* iRacing (Verfolgerkamera „Far Chase“) auf das Auto, das vor deinem Fahrer neben der Strecke ist oder steht – so kannst du ihm über Discord sagen, was los ist. Mit **Zurück zu …** geht es wieder zu deinem Fahrer.
+Steht bis etwa 1,5 km vor deinem Fahrer ein Auto oder schleicht es neben der Strecke, erscheint in der Kopfzeile des Overlays **UNFALL VORAUS** mit Auto, Abstand und Zustand (z. B. „#44 Name · 800 m · steht“) und dem Knopf **Zum Unfall**. Das erkennt StintView selbst auf dem PC deines Fahrers (ähnlich dem iRacing-Spotter); zusätzlich löst eine gelbe Flagge **GELB VORAUS** aus. Ein Klick schaltet die Kamera in *deinem* iRacing (Verfolgerkamera „Far Chase“) direkt auf dieses Auto – so kannst du deinem Fahrer über Discord sagen, was los ist. Mit **Zurück zu …** geht es wieder zu deinem Fahrer.
 
 - Voraussetzung: Du schaust der Team-Session in iRacing zu (nicht selbst im Auto). Beim Fahrer wird nie etwas umgestellt.
 - Tastenkürzel (auch in VR): **Strg+Umschalt+J** = zum Unfall, **Strg+Umschalt+K** = zurück (Ausweichkürzel stehen im StintView-Fenster).

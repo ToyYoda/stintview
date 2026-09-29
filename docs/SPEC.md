@@ -1,6 +1,6 @@
 # StintView – Spezifikation
 
-Stand: 2026-09-29, Version 0.4.0. Diese Datei ist die maßgebliche Beschreibung von Zielen, Entscheidungen und Architektur.
+Stand: 2026-09-29, Version 0.5.0 (in Arbeit). Diese Datei ist die maßgebliche Beschreibung von Zielen, Entscheidungen und Architektur.
 `docs/konzept.md` ist das ursprüngliche Konzept (historisch; wo es abweicht, gilt diese Datei). Testplan für Team-Tests: [TESTPLAN.md](TESTPLAN.md).
 
 ## 1. Zweck und Anforderungen
@@ -80,6 +80,7 @@ WebSocket-Pfad `/ws`, binäre Frames, MessagePack. Erste Nachricht des Clients: 
 | `status` | Recorder → Overlays | 2/s | `sessionTime`, `lap`, `lapDistPct`, `fuelLevel`, `onPitRoad`, `odometer` je Rad, `flags` (SessionFlags des Fahrers; v3) |
 | `fuel` | Recorder → Overlays | pro Runde | letzte Runden `{lap, used, lapTime, pit}`, `tankCapacity` |
 | `tyres` | Recorder → Overlays | bei Messung | Messungen `{lap, odometer, carcass L/M/R, wear L/M/R}` je Rad |
+| `hazard` | Recorder → Overlays | bei Änderung + alle 2 s solange aktiv | „Unfall voraus“: `active`, `carIdx`, `carNumber`, `driverName`, `distance` (m), `reason` (`slow`/`offtrack`), `speed`; ohne Versionssprung ergänzt |
 | `weather` | Recorder → Overlays | alle 5 s + bei Änderung | `now` (Luft/Strecke °C + Trend, `skies` 0–3, `precipitation` 0–1, `wetness` 0–7, `declaredWet`, Tageszeit), `events` (Änderungen); ohne Versionssprung ergänzt (alte Clients ignorieren es, Server muss es kennen) |
 | `session` | Recorder → Overlays | bei Änderung | Strecke, Auto, Fahrer, Team, Session-Typ, `carIdx`, `carNumber` (CarNumberRaw), `sessionId` (v3) |
 | `active` | Server → Overlays | bei Wechsel | aktiver Fahrer (Name, Mitglied) |
@@ -137,7 +138,8 @@ Sonstiges: Der Shared-Memory-Bereich existiert auch, wenn nur die iRacing-UI lä
 
 ## 7a. Zuschauer-Kamera („Zum Unfall“)
 
-- **Auslöser:** `status.flags` des aktiven Fahrers enthält `YELLOW_FLAGS` (yellow `0x8`, yellowWaving `0x100`, caution `0x4000`, cautionWaving `0x8000`). Lokale Gelbphasen dauern ~10 s (gemessen in der `.ibt`: 5 Phasen, nur `0x100`) → Banner bleibt 20 s nach Ende stehen.
+- **Hauptauslöser „Unfall voraus“ (seit 0.5.0):** Im echten Rennen kam trotz vieler Unfälle **nie** eine gelbe Flagge; der iRacing-Spotter-Ruf („incident ahead“) ist **nicht** im SDK (nur `CarLeftRight`). Deshalb läuft auf dem **Fahrer-PC** `HazardDetector` (`apps/recorder/src/hazard.ts`, getestet): ~4×/s `findIncidentCar` mit strengeren Schwellen – bis **1500 m** voraus, **< 30 km/h** oder **neben der Strecke und < 80 km/h** (Tracklimit-Ausritte zählen nicht), **2 Prüfungen** in Folge; bleibt bis **5 s** nach der letzten Sichtung aktiv; nicht in der Boxengasse. Meldung `hazard` (Auto-Index/-Nummer/-Name, Abstand, Grund) bei Änderung und alle 2 s; jede Meldung steht im `recorder.log` des Fahrers (`[hazard] …`) zum Nachjustieren. Knopf und Kürzel springen **direkt** auf dieses Auto (`targetCarIdx`), ohne erneute Suche beim Zuschauer.
+- **Zusatzauslöser Gelb:** `status.flags` des aktiven Fahrers enthält `YELLOW_FLAGS` (yellow `0x8`, yellowWaving `0x100`, caution `0x4000`, cautionWaving `0x8000`). Lokale Gelbphasen dauern ~10 s (gemessen in der `.ibt`: 5 Phasen, nur `0x100`) → Banner bleibt 20 s nach Ende stehen.
 - **Ablauf:** Overlay-Knopf bzw. Kürzel → `electron/camera.cjs` → Recorder-Utility-Process (`postMessage`) → `apps/recorder/src/spectator.ts` auf dem **lokalen** iRacing des Zuschauers.
 - **Unfall-Auto:** `findIncidentCar` (getestet): nächstes Auto **vor** dem Team-Auto (≤ 3 km, über Start/Ziel), das `CarIdxTrackSurface = OffTrack` hat oder < 30 km/h fährt (Geschwindigkeit aus `CarIdxLapDistPct` zweier Momentaufnahmen ~1 s, Streckenlänge aus `WeekendInfo.TrackLength`); Box/NotInWorld ausgenommen. Nichts gefunden → `CamFocus.AtIncident (-3)` (iRacings letzter Unfall).
 - **Kamera:** Broadcast `CamSwitchNum` (= 1) mit `CarNumberRaw`, Gruppe „Far Chase“ (GroupNum aus `CameraInfo`), Kamera 0; Nachricht `IRSDK_BROADCASTMSG` per `SendNotifyMessageA(HWND_BROADCAST, id, MAKELONG(msg, var1), MAKELONG(var2, var3))`. Konstanten aus `vendor/irsdk/irsdk_defines.h` (zwei unabhängige Kopien verglichen). „Zurück“ stellt die vorherige Kameragruppe wieder her.
@@ -181,6 +183,7 @@ Sonstiges: Der Shared-Memory-Bereich existiert auch, wenn nur die iRacing-UI lä
 
 ## 11. Offene Punkte / Backlog
 
+0. „Unfall voraus“ im Rennen prüfen: Fehlalarme/verpasste Unfälle anhand `[hazard]`-Zeilen im `recorder.log` des Fahrers, Schwellen (1500 m, 30/80 km/h) justieren.
 0. Zuschauer-Kamera live testen (§7a): Knopf-Klick im Overlay, Sprung auf „Far Chase“, „Zurück“, Suchradius 3 km auf der Nordschleife bewerten.
 1. Auto-Update 0.2.1 → 0.2.2 beim Teamchef verifizieren; echtes Installieren testen.
 2. Recorder mit **laufendem iRacing** in der App testen (neue `RtlMoveMemory`-Auslese nur ohne Sim geprüft); VR in der installierten App mit SteamVR testen.

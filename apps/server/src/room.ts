@@ -146,6 +146,7 @@ export class Room {
     this.activeId = p?.id ?? null;
     this.active = { t: 'active', driverName, memberName: p?.memberName ?? null, since: this.now() };
     this.latest.delete('inputs');
+    this.latest.delete('hazard'); // belongs to the previous driver's view of the track
     this.broadcast(this.active);
   }
 

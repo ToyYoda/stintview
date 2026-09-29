@@ -1,6 +1,6 @@
 # StintView – Testplan mit dem Team
 
-Gilt für **Version 0.3.0**. Ziel: alle Funktionen einmal unter echten Bedingungen prüfen – mehrere PCs, Internet, echte iRacing-Session, Fahrerwechsel, gelbe Flaggen, VR.
+Gilt ab **Version 0.5.0** (Block 4: „Unfall voraus“). Ziel: alle Funktionen einmal unter echten Bedingungen prüfen – mehrere PCs, Internet, echte iRacing-Session, Fahrerwechsel, gelbe Flaggen, VR.
 Hintergrund zu jeder Funktion: [SPEC.md](SPEC.md). Installation: [ANLEITUNG.md](../ANLEITUNG.md).
 
 Dauer: **Vorbereitung ~20 min pro Person (einmalig), Test-Session ~90 min.**
@@ -107,19 +107,21 @@ A fährt, B übernimmt dasselbe Team-Auto.
 ### Block 4 – Gelbe Flagge & Kamera-Sprung (20 min) – **Hauptziel von 0.3.0**
 
 Aufbau: **A** fährt das Team-Auto. **B** fährt ein **zweites Auto** in derselben Session und ist das „Unfall-Auto“. **Z** schaut als Zuschauer zu, Kamera auf dem Team-Auto.
-Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann **neben die Strecke** oder **bleibt auf der Strecke stehen**, ca. 300–1500 m vor A. A bekommt dadurch lokal Gelb.
+Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann **neben die Strecke** oder **bleibt auf der Strecke stehen**, ca. 300–1400 m vor A. StintView auf A's PC erkennt das und meldet **UNFALL VORAUS** (iRacing setzt dafür oft **keine** gelbe Flagge – das ist der Grund für diese Erkennung).
 
 > In Block 4 fährt B ein eigenes Auto. StintView zeigt pro Team nur ein Auto an: weil A zuerst sendet, bleibt A angezeigt und B steht auf *Standby* – das ist gewollt (Test 4.9).
 
 | # | Wer | Schritt | Erwartet | Ergebnis |
 |---|---|---|---|---|
-| 4.1 | B | Auto vor A neben die Strecke stellen | A bekommt in iRacing Gelb | |
-| 4.2 | Z | Overlay-Kopfzeile | **GELB VORAUS** blinkt, Knopf **Zum Unfall**; bleibt nach Ende der Flagge noch ~20 s stehen | |
-| 4.3 | Z | **Zum Unfall** klicken | iRacing-Kamera springt auf **B** in **Far Chase**; Meldung „#.. B – neben der Strecke, … m voraus“; iRacing behält den Fokus (Tastatur/Maus in iRacing gehen weiter) | |
+| 4.1 | B | Auto vor A neben die Strecke stellen und dort **langsam** fahren oder stehen | – | |
+| 4.2 | Z | Overlay-Kopfzeile | **UNFALL VORAUS · #.. B · … m · neben der Strecke/steht** blinkt, Knopf **Zum Unfall**; bleibt nach Ende noch ~20 s stehen | |
+| 4.3 | Z | **Zum Unfall** klicken | iRacing-Kamera springt auf **B** in **Far Chase**; Meldung „#.. B“; iRacing behält den Fokus (Tastatur/Maus in iRacing gehen weiter) | |
+| 4.3a | B | nur kurz mit Tempo über die Tracklimits fahren | **keine** Meldung | |
+| 4.3b | A | nach dem Test: `recorder.log` (Protokolle öffnen) an H | Zeilen `[hazard] …` passend zu den Unfällen | |
 | 4.4 | Z | Knopf **Zurück zu A** | Kamera wieder bei A, in der vorherigen Kamera | |
 | 4.5 | Z | Wiederholen mit **Strg+Umschalt+J** / **Strg+Umschalt+K** (bzw. Kürzel aus dem StintView-Fenster) | gleiches Verhalten wie 4.3/4.4 | |
 | 4.6 | B | diesmal **auf der Strecke stehen bleiben** (Warnblinker, sicherer Abschnitt) | 4.3 findet B mit „steht/langsam“ | |
-| 4.7 | B | Auto **weit** (> 3 km) vor A abstellen | Meldung „Kein stehendes Auto … gefunden – iRacing zeigt den letzten Unfall“, Kamera springt trotzdem irgendwohin sinnvoll | |
+| 4.7 | B | Auto **weit** (> 1,5 km) vor A abstellen | **keine** „Unfall voraus“-Meldung; J-Kürzel sucht bis 3 km bzw. zeigt iRacings letzten Unfall | |
 | 4.8 | A | während der Fahrt selbst Strg+Umschalt+J drücken | **nichts** passiert an A's Kamera; Meldung „Du fährst gerade …“ | |
 | 4.9 | B | Status in B's StintView-Fenster, während A fährt | *Im Auto – Standby*; Overlay aller zeigt weiter nur A (kein Hin- und Herspringen) | |
 | 4.10 | Z | Z schaut eine **andere** Session (z. B. offizielles Rennen) und drückt J | Meldung „Du schaust … nicht dieselbe Session wie dein Team“ | |
