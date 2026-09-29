@@ -111,6 +111,10 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .st-name { max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
 .st-gap, .st-tyre { font-family: var(--mono); text-align: right; width: 54px; }
 .st-tyre { width: 42px; }
+.st-gap.attack { color: var(--warn); font-weight: 700; }
+.st-gap.defend { color: var(--bad); font-weight: 700; }
+.st-gap.far { color: var(--muted); }
+.st-gap.lap { color: var(--cold); }
 .st-delta { font-family: var(--mono); text-align: right; width: 62px; }
 .st-delta.slower { color: var(--bad); }
 .st-delta.faster { color: var(--ok); }

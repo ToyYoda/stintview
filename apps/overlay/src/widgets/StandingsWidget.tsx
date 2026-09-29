@@ -34,7 +34,7 @@ export function StandingsWidget({ standings }: { standings: Standings | null }) 
                   <td className="st-pos">{r.pos}</td>
                   <td className="st-num">#{r.number}</td>
                   <td className="st-name">{r.name}</td>
-                  <td className="st-gap">{r.isTeam ? '' : gapText(r.gap, r.lapsGap)}</td>
+                  <td className={r.isTeam ? 'st-gap' : `st-gap ${gapClass(r.gap, r.lapsGap)}`}>{r.isTeam ? '' : gapText(r.gap, r.lapsGap)}</td>
                   <td className="st-tyre">{r.inPit ? 'Box' : r.tyreLaps ?? '–'}</td>
                   <td className={delta === null || delta === 0 ? 'st-delta' : delta > 0 ? 'st-delta slower' : 'st-delta faster'}>
                     {delta === null ? (r.isTeam && ours !== null ? lapTime(ours) : '') : delta === 0 ? '0.00' : `${delta > 0 ? '+' : '−'}${Math.abs(delta).toFixed(2)}`}
@@ -47,6 +47,15 @@ export function StandingsWidget({ standings }: { standings: Standings | null }) 
       )}
     </div>
   );
+}
+
+/** Within 1 s: attack (ahead, amber) / defend (behind, red); 1–3 s normal; further away dimmed; other lap blue. */
+function gapClass(gap: number | null | undefined, laps: number | undefined) {
+  if (laps) return 'lap';
+  if (gap == null) return '';
+  const a = Math.abs(gap);
+  if (a < 1) return gap >= 0 ? 'attack' : 'defend';
+  return a < 3 ? 'near' : 'far';
 }
 
 function gapText(gap: number | null | undefined, laps: number | undefined) {
