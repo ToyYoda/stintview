@@ -196,6 +196,8 @@ export interface StandingRow {
   tyreLaps?: number | null;
   /** Car is on pit road right now. */
   inPit?: boolean;
+  /** Driver's country (iRacing flair) as lower-case ISO code for the flag, e.g. "de", "gb-eng". */
+  country?: string | null;
 }
 
 /** P1–P3 and the cars around the team car, about once per second. Additive, no version bump. */

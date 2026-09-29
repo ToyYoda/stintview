@@ -8,6 +8,7 @@ import { Recorder } from './recorder.ts';
 import { Spectator, type CameraCommand, type CameraResult, type CameraState } from './spectator.ts';
 import { HazardDetector } from './hazard.ts';
 import { StandingsTracker } from './standings.ts';
+import { countryCode } from './country.ts';
 import { parseSessionCars } from './spectator.ts';
 
 const USAGE = `StintView recorder
@@ -95,7 +96,7 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
       recorder.onSessionInfo(yaml);
       spectator?.onSessionInfo(yaml);
       const cars = parseSessionCars(yaml);
-      standings.setDrivers(new Map([...cars.drivers].map(([idx, d]) => [idx, { number: d.label, name: d.name }])), cars.trackLength);
+      standings.setDrivers(new Map([...cars.drivers].map(([idx, d]) => [idx, { number: d.label, name: d.name, country: countryCode(d.flair) }])), cars.trackLength);
       hazard?.onSessionInfo(yaml);
     },
   );

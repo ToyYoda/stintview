@@ -99,7 +99,7 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .wx-event { display: flex; gap: 8px; font-size: 12px; }
 .wx-time { font-family: var(--mono); color: var(--muted); }
 
-.standings { width: 400px; }
+.standings { width: 420px; }
 .standings table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .standings td { padding: 3px 4px; white-space: nowrap; }
 .standings tr.gap td { border-top: 1px dashed var(--border); }
@@ -108,7 +108,8 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .st-num { font-family: var(--mono); color: var(--muted); width: 36px; }
 .standings th { font-size: 10px; font-weight: 400; color: var(--muted); text-align: right; padding: 0 4px 2px; }
 .standings th:nth-child(3) { text-align: left; }
-.st-name { max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+.st-flag { width: 1.1em; line-height: 0.8em; margin-right: 5px; border-radius: 1px; vertical-align: -1px; }
+.st-name { max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
 .st-gap, .st-tyre { font-family: var(--mono); text-align: right; width: 54px; }
 .st-tyre { width: 42px; }
 .st-gap.attack { color: var(--warn); font-weight: 700; }

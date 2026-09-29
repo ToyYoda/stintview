@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "electron-updater": "^6",
+    "flag-icons": "^7",
     "koffi": "^2.9.0"
   },
   "devDependencies": {

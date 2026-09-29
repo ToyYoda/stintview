@@ -1,4 +1,5 @@
 import type { Standings } from '@stintview/protocol';
+import 'flag-icons/css/flag-icons.min.css';
 
 /**
  * Running order on track: P1–P3 and three cars ahead of / behind the team car.
@@ -33,7 +34,7 @@ export function StandingsWidget({ standings }: { standings: Standings | null }) 
                 <tr key={r.carIdx} className={[r.isTeam ? 'team' : '', gap ? 'gap' : ''].join(' ')}>
                   <td className="st-pos">{r.pos}</td>
                   <td className="st-num">#{r.number}</td>
-                  <td className="st-name">{r.name}</td>
+                  <td className="st-name">{r.country && /^[a-z]{2}(-[a-z]{3})?$/.test(r.country) && <span className={`fi fi-${r.country} st-flag`} />}{r.name}</td>
                   <td className={r.isTeam ? 'st-gap' : `st-gap ${gapClass(r.gap, r.lapsGap)}`}>{r.isTeam ? '' : gapText(r.gap, r.lapsGap)}</td>
                   <td className="st-tyre">{r.inPit ? 'Box' : r.tyreLaps ?? '–'}</td>
                   <td className={delta === null || delta === 0 ? 'st-delta' : delta > 0 ? 'st-delta slower' : 'st-delta faster'}>

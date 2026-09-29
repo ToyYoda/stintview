@@ -13,7 +13,7 @@ export interface CarProgress {
   onPitRoad?: boolean;
 }
 
-export interface CarInfo { number: string; name: string }
+export interface CarInfo { number: string; name: string; /** ISO code for the flag, e.g. "de". */ country?: string | null }
 
 export interface StandingsExtras {
   /** Tyre age in laps per carIdx (null = unknown). */
@@ -71,6 +71,7 @@ export function computeStandings(
       carIdx: c.carIdx,
       number: d?.number ?? '?',
       name: d?.name ?? '',
+      country: d?.country ?? null,
       lastLap: c.lastLap,
       isTeam,
       gap: isTeam ? 0 : trackGap(c, team, lapRef),

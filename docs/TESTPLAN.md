@@ -137,6 +137,7 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 | 4b.2 | Z | Δ-Spalte nach einer Runde | rot/+ bei Autos, die schneller waren als A, grün/− bei langsameren; A's Zeile zeigt A's letzte Rundenzeit | |
 | 4b.4 | Z | Spalte **Abstand** mit iRacings Relative (F3) vergleichen | ± ca. 0,5 s gleich; überrundete Autos als „−1 R“ (blau); unter 1 s gelb (vor A) / rot (hinter A), über 3 s grau | |
 | 4b.5 | Z | Spalte **Reifen** nach einem Boxenstopp eines Gegners bzw. von A | Gegner: zählt ab Boxenausfahrt ab 0; „Box“ während er in der Boxengasse ist; A's Zeile springt nach Reifenwechsel auf 0 | |
+| 4b.6 | Z | Flaggen vor den Namen mit iRacings Fahrerliste vergleichen | gleiche Länder; Fahrer ohne Land („Global“) ohne Flagge | |
 | 4b.3 | alle | Mehrklassen-Rennen (falls vorhanden) | nur Autos der eigenen Klasse | |
 
 ### Block 5 – Overlay bedienen (5 min)

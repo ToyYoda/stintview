@@ -101,7 +101,7 @@ export class CarTracker {
 
 export interface SessionCars {
   /** number = CarNumberRaw (camera commands), label = CarNumber as displayed ("07"). */
-  drivers: Map<number, { number: number; label: string; name: string }>;
+  drivers: Map<number, { number: number; label: string; name: string; flair?: string }>;
   farChaseGroup: number;
   trackLength: number;
   sessionId: string;
@@ -113,11 +113,11 @@ export function parseSessionCars(text: string): SessionCars {
   try {
     y = parse(text, { strict: false, uniqueKeys: false }) ?? {};
   } catch { /* keep defaults */ }
-  const drivers = new Map<number, { number: number; label: string; name: string }>();
+  const drivers = new Map<number, { number: number; label: string; name: string; flair?: string }>();
   for (const d of y.DriverInfo?.Drivers ?? []) {
     if (d.CarIdx === undefined) continue;
     const number = d.CarNumberRaw ?? -1;
-    drivers.set(d.CarIdx, { number, label: String(d.CarNumber ?? number), name: d.UserName ?? d.TeamName ?? '' });
+    drivers.set(d.CarIdx, { number, label: String(d.CarNumber ?? number), name: d.UserName ?? d.TeamName ?? '', flair: d.FlairName });
   }
   return {
     drivers,
@@ -142,7 +142,7 @@ export interface CameraState {
 
 export interface CameraResult { t: 'camera-result'; ok: boolean; text: string }
 
-interface DriverRow { CarIdx?: number; CarNumberRaw?: number; CarNumber?: string | number; UserName?: string; TeamName?: string }
+interface DriverRow { CarIdx?: number; CarNumberRaw?: number; CarNumber?: string | number; UserName?: string; TeamName?: string; FlairName?: string }
 interface Yaml {
   WeekendInfo?: { TrackLength?: string; SessionID?: number; SubSessionID?: number };
   DriverInfo?: { Drivers?: DriverRow[] };

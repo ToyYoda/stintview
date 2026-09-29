@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { countryCode } from './country.ts';
 import { computeStandings, PitStopTracker, trackGap, type CarInfo, type CarProgress } from './standings.ts';
 
 const info = new Map<number, CarInfo>(
@@ -87,5 +88,22 @@ describe('PitStopTracker', () => {
     expect(p.laps(1, 7)).toBe(7);
     p.reset();
     expect(p.laps(1, 7)).toBeNull();
+  });
+});
+
+describe('countryCode', () => {
+  it('maps iRacing flair names to flag codes', () => {
+    expect(countryCode('Germany')).toBe('de');
+    expect(countryCode('Netherlands')).toBe('nl');
+    expect(countryCode('United Kingdom')).toBe('gb');
+    expect(countryCode('England')).toBe('gb-eng');
+    expect(countryCode('Czech Republic')).toBe('cz');
+    expect(countryCode('Bosnia and Herzegovina')).toBe('ba');
+  });
+
+  it('has no flag for Global / none', () => {
+    expect(countryCode('Global')).toBeNull();
+    expect(countryCode('-none-')).toBeNull();
+    expect(countryCode(undefined)).toBeNull();
   });
 });
