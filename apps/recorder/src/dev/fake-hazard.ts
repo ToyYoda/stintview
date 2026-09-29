@@ -29,6 +29,8 @@ ws.on('open', async () => {
     const row = (pos: number, lastLap: number, isTeam = false) => ({
       pos, carIdx: pos === 9 ? 0 : 100 + pos, number: String(pos * 3).padStart(2, '0'),
       name: isTeam ? 'Test Fahrer' : `Fahrer P${pos}`, lastLap, isTeam,
+      gap: isTeam ? 0 : (9 - pos) * 2.7, lapsGap: pos <= 3 ? 1 : 0,
+      tyreLaps: pos === 11 ? null : (pos * 7) % 23, inPit: pos === 12,
     });
     send({
       t: 'standings', sessionTime: t,

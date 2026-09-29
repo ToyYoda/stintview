@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeStandings, type CarInfo, type CarProgress } from './standings.ts';
+import { computeStandings, PitStopTracker, trackGap, type CarInfo, type CarProgress } from './standings.ts';
 
 const info = new Map<number, CarInfo>(
   Array.from({ length: 20 }, (_, i) => [i, { number: String(i + 1).padStart(2, '0'), name: `Driver ${i}` }]),
@@ -31,5 +31,61 @@ describe('computeStandings', () => {
 
   it('returns nothing when the team car is not on track', () => {
     expect(computeStandings(field([1, 2]), 7, info)).toEqual([]);
+  });
+});
+
+const car = (progress: number, estTime: number | null, lastLap: number | null = 100): CarProgress =>
+  ({ carIdx: 0, progress, lastLap, classId: 0, estTime });
+
+describe('trackGap', () => {
+  it('uses the time estimate on the same lap', () => {
+    expect(trackGap(car(5.6, 58), car(5.5, 52), 100)).toBeCloseTo(6); // ahead
+    expect(trackGap(car(5.4, 45), car(5.5, 52), 100)).toBeCloseTo(-7); // behind
+  });
+
+  it('bridges the start/finish line with the lap time', () => {
+    // car ahead has just crossed the line (est 2 s), we are at 97 s of a 100 s lap
+    expect(trackGap(car(6.02, 2), car(5.97, 97), 100)).toBeCloseTo(5);
+    expect(trackGap(car(5.97, 97), car(6.02, 2), 100)).toBeCloseTo(-5);
+  });
+
+  it('adds whole laps for lapped cars', () => {
+    expect(trackGap(car(4.5, 50), car(5.6, 58), 100)).toBeCloseTo(-108);
+  });
+
+  it('falls back to distance × lap time without estimates, null without lap time', () => {
+    expect(trackGap(car(5.6, null), car(5.5, null), 100)).toBeCloseTo(10);
+    expect(trackGap(car(5.6, null), car(5.5, null), null)).toBeNull();
+  });
+});
+
+describe('computeStandings extras', () => {
+  it('reports gap, lap difference, tyre age and pit status per row', () => {
+    const cars: CarProgress[] = [
+      { carIdx: 0, progress: 5.5, lastLap: 100, classId: 0, estTime: 50 },
+      { carIdx: 1, progress: 5.6, lastLap: 99, classId: 0, estTime: 60, onPitRoad: true },
+    ];
+    const rows = computeStandings(cars, 0, info, 3, 3, { tyreLaps: (i) => (i === 1 ? 12 : null) });
+    expect(rows[0]).toMatchObject({ carIdx: 1, gap: 10, lapsGap: 0, tyreLaps: 12, inPit: true });
+    expect(rows[1]).toMatchObject({ carIdx: 0, gap: 0, isTeam: true, tyreLaps: null, inPit: false });
+  });
+});
+
+describe('PitStopTracker', () => {
+  it('counts laps since the car left pit road', () => {
+    const p = new PitStopTracker();
+    p.update([{ carIdx: 3, laps: 10, onPitRoad: false }]);
+    expect(p.laps(3, 10)).toBeNull(); // first seen mid-race, no stop seen yet
+    p.update([{ carIdx: 3, laps: 11, onPitRoad: true }]);
+    p.update([{ carIdx: 3, laps: 11, onPitRoad: false }]);
+    expect(p.laps(3, 15)).toBe(4);
+  });
+
+  it('counts from the start when the car is seen before its first lap', () => {
+    const p = new PitStopTracker();
+    p.update([{ carIdx: 1, laps: 0, onPitRoad: false }]);
+    expect(p.laps(1, 7)).toBe(7);
+    p.reset();
+    expect(p.laps(1, 7)).toBeNull();
   });
 });

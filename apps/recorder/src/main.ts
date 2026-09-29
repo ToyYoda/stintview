@@ -85,10 +85,8 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
   source.start(
     (f) => {
       recorder.onFrame(f);
-      if (recorder.isDriving) {
-        const table = standings.onFrame(f);
-        if (table) conn.send(table);
-      }
+      const table = standings.onFrame(f, recorder.isDriving); // also tracks pit stops while not driving
+      if (table) conn.send(table);
       spectator?.onFrame(f, recorder.isDriving);
       const warning = hazard?.onFrame(f, recorder.isDriving);
       if (warning) conn.send(warning);
@@ -96,8 +94,8 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
     (yaml) => {
       recorder.onSessionInfo(yaml);
       spectator?.onSessionInfo(yaml);
-      const cars = parseSessionCars(yaml).drivers;
-      standings.setDrivers(new Map([...cars].map(([idx, d]) => [idx, { number: d.label, name: d.name }])));
+      const cars = parseSessionCars(yaml);
+      standings.setDrivers(new Map([...cars.drivers].map(([idx, d]) => [idx, { number: d.label, name: d.name }])), cars.trackLength);
       hazard?.onSessionInfo(yaml);
     },
   );

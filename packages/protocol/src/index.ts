@@ -188,6 +188,14 @@ export interface StandingRow {
   /** Last lap time in seconds, null if none yet. */
   lastLap: number | null;
   isTeam: boolean;
+  /** Gap on track to the team car in seconds, positive = ahead of us; null if unknown. Optional: older recorders. */
+  gap?: number | null;
+  /** Whole laps ahead (+) of or behind (−) the team car. */
+  lapsGap?: number;
+  /** Tyre age in laps. Team car: exact (tyre odometer). Others: laps since their last pit stop. null = unknown. */
+  tyreLaps?: number | null;
+  /** Car is on pit road right now. */
+  inPit?: boolean;
 }
 
 /** P1–P3 and the cars around the team car, about once per second. Additive, no version bump. */
