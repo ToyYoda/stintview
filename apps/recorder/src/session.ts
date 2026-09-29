@@ -13,6 +13,11 @@ export interface SessionMeta {
   sessionId: string;
   /** CarNumberRaw of the player's car (camera commands use car numbers). */
   carNumber: number;
+  /**
+   * The local user is the current driver of their car. In team races iRacing reports
+   * IsOnTrack for teammates following the team car too – they are not driving.
+   */
+  isCurrentDriver: boolean;
 }
 
 interface Yaml {
@@ -50,5 +55,7 @@ export function parseSession(text: string): SessionMeta {
     sessionTypes: (y.SessionInfo?.Sessions ?? []).map((s) => s.SessionType ?? ''),
     sessionId: `${y.WeekendInfo?.SessionID ?? 0}/${y.WeekendInfo?.SubSessionID ?? 0}`,
     carNumber: car?.CarNumberRaw ?? -1,
+    // The car's entry names its current driver; unknown → don't block (single-driver sessions).
+    isCurrentDriver: car?.UserID === undefined || di.DriverUserID === undefined || car.UserID === di.DriverUserID,
   };
 }

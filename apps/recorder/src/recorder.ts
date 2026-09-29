@@ -118,8 +118,17 @@ export class Recorder {
     return msgs;
   }
 
+  /** iRacing closed/crashed while driving: nobody will report leaving the car otherwise. */
+  sourceLost() {
+    if (!this.driving) return;
+    this.driving = false;
+    this.offTrackSince = null;
+    this.emit(this.drivingMsg());
+  }
+
   private updateDriving(f: Frame, t: number) {
-    const inCar = f.bool('IsOnTrack');
+    // In the car *and* its current driver (teammates following the team car also get IsOnTrack).
+    const inCar = f.bool('IsOnTrack') && (this.meta?.isCurrentDriver ?? true);
     if (inCar) {
       this.offTrackSince = null;
       if (!this.driving) {

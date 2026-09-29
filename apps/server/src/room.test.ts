@@ -103,3 +103,28 @@ describe('Room: only the driver in the car reaches the overlays', () => {
     expect(room.driving(b, true, 'Ben', RACE)).toBe(true);
   });
 });
+
+describe('Room: silent active driver', () => {
+  it('releases the active driver after ACTIVE_STALE_MS without data (iRacing crashed)', () => {
+    const { room, peer, overlay, advance } = setup();
+    const a = peer(1, 'Anna');
+    room.driving(a, true, 'Anna', RACE);
+    advance(ACTIVE_STALE_MS - 1);
+    expect(room.expire()).toBe(false);
+    advance(2);
+    expect(room.expire()).toBe(true);
+    const actives = overlay.got.filter((m) => m.t === 'active').map((m) => (m as { driverName: string | null }).driverName);
+    expect(actives).toEqual(['Anna', null]);
+  });
+
+  it('keeps a driver whose recorder keeps claiming', () => {
+    const { room, peer, advance } = setup();
+    const a = peer(1, 'Anna');
+    room.driving(a, true, 'Anna', RACE);
+    for (let i = 0; i < 10; i++) {
+      advance(2000);
+      room.driving(a, true, 'Anna', RACE);
+      expect(room.expire()).toBe(false);
+    }
+  });
+});

@@ -103,6 +103,8 @@ A fährt, B übernimmt dasselbe Team-Auto.
 | 3.2 | alle | Sprit- und Reifen-Historie nach dem Wechsel | Runden und Reifenmessung von A bleiben sichtbar und laufen weiter | |
 | 3.3 | B | falls B schon „im Auto“ ist, bevor A raus ist | B: Status *Im Auto – Standby*, danach automatisch *Du fährst* | |
 | 3.4 | H | `server.log` | Zeilen `A is no longer active` / `B is now the active driver` in richtiger Reihenfolge | |
+| 3.5 | A (nach dem Wechsel) | A verfolgt in iRacing das Team-Auto (Kamera auf dem eigenen Team-Auto), während B fährt | A's StintView: **nicht** *Du fährst*; Overlay zeigt weiter **B**; in A's `recorder.log` **kein** `[car] … in the car` | |
+| 3.6 | B (fährt) | iRacing während der Fahrt schließen | Overlay: nach spätestens ~10 s *Niemand im Auto* | |
 
 ### Block 4 – Gelbe Flagge & Kamera-Sprung (20 min) – **Hauptziel von 0.3.0**
 

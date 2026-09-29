@@ -1,6 +1,6 @@
 # StintView – Spezifikation
 
-Stand: 2026-09-29, Version 0.5.0. Diese Datei ist die maßgebliche Beschreibung von Zielen, Entscheidungen und Architektur.
+Stand: 2026-09-29, Version 0.5.1 (in Arbeit). Diese Datei ist die maßgebliche Beschreibung von Zielen, Entscheidungen und Architektur.
 `docs/konzept.md` ist das ursprüngliche Konzept (historisch; wo es abweicht, gilt diese Datei). Testplan für Team-Tests: [TESTPLAN.md](TESTPLAN.md).
 
 ## 1. Zweck und Anforderungen
@@ -95,7 +95,8 @@ HTTP: `POST /api/teams {teamName, memberName}`, `POST /api/join {inviteCode, mem
 
 Implementiert in `apps/server/src/room.ts`, getestet in `room.test.ts`.
 
-1. Der Recorder meldet `driving=true` nur, wenn iRacing **`IsOnTrack`** meldet (Spieler selbst im Auto). Zuschauer senden nichts. Verlassen des Autos wird nach 3 s Entprellung gemeldet.
+1. Der Recorder meldet `driving=true` nur, wenn iRacing **`IsOnTrack`** meldet **und** der lokale Nutzer der **aktuelle Fahrer seines Autos** ist (`DriverInfo.DriverUserID` = `UserID` des Eintrags mit `CarIdx = DriverCarIdx`). **Wichtig (Rennen 29.09.2026):** In Teamrennen meldet iRacing `IsOnTrack` auch bei Teammitgliedern, die das Team-Auto verfolgen, während ein anderer fährt – ohne die Nutzer-ID-Prüfung hielt sich der Recorder des Teamchefs für den Fahrer (falscher aktiver Fahrer, und dieses Teammitglied konnte nicht zum Unfall springen, weil „du fährst gerade“). Verlassen des Autos wird nach 3 s Entprellung gemeldet; verschwindet iRacing während der Fahrt, meldet der Recorder sofort „ausgestiegen“.
+1a. Der Server gibt den aktiven Fahrer frei, wenn er **10 s** weder Daten noch Ansprüche geschickt hat (`Room.expire`, alle 2 s) – vorher blieb ein Fahrer nach einem iRacing-Absturz bis zu einer Stunde „aktiv“.
 2. Ein Fahrer, der **Daten sendet**, wird **nie verdrängt** (verhindert Flattern bei zwei Team-Autos oder zu frühem Einsteigen). Nur wenn er **10 s** nichts gesendet hat (`ACTIVE_STALE_MS`), darf jemand übernehmen.
 3. Ein Anspruch aus einer **anderen iRacing-Session** wird abgelehnt, solange die letzte Team-Session vor weniger als **5 min** Daten lieferte (`SESSION_STALE_MS`) – z. B. Teamkollege im Training parallel zum Rennen.
 4. Abgelehnte Recorder erhalten `standby` und fordern alle 2 s erneut an → Übernahme nach Fahrerwechsel binnen Sekunden.
@@ -143,7 +144,8 @@ Sonstiges: Der Shared-Memory-Bereich existiert auch, wenn nur die iRacing-UI lä
 - **Ablauf:** Overlay-Knopf bzw. Kürzel → `electron/camera.cjs` → Recorder-Utility-Process (`postMessage`) → `apps/recorder/src/spectator.ts` auf dem **lokalen** iRacing des Zuschauers.
 - **Unfall-Auto:** `findIncidentCar` (getestet): nächstes Auto **vor** dem Team-Auto (≤ 3 km, über Start/Ziel), das `CarIdxTrackSurface = OffTrack` hat oder < 30 km/h fährt (Geschwindigkeit aus `CarIdxLapDistPct` zweier Momentaufnahmen ~1 s, Streckenlänge aus `WeekendInfo.TrackLength`); Box/NotInWorld ausgenommen. Nichts gefunden → `CamFocus.AtIncident (-3)` (iRacings letzter Unfall).
 - **Kamera:** Broadcast `CamSwitchNum` (= 1) mit `CarNumberRaw`, Gruppe „Far Chase“ (GroupNum aus `CameraInfo`), Kamera 0; Nachricht `IRSDK_BROADCASTMSG` per `SendNotifyMessageA(HWND_BROADCAST, id, MAKELONG(msg, var1), MAKELONG(var2, var3))`. Konstanten aus `vendor/irsdk/irsdk_defines.h` (zwei unabhängige Kopien verglichen). „Zurück“ stellt die vorherige Kameragruppe wieder her.
-- **Schutz:** nichts tun, wenn der Zuschauer selbst `IsOnTrack` ist, iRacing nicht läuft oder die lokale `sessionId` nicht zur Team-Session passt.
+- **Protokoll:** jeder Kamera-Befehl steht im `recorder.log` (`[camera] incident car 12 -> ok: …`).
+- **Schutz:** nichts tun, wenn der Zuschauer selbst fährt (Regel §4.1), iRacing nicht läuft oder die lokale `sessionId` nicht zur Team-Session passt.
 - **Knopf „Zurück zu …“** erscheint, solange `CamCarIdx` ≠ Team-`carIdx`.
 - **Klickbar im click-through-Overlay:** Seite meldet Zeiger über Knopf (`overlay:interactive`) → Fenster nimmt nur dann Maus-Eingaben an; bleibt nicht fokussierbar (iRacing behält den Fokus).
 - **Kürzel:** erstes freies aus Strg+Umschalt+J / Strg+Alt+J / Strg+Umschalt+F7 (zum Unfall) und Strg+Umschalt+K / Strg+Alt+K / Strg+Umschalt+F8 (zurück); im StintView-Fenster angezeigt, VR-Panels zeigen die Kürzel statt Knöpfen.

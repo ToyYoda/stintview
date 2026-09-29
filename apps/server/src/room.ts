@@ -72,7 +72,10 @@ export class Room {
       if (this.activeId === p.id) this.setActive(null, null);
       return false;
     }
-    if (this.activeId === p.id) return true;
+    if (this.activeId === p.id) {
+      this.lastDataAt = this.now();
+      return true;
+    }
 
     const now = this.now();
     const dataStale = now - this.lastDataAt > ACTIVE_STALE_MS;
@@ -88,6 +91,16 @@ export class Room {
     this.raceSession = session;
     this.lastDataAt = now; // the claim itself counts as a sign of life
     this.setActive(p, driverName);
+    return true;
+  }
+
+  /**
+   * Releases an active driver that went silent (iRacing crashed, PC froze, network gone
+   * without the socket closing). Called periodically; returns true if released.
+   */
+  expire(): boolean {
+    if (this.activeId === null || this.now() - this.lastDataAt <= ACTIVE_STALE_MS) return false;
+    this.setActive(null, null);
     return true;
   }
 

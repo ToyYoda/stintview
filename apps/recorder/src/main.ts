@@ -40,6 +40,8 @@ interface ParentPort {
 }
 const parentPort = (process as { parentPort?: ParentPort }).parentPort;
 const report = (e: RecorderEvent) => parentPort?.postMessage(e);
+/** The live source reports iRacing going away before record() has set up the recorder. */
+let recorderRef: Recorder | null = null;
 
 async function register(path: string, body: CreateTeamRequest | JoinTeamRequest) {
   if (!values.server) throw new Error('--server is required');
@@ -90,9 +92,13 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
       hazard?.onSessionInfo(yaml);
     },
   );
+  recorderRef = recorder;
   // Camera commands from the desktop app (teammate watching the team car in iRacing).
   parentPort?.on('message', (e) => {
-    if (e.data?.t === 'camera' && spectator) report(spectator.command(e.data));
+    if (e.data?.t !== 'camera' || !spectator) return;
+    const result = spectator.command(e.data);
+    console.log(`[camera] ${e.data.action}${e.data.targetCarIdx !== undefined ? ` car ${e.data.targetCarIdx}` : ''} -> ${result.ok ? 'ok' : 'refused'}: ${result.text}`);
+    report(result);
   });
 
   const shutdown = () => {
@@ -118,6 +124,7 @@ async function main() {
         console.log(c ? '[iracing] connected' : '[iracing] waiting for iRacing session…');
         report({ t: 'iracing', connected: c });
         spectator.setConnected(c);
+        if (!c) recorderRef?.sourceLost();
       });
       return record(source, 'live iRacing telemetry', spectator, new HazardDetector((line) => console.log(line)));
     }

@@ -134,6 +134,11 @@ wss.on('connection', (ws: WebSocket) => {
   });
 });
 
+// Free the "active driver" slot when its recorder went silent.
+setInterval(() => {
+  for (const room of rooms.values()) if (room.expire()) log(`active driver of team ${room.teamId} went silent – released`);
+}, 2000);
+
 function log(msg: string) {
   console.log(`${new Date().toISOString()} ${msg}`);
 }
