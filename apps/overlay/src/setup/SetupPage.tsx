@@ -155,6 +155,10 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
           </div>
         )}
         <Toggle checked={settings.vr} onChange={(v) => set({ vr: v })} label="VR-Overlay (SteamVR)" hint="Panels in der Brille. Strg+Umschalt+V wählt, Pfeiltasten verschieben." />
+        <p className="hint cam-keys">
+          Als Zuschauer bei Gelb für deinen Fahrer: <b>{state.cameraHotkeys.incident ?? '–'}</b> springt mit der Kamera zum Unfall vor ihm,{' '}
+          <b>{state.cameraHotkeys.back ?? '–'}</b> zurück zu ihm. Am Monitor gibt es dafür auch Knöpfe in der Kopfzeile.
+        </p>
       </section>
 
       <section className="card">

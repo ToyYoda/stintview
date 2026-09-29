@@ -81,7 +81,7 @@ export class Recorder {
 
     if (t - this.lastStatus >= STATUS_INTERVAL || t < this.lastStatus) {
       this.lastStatus = t;
-      this.emit({ t: 'status', ...fuelSample, odometer });
+      this.emit({ t: 'status', ...fuelSample, odometer, flags: f.num('SessionFlags') >>> 0 });
     }
   }
 
@@ -134,6 +134,7 @@ export class Recorder {
       t: 'session',
       track: m?.track ?? '', car: m?.car ?? '', driverName: m?.driverName ?? '', teamName: m?.teamName ?? '',
       sessionType: m?.sessionTypes[idx] ?? '',
+      carIdx: m?.carIdx ?? -1, carNumber: m?.carNumber ?? -1, sessionId: m?.sessionId ?? '',
     };
   }
 

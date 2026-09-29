@@ -5,6 +5,7 @@ import { Connection } from './connection.ts';
 import { IbtSource } from './irsdk/ibt.ts';
 import type { TelemetrySource } from './irsdk/layout.ts';
 import { Recorder } from './recorder.ts';
+import { Spectator, type CameraCommand, type CameraResult, type CameraState } from './spectator.ts';
 
 const USAGE = `StintView recorder
 
@@ -29,8 +30,14 @@ const [command = 'run', ...rest] = positionals;
 export type RecorderEvent =
   | { t: 'iracing'; connected: boolean }
   | { t: 'server'; connected: boolean; text: string }
-  | { t: 'car'; inCar: boolean; driverName: string };
-const parentPort = (process as { parentPort?: { postMessage(m: RecorderEvent): void } }).parentPort;
+  | { t: 'car'; inCar: boolean; driverName: string }
+  | CameraState
+  | CameraResult;
+interface ParentPort {
+  postMessage(m: RecorderEvent): void;
+  on(event: 'message', fn: (e: { data: CameraCommand }) => void): void;
+}
+const parentPort = (process as { parentPort?: ParentPort }).parentPort;
 const report = (e: RecorderEvent) => parentPort?.postMessage(e);
 
 async function register(path: string, body: CreateTeamRequest | JoinTeamRequest) {
@@ -46,7 +53,7 @@ async function register(path: string, body: CreateTeamRequest | JoinTeamRequest)
   console.log(`Saved to ${configPath()}`);
 }
 
-async function record(source: TelemetrySource, label: string) {
+async function record(source: TelemetrySource, label: string, spectator?: Spectator) {
   const config = loadConfig();
   if (!config) throw new Error(`Not set up yet – run create-team or join first.\n\n${USAGE}`);
 
@@ -69,7 +76,20 @@ async function record(source: TelemetrySource, label: string) {
 
   console.log(`[source] ${label}`);
   conn.connect();
-  source.start((f) => recorder.onFrame(f), (yaml) => recorder.onSessionInfo(yaml));
+  source.start(
+    (f) => {
+      recorder.onFrame(f);
+      spectator?.onFrame(f, recorder.isDriving);
+    },
+    (yaml) => {
+      recorder.onSessionInfo(yaml);
+      spectator?.onSessionInfo(yaml);
+    },
+  );
+  // Camera commands from the desktop app (teammate watching the team car in iRacing).
+  parentPort?.on('message', (e) => {
+    if (e.data?.t === 'camera' && spectator) report(spectator.command(e.data));
+  });
 
   const shutdown = () => {
     source.stop();
@@ -89,11 +109,13 @@ async function main() {
       return register('/api/join', { inviteCode: values.code ?? '', memberName: values.name ?? '' });
     case 'run': {
       const { LiveSource } = await import('./irsdk/live.ts');
+      const spectator = new Spectator(report);
       const source = new LiveSource((c) => {
         console.log(c ? '[iracing] connected' : '[iracing] waiting for iRacing session…');
         report({ t: 'iracing', connected: c });
+        spectator.setConnected(c);
       });
-      return record(source, 'live iRacing telemetry');
+      return record(source, 'live iRacing telemetry', spectator);
     }
     case 'replay': {
       const file = rest[0];

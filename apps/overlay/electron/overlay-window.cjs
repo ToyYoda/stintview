@@ -1,5 +1,5 @@
 // Desktop overlay: transparent, always-on-top, click-through window over iRacing (borderless mode).
-const { BrowserWindow, globalShortcut, screen } = require('electron');
+const { BrowserWindow, globalShortcut, ipcMain, screen } = require('electron');
 const { PRELOAD, loadRoute } = require('./renderer.cjs');
 
 // Tried in order; the first one no other program holds wins (e.g. AMD Radeon Software
@@ -27,6 +27,14 @@ function setEdit(on) {
   win.webContents.send('edit-mode', on, displayHotkey(hotkey));
   notify();
 }
+
+// Buttons in the overlay (camera jump) must be clickable although the window is click-through:
+// the page reports when the pointer is over one, and only then the window takes mouse input.
+// The window stays non-focusable, so clicking does not take focus away from iRacing.
+ipcMain.on('overlay:interactive', (e, on) => {
+  if (!win || e.sender !== win.webContents || edit) return;
+  win.setIgnoreMouseEvents(!on, { forward: true });
+});
 
 function registerHotkey() {
   hotkey = EDIT_HOTKEYS.find((h) => globalShortcut.register(h, () => setEdit(!edit))) ?? null;

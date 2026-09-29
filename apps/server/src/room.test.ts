@@ -17,7 +17,7 @@ function setup() {
   room.addOverlay(overlay);
   const status = (lap: number): Status => ({
     t: 'status', sessionTime: lap, lap, lapDistPct: 0, fuelLevel: 50, onPitRoad: false,
-    odometer: { LF: 0, RF: 0, LR: 0, RR: 0 },
+    odometer: { LF: 0, RF: 0, LR: 0, RR: 0 }, flags: 0,
   });
   const received = () => overlay.got.filter((m): m is Telemetry => m.t === 'status');
   return { room, peer, overlay, status, received, advance: (ms: number) => { now += ms; } };

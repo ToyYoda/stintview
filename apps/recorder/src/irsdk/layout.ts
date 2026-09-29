@@ -84,6 +84,11 @@ export class Frame {
     return this.vars.has(name);
   }
 
+  /** Number of entries of an array variable (e.g. 64 for CarIdx*), 0 if missing. */
+  count(name: string) {
+    return this.vars.get(name)?.count ?? 0;
+  }
+
   /** Numeric value of a scalar variable (bools as 0/1). Missing vars read as NaN. */
   num(name: string, index = 0): number {
     const v = this.vars.get(name);

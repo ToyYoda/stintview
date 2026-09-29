@@ -57,6 +57,14 @@ Switch **Overlay am Monitor** (on by default). In iRacing's graphics options, ch
 - Faster via hotkey: **Ctrl+Shift+O**. If another program already uses it (e.g. AMD Radeon Software), StintView takes **Ctrl+Alt+O** or **Ctrl+Shift+F9** instead – the active one is shown in the StintView window.
 - Outside edit mode, all clicks go through the overlay to iRacing.
 
+### Jumping to an incident as a spectator
+
+When your driver gets a **yellow** (incident ahead), the overlay header shows **GELB VORAUS** (yellow ahead) with the button **Zum Unfall** (to the incident). Clicking it points the camera in *your* iRacing (chase camera "Far Chase") at the car ahead of your driver that is off track or stopped – so you can tell them on Discord what's going on. **Zurück zu …** (back to …) returns to your driver.
+
+- Requirement: you are watching the team session in iRacing (not driving yourself). Nothing is ever changed for the driver.
+- Hotkeys (also in VR): **Ctrl+Shift+J** = to the incident, **Ctrl+Shift+K** = back (fallback hotkeys are shown in the StintView window).
+- If StintView finds no stopped car ahead of your driver, iRacing shows the latest incident on track.
+
 ### Overlay in VR (SteamVR headsets)
 
 Switch **VR-Overlay (SteamVR)**. Works with anything that runs through **SteamVR** (e.g. Bigscreen Beyond, Valve Index, Vive, Pimax). StintView connects automatically as soon as SteamVR is running.

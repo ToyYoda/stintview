@@ -1,6 +1,6 @@
 import { decode, encode } from '@msgpack/msgpack';
 
-export const PROTOCOL_VERSION = 2;
+export const PROTOCOL_VERSION = 3;
 
 export type Role = 'recorder' | 'overlay';
 export type Wheel = 'LF' | 'RF' | 'LR' | 'RR';
@@ -63,7 +63,12 @@ export interface Status {
   onPitRoad: boolean;
   /** Metres travelled on the current tyre set, per wheel. */
   odometer: Record<Wheel, number>;
+  /** iRacing SessionFlags as seen by the driver (irsdk_Flags bits, e.g. local yellow). */
+  flags: number;
 }
+
+/** irsdk_Flags bits that mean "incident ahead" for the driver. */
+export const YELLOW_FLAGS = 0x0008 /* yellow */ | 0x0100 /* yellowWaving */ | 0x4000 /* caution */ | 0x8000; /* cautionWaving */
 
 export interface FuelLap {
   lap: number;
@@ -104,6 +109,12 @@ export interface SessionInfo {
   driverName: string;
   teamName: string;
   sessionType: string;
+  /** Team car in this session – spectators use it to point their camera at it. */
+  carIdx: number;
+  /** CarNumberRaw of the team car (iRacing camera commands take the car number). */
+  carNumber: number;
+  /** `${SessionID}/${SubSessionID}`: spectators must watch the same event. */
+  sessionId: string;
 }
 
 export type Telemetry = Inputs | Status | Fuel | Tyres | SessionInfo;

@@ -38,6 +38,7 @@ Aufbau der App (`apps/overlay/electron/`):
 | `overlay-window.cjs` | durchsichtiges Monitor-Overlay; Verschieben per Knopf oder erstem freien Kürzel aus `Strg+Umschalt+O`, `Strg+Alt+O`, `Strg+Umschalt+F9` |
 | `vr.cjs`, `openvr.cjs`, `d3d11.cjs` | SteamVR-Panels (OpenVR + D3D11-Texturen per koffi, kein nativer Build) |
 | `config.cjs` | Zugangsdaten (`config.json`), Einstellungen (`app.json`), Beitreten/Anlegen |
+| `camera.cjs` | Zuschauer-Kamera: Knöpfe/Kürzel „Zum Unfall“ (Strg+Umschalt+J) und „Zurück“ (Strg+Umschalt+K) → Recorder (`apps/recorder/src/spectator.ts`, iRacing-Broadcast `CamSwitchNum`) |
 
 Recorder und Relay bündelt `scripts/bundle.mjs` mit esbuild nach `dist-bundles/`; die App startet sie als Electron-`utilityProcess`, Nutzer brauchen also kein Node.js.
 

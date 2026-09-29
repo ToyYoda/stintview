@@ -27,6 +27,7 @@ export interface AppState {
     update: string;
   };
   autostartAvailable: boolean;
+  cameraHotkeys: { incident: string | null; back: string | null };
 }
 
 declare global {
@@ -35,6 +36,11 @@ declare global {
       getConfig(): Promise<LocalConfig | null>;
       onEditMode(cb: (edit: boolean, hotkey: string | null) => void): void;
       setEditMode(on?: boolean): Promise<AppState>;
+      setInteractive(on: boolean): void;
+      setTeamCar(team: { carIdx: number; carNumber: number; sessionId: string }): void;
+      camera(action: 'incident' | 'back'): Promise<void>;
+      getCameraInfo(): Promise<{ state: unknown; hotkeys: { incident: string | null; back: string | null } }>;
+      onCamera(cb: (m: { t: 'camera-state' | 'camera-result' } & Record<string, unknown>) => void): void;
       getState(): Promise<AppState>;
       onState(cb: (state: AppState) => void): void;
       join(data: { serverUrl: string; inviteCode: string; memberName: string }): Promise<AppState>;
@@ -151,7 +157,10 @@ export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
         case 'status': return { ...s, status: m, lastData: now };
         case 'fuel': return { ...s, fuel: m, lastData: now };
         case 'tyres': return { ...s, tyres: m, lastData: now };
-        case 'session': return { ...s, session: m, lastData: now };
+        case 'session':
+          // Lets the desktop app (hotkeys) know which car to jump back to.
+          window.stintview?.setTeamCar?.({ carIdx: m.carIdx, carNumber: m.carNumber, sessionId: m.sessionId });
+          return { ...s, session: m, lastData: now };
       }
     };
 

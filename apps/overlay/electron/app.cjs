@@ -10,6 +10,7 @@ const {
   editHotkey, editing, onOverlayChange, overlayRunning, setEditMode, startOverlay, stopOverlay, toggleEdit,
 } = require('./overlay-window.cjs');
 const { PRELOAD, loadRoute } = require('./renderer.cjs');
+const { cameraCommand, cameraInfo, onRecorderMessage, setTeamCar, startCamera, stopCamera } = require('./camera.cjs');
 const { startVr, stopVr, vrStatus } = require('./vr.cjs');
 
 const BUNDLES = path.join(__dirname, '..', 'dist-bundles');
@@ -74,6 +75,12 @@ function supervise(name, file, args, env, onMessage) {
   };
   start();
   return {
+    /** Sends a message to the running process; false if it isn't running. */
+    post(msg) {
+      if (!state.proc) return false;
+      state.proc.postMessage(msg);
+      return true;
+    },
     stop() {
       state.stopped = true;
       clearTimeout(state.timer);
@@ -99,6 +106,7 @@ function startRecorder() {
           : m.text.startsWith('server error') ? 'error' : 'offline';
     }
     if (m.t === 'exit') Object.assign(status, { iracing: false, inCar: false, server: 'offline' });
+    if (m.t === 'camera-state' || m.t === 'camera-result') return onRecorderMessage(m);
     refresh();
   });
 }
@@ -227,6 +235,7 @@ function appState() {
     settings,
     status: { ...status, line: statusLine(), vr: vrStatus(), overlay: overlayRunning(), editing: editing(), editHotkey: editHotkey() },
     autostartAvailable: app.isPackaged,
+    cameraHotkeys: cameraInfo().hotkeys,
   };
 }
 
@@ -271,6 +280,11 @@ ipcMain.handle('app:edit', (_e, on) => {
   if (on === undefined) toggleEdit(); else setEditMode(on);
   return appState();
 });
+
+// Spectator camera: renderers report the team car and trigger jumps (same as the hotkeys).
+ipcMain.on('app:team-car', (_e, team) => setTeamCar(team));
+ipcMain.handle('app:camera', (_e, action) => cameraCommand(action === 'back' ? 'back' : 'incident'));
+ipcMain.handle('app:camera-info', () => cameraInfo());
 
 ipcMain.handle('app:leave', async () => {
   const { response } = await dialog.showMessageBox(setupWin ?? undefined, {
@@ -317,6 +331,7 @@ app.whenReady().then(() => {
   tray = new Tray(nativeImage.createFromPath(ICON));
   tray.on('click', openSetup);
   startRecorder();
+  startCamera((msg) => recorder?.post(msg) ?? false);
   applySettings();
   setupUpdates();
   // First run (or started manually): show the window. Autostart passes --hidden.
@@ -329,6 +344,7 @@ app.on('window-all-closed', () => {});
 app.on('before-quit', () => {
   quitting = true;
   recorder?.stop();
+  stopCamera();
   stopRelay();
   stopVr();
   stopOverlay();

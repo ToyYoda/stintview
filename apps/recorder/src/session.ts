@@ -11,6 +11,8 @@ export interface SessionMeta {
   sessionTypes: string[];
   /** Identifies the iRacing event: `${SessionID}/${SubSessionID}`. */
   sessionId: string;
+  /** CarNumberRaw of the player's car (camera commands use car numbers). */
+  carNumber: number;
 }
 
 interface Yaml {
@@ -20,7 +22,7 @@ interface Yaml {
     DriverCarIdx?: number;
     DriverUserID?: number;
     DriverCarFuelMaxLtr?: number;
-    Drivers?: { CarIdx?: number; UserID?: number; UserName?: string; TeamName?: string; CarScreenName?: string }[];
+    Drivers?: { CarIdx?: number; UserID?: number; UserName?: string; TeamName?: string; CarScreenName?: string; CarNumberRaw?: number }[];
   };
 }
 
@@ -47,5 +49,6 @@ export function parseSession(text: string): SessionMeta {
     tankCapacity: di.DriverCarFuelMaxLtr ?? 0,
     sessionTypes: (y.SessionInfo?.Sessions ?? []).map((s) => s.SessionType ?? ''),
     sessionId: `${y.WeekendInfo?.SessionID ?? 0}/${y.WeekendInfo?.SubSessionID ?? 0}`,
+    carNumber: car?.CarNumberRaw ?? -1,
   };
 }

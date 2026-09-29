@@ -1,6 +1,6 @@
 # StintView – Spezifikation
 
-Stand: 2026-09-29, Version 0.2.2. Diese Datei ist die maßgebliche Beschreibung von Zielen, Entscheidungen und Architektur.
+Stand: 2026-09-29, Version 0.3.0 (in Arbeit). Diese Datei ist die maßgebliche Beschreibung von Zielen, Entscheidungen und Architektur.
 `docs/konzept.md` ist das ursprüngliche Konzept (historisch; wo es abweicht, gilt diese Datei).
 
 ## 1. Zweck und Anforderungen
@@ -19,6 +19,7 @@ Jedes Teammitglied fährt an seinem eigenen PC. Alle sollen die Daten des Teamko
 | A7 | Einfache Installation für Teammitglieder ohne Git/Node/Kommandozeile. | umgesetzt (Windows-Installer) |
 | A8 | Der Team-Server läuft beim Teamchef zu Hause (Portfreigabe im Router, kein Cloud-Hosting). | umgesetzt (Relay in der App) |
 | A9 | Download-Website mit Beschreibung und Anleitung, Design von Outcast Endurance, **Deutsch und Englisch**. | umgesetzt (GitHub Pages) |
+| A10 | **Live-Zuschauer:** Bekommt der Fahrer Gelb (Unfall voraus), kann ein zuschauender Teamkollege per Knopf die Kamera in seinem iRacing zum Unfall-Auto springen lassen (Verfolgerkamera „Far Chase“) und per Knopf zurück zum Team-Auto. Absprache mit dem Fahrer über Discord (außerhalb von StintView). In VR per Tastenkürzel (Maus kann SteamVR-Panels nicht treffen). | umgesetzt, live noch ungetestet (§7a) |
 
 Sprache für Nutzer: Deutsch (App-Oberfläche nur Deutsch; Website und Anleitung de/en).
 
@@ -47,6 +48,7 @@ Eine einzige Electron-App auf jedem PC. Recorder läuft immer; Monitor-Overlay, 
 | `site/` | Download-Website (Vorlage, Texte de/en, Build-Skript) |
 | `tools/` | Python-Prüfskripte: `ibt_inspect.py`, `live_probe.py`, `live_vars.py` |
 | `vendor/openvr` | `openvr_capi.h` + Lizenz (Valve, BSD) als Referenz für die Funktionstabelle |
+| `vendor/irsdk` | `irsdk_defines.h` (iRacing SDK, BSD) – Broadcast-Befehle, Flags, TrkLoc |
 
 ### Desktop-App (`apps/overlay/electron/`)
 
@@ -65,7 +67,7 @@ React-UI-Routen: `#/` alle Widgets (Monitor-Overlay), `#/widget/<header|inputs|f
 
 Einstellungen `app.json` (Default): `overlay: true`, `vr: false`, `autostart: true`, `server: false`, `serverPort: 8787`.
 
-## 3. Protokoll (Version 2)
+## 3. Protokoll (Version 3)
 
 WebSocket-Pfad `/ws`, binäre Frames, MessagePack. Erste Nachricht des Clients: `hello { v, token, role: 'recorder'|'overlay' }` (5 s Timeout). Server antwortet `welcome` oder `error {code: auth|protocol|version}`.
 
@@ -73,10 +75,10 @@ WebSocket-Pfad `/ws`, binäre Frames, MessagePack. Erste Nachricht des Clients: 
 |---|---|---|---|
 | `driving` | Recorder → Server | bei Wechsel + **alle 2 s** während der Fahrt | `driving`, `driverName`, `session` (= `SessionID/SubSessionID`) |
 | `inputs` | Recorder → Overlays | 10/s, je 3 Samples (30 Hz) | `[steer rad, throttle, brake, clutch]`, `steerMax`, `speed`, `gear` |
-| `status` | Recorder → Overlays | 2/s | `sessionTime`, `lap`, `lapDistPct`, `fuelLevel`, `onPitRoad`, `odometer` je Rad |
+| `status` | Recorder → Overlays | 2/s | `sessionTime`, `lap`, `lapDistPct`, `fuelLevel`, `onPitRoad`, `odometer` je Rad, `flags` (SessionFlags des Fahrers; v3) |
 | `fuel` | Recorder → Overlays | pro Runde | letzte Runden `{lap, used, lapTime, pit}`, `tankCapacity` |
 | `tyres` | Recorder → Overlays | bei Messung | Messungen `{lap, odometer, carcass L/M/R, wear L/M/R}` je Rad |
-| `session` | Recorder → Overlays | bei Änderung | Strecke, Auto, Fahrer, Team, Session-Typ |
+| `session` | Recorder → Overlays | bei Änderung | Strecke, Auto, Fahrer, Team, Session-Typ, `carIdx`, `carNumber` (CarNumberRaw), `sessionId` (v3) |
 | `active` | Server → Overlays | bei Wechsel | aktiver Fahrer (Name, Mitglied) |
 | `snapshot` | Server → Overlay | beim Verbinden | `active` + letzte Telemetrie |
 | `standby` | Server → Recorder | bei abgelehntem Anspruch | `reason: other-driver|other-session` |
@@ -128,6 +130,18 @@ Sonstiges: Der Shared-Memory-Bereich existiert auch, wenn nur die iRacing-UI lä
 - iRacing muss im **randlosen Fenster** laufen.
 - Bearbeiten-Modus (Widgets ziehen): Knopf „Anzeigen verschieben“ im Fenster/Menü, Knopf „Fertig“ im Overlay-Banner, oder Tastenkürzel = **erstes freies** aus Strg+Umschalt+O, Strg+Alt+O, Strg+Umschalt+F9 (AMD Radeon Software belegt Strg+Umschalt+O). Positionen im localStorage des Overlays.
 
+## 7a. Zuschauer-Kamera („Zum Unfall“)
+
+- **Auslöser:** `status.flags` des aktiven Fahrers enthält `YELLOW_FLAGS` (yellow `0x8`, yellowWaving `0x100`, caution `0x4000`, cautionWaving `0x8000`). Lokale Gelbphasen dauern ~10 s (gemessen in der `.ibt`: 5 Phasen, nur `0x100`) → Banner bleibt 20 s nach Ende stehen.
+- **Ablauf:** Overlay-Knopf bzw. Kürzel → `electron/camera.cjs` → Recorder-Utility-Process (`postMessage`) → `apps/recorder/src/spectator.ts` auf dem **lokalen** iRacing des Zuschauers.
+- **Unfall-Auto:** `findIncidentCar` (getestet): nächstes Auto **vor** dem Team-Auto (≤ 3 km, über Start/Ziel), das `CarIdxTrackSurface = OffTrack` hat oder < 30 km/h fährt (Geschwindigkeit aus `CarIdxLapDistPct` zweier Momentaufnahmen ~1 s, Streckenlänge aus `WeekendInfo.TrackLength`); Box/NotInWorld ausgenommen. Nichts gefunden → `CamFocus.AtIncident (-3)` (iRacings letzter Unfall).
+- **Kamera:** Broadcast `CamSwitchNum` (= 1) mit `CarNumberRaw`, Gruppe „Far Chase“ (GroupNum aus `CameraInfo`), Kamera 0; Nachricht `IRSDK_BROADCASTMSG` per `SendNotifyMessageA(HWND_BROADCAST, id, MAKELONG(msg, var1), MAKELONG(var2, var3))`. Konstanten aus `vendor/irsdk/irsdk_defines.h` (zwei unabhängige Kopien verglichen). „Zurück“ stellt die vorherige Kameragruppe wieder her.
+- **Schutz:** nichts tun, wenn der Zuschauer selbst `IsOnTrack` ist, iRacing nicht läuft oder die lokale `sessionId` nicht zur Team-Session passt.
+- **Knopf „Zurück zu …“** erscheint, solange `CamCarIdx` ≠ Team-`carIdx`.
+- **Klickbar im click-through-Overlay:** Seite meldet Zeiger über Knopf (`overlay:interactive`) → Fenster nimmt nur dann Maus-Eingaben an; bleibt nicht fokussierbar (iRacing behält den Fokus).
+- **Kürzel:** erstes freies aus Strg+Umschalt+J / Strg+Alt+J / Strg+Umschalt+F7 (zum Unfall) und Strg+Umschalt+K / Strg+Alt+K / Strg+Umschalt+F8 (zurück); im StintView-Fenster angezeigt, VR-Panels zeigen die Kürzel statt Knöpfen.
+- **Test:** Banner per `.ibt`-Replay (Minute 22,4) geprüft; `.ibt` enthält **keine** `CarIdx*`-Daten → Unfallsuche und Kamerasprung nur live testbar (z. B. offizielles Rennen als Zuschauer).
+
 ## 8. Installer, Updates, Website
 
 - **Installer:** electron-builder (`apps/overlay/electron-builder.yml`), NSIS one-click, pro Benutzer (keine Adminrechte), `StintView-Setup.exe` ~82 MB, **nicht signiert** (SmartScreen-Warnung, bewusst: erst mal ohne Zertifikat). appId `com.outcastendurance.stintview`. Installationsordner derzeit `%LOCALAPPDATA%\Programs\@stintviewoverlay` (Schönheitsfehler, s. §11).
@@ -162,6 +176,7 @@ Sonstiges: Der Shared-Memory-Bereich existiert auch, wenn nur die iRacing-UI lä
 
 ## 11. Offene Punkte / Backlog
 
+0. Zuschauer-Kamera live testen (§7a): Knopf-Klick im Overlay, Sprung auf „Far Chase“, „Zurück“, Suchradius 3 km auf der Nordschleife bewerten.
 1. Auto-Update 0.2.1 → 0.2.2 beim Teamchef verifizieren; echtes Installieren testen.
 2. Recorder mit **laufendem iRacing** in der App testen (neue `RtlMoveMemory`-Auslese nur ohne Sim geprüft); VR in der installierten App mit SteamVR testen.
 3. Erster Start auf einem PC ohne Node.js (Teamkollege); Firewall-Abfrage des Relays.
