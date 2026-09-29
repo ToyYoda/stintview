@@ -178,7 +178,26 @@ export interface Hazard {
   speed: number | null;
 }
 
-export type Telemetry = Inputs | Status | Fuel | Tyres | SessionInfo | Weather | Hazard;
+export interface StandingRow {
+  /** Running order on track (within the team car's class). */
+  pos: number;
+  carIdx: number;
+  /** Car number as shown in iRacing, e.g. "07". */
+  number: string;
+  name: string;
+  /** Last lap time in seconds, null if none yet. */
+  lastLap: number | null;
+  isTeam: boolean;
+}
+
+/** P1–P3 and the cars around the team car, about once per second. Additive, no version bump. */
+export interface Standings {
+  t: 'standings';
+  sessionTime: number;
+  rows: StandingRow[];
+}
+
+export type Telemetry = Inputs | Status | Fuel | Tyres | SessionInfo | Weather | Hazard | Standings;
 export type TelemetryType = Telemetry['t'];
 
 // ---------------------------------------------------------------------------
@@ -221,7 +240,7 @@ export interface Snapshot {
 export type ClientMessage = Hello | DrivingState | Telemetry;
 export type ServerMessage = Welcome | ErrorMsg | Standby | ActiveDriver | Snapshot | Telemetry;
 
-const TELEMETRY_TYPES = new Set<string>(['inputs', 'status', 'fuel', 'tyres', 'session', 'weather', 'hazard']);
+const TELEMETRY_TYPES = new Set<string>(['inputs', 'status', 'fuel', 'tyres', 'session', 'weather', 'hazard', 'standings']);
 
 export function isTelemetry(msg: { t: string }): msg is Telemetry {
   return TELEMETRY_TYPES.has(msg.t);

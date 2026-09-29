@@ -22,6 +22,7 @@ const DEFAULT_SETTINGS = {
     fuel: { monitor: true, vr: true },
     tyres: { monitor: true, vr: true },
     weather: { monitor: true, vr: false },
+    standings: { monitor: true, vr: false },
   },
 };
 const PANEL_IDS = Object.keys(DEFAULT_SETTINGS.panels);

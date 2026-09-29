@@ -7,6 +7,8 @@ import type { TelemetrySource } from './irsdk/layout.ts';
 import { Recorder } from './recorder.ts';
 import { Spectator, type CameraCommand, type CameraResult, type CameraState } from './spectator.ts';
 import { HazardDetector } from './hazard.ts';
+import { StandingsTracker } from './standings.ts';
+import { parseSessionCars } from './spectator.ts';
 
 const USAGE = `StintView recorder
 
@@ -79,9 +81,14 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
 
   console.log(`[source] ${label}`);
   conn.connect();
+  const standings = new StandingsTracker();
   source.start(
     (f) => {
       recorder.onFrame(f);
+      if (recorder.isDriving) {
+        const table = standings.onFrame(f);
+        if (table) conn.send(table);
+      }
       spectator?.onFrame(f, recorder.isDriving);
       const warning = hazard?.onFrame(f, recorder.isDriving);
       if (warning) conn.send(warning);
@@ -89,6 +96,8 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
     (yaml) => {
       recorder.onSessionInfo(yaml);
       spectator?.onSessionInfo(yaml);
+      const cars = parseSessionCars(yaml).drivers;
+      standings.setDrivers(new Map([...cars].map(([idx, d]) => [idx, { number: d.label, name: d.name }])));
       hazard?.onSessionInfo(yaml);
     },
   );

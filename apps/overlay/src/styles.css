@@ -49,6 +49,9 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .header { min-width: 300px; }
 .header-row { display: flex; align-items: center; gap: 10px; }
 .camera-bar { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.cam-actions { display: flex; gap: 8px; }
+.cam-actions .cam-btn { min-width: 110px; }
+.cam-btn:disabled { background: #3a3a3a; color: #8a8a8a; cursor: default; }
 .cam-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .cam-flag { background: #ffd400; color: #000; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 10px; border-radius: 3px; }
 .cam-row.yellow.live .cam-flag { animation: cam-blink 0.8s steps(2, jump-none) infinite; }
@@ -95,3 +98,15 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .wx-events { border-top: 1px solid var(--border); padding-top: 6px; display: flex; flex-direction: column; gap: 3px; }
 .wx-event { display: flex; gap: 8px; font-size: 12px; }
 .wx-time { font-family: var(--mono); color: var(--muted); }
+
+.standings { width: 300px; }
+.standings table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.standings td { padding: 3px 4px; white-space: nowrap; }
+.standings tr.gap td { border-top: 1px dashed var(--border); }
+.standings tr.team td { background: rgba(255, 176, 0, 0.18); font-weight: 700; }
+.st-pos { font-family: var(--mono); color: var(--muted); width: 22px; text-align: right; }
+.st-num { font-family: var(--mono); color: var(--muted); width: 36px; }
+.st-name { max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+.st-delta { font-family: var(--mono); text-align: right; width: 62px; }
+.st-delta.slower { color: var(--bad); }
+.st-delta.faster { color: var(--ok); }

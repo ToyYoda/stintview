@@ -24,7 +24,14 @@ function broadcast(channel, payload) {
 }
 
 /** `targetCarIdx`: car named by the driver's "Unfall voraus"; without it the recorder searches. */
+/** Ignore commands this soon after the previous one (double clicks, held hotkeys). */
+const COOLDOWN_MS = 1000;
+let lastCommandAt = 0;
+
 function command(action, targetCarIdx) {
+  const now = Date.now();
+  if (now - lastCommandAt < COOLDOWN_MS) return console.log(`[camera] ${action} ignored (${now - lastCommandAt} ms after the previous command)`);
+  lastCommandAt = now;
   if (!team || team.carIdx < 0) return broadcast('camera', { t: 'camera-result', ok: false, text: 'Noch keine Daten vom Team-Auto' });
   const msg = { t: 'camera', action, team, ...(targetCarIdx !== undefined ? { targetCarIdx } : {}) };
   if (!sendToRecorder(msg)) broadcast('camera', { t: 'camera-result', ok: false, text: 'Recorder läuft nicht' });

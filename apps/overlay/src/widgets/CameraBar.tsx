@@ -5,6 +5,8 @@ import type { FeedState } from '../feed.ts';
 /** Keep the banner up this long after the warning clears (local yellows last ~10 s). */
 const HOLD_MS = 20_000;
 const RESULT_MS = 7000;
+/** A click shows "…" until iRacing confirms (the recorder checks for 1.5 s). */
+const PENDING_MS = 2500;
 const RESULT_FAILED_MS = 15_000; // failures carry longer hints (e.g. iRacing running as administrator)
 
 interface CameraState {
@@ -32,6 +34,7 @@ export function CameraBar({ state, interactive }: { state: FeedState; interactiv
   /** Last car named by the driver's "Unfall voraus" (kept while the banner is held). */
   const [lastHazard, setLastHazard] = useState<{ carIdx: number; text: string } | null>(null);
   const [now, setNow] = useState(Date.now());
+  const [pending, setPending] = useState<number | null>(null);
 
   useEffect(() => {
     if (!api?.onCamera) return;
@@ -41,7 +44,10 @@ export function CameraBar({ state, interactive }: { state: FeedState; interactiv
     });
     api.onCamera((m) => {
       if (m.t === 'camera-state') setCamera(m as unknown as CameraState);
-      else setResult({ ...(m as unknown as CameraResult), at: Date.now() });
+      else {
+        setResult({ ...(m as unknown as CameraResult), at: Date.now() });
+        setPending(null);
+      }
     });
     const t = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(t);
@@ -78,33 +84,41 @@ export function CameraBar({ state, interactive }: { state: FeedState; interactiv
   if (!yellow && !away && !showResult) return null;
 
   const canJump = Boolean(camera?.available && sameSession);
+  const busy = pending !== null && now - pending < PENDING_MS;
   const hover = (on: boolean) => interactive && api.setInteractive(on);
-  const button = (label: string, key: string | null, action: 'incident' | 'back') =>
+  const run = (action: 'incident' | 'back') => {
+    setPending(Date.now());
+    api.camera(action, action === 'incident' ? lastHazard?.carIdx : undefined);
+  };
+  // Both buttons always sit in the same place (first row, fixed width). In the race on
+  // 29.09. the bar re-laid out under the pointer and repeated clicks hit the other button.
+  const button = (label: string, key: string | null, action: 'incident' | 'back', enabled: boolean) =>
     interactive ? (
-      <button type="button" className="cam-btn" onClick={() => api.camera(action, action === 'incident' ? lastHazard?.carIdx : undefined)} onPointerEnter={() => hover(true)} onPointerLeave={() => hover(false)}>
-        {label}
+      <button type="button" className="cam-btn" disabled={!enabled || busy} onClick={() => run(action)}
+        onPointerEnter={() => hover(true)} onPointerLeave={() => hover(false)}>
+        {busy && enabled ? '…' : label}
       </button>
     ) : (
-      key && <span className="cam-key">{key}: {label}</span>
+      enabled && key && <span className="cam-key">{key}: {label}</span>
     );
 
   return (
     <div className="camera-bar">
+      {canJump ? (
+        <div className="cam-actions">
+          {button('Zum Unfall', hotkeys.incident, 'incident', yellow)}
+          {button('Zurück', hotkeys.back, 'back', away)}
+        </div>
+      ) : (
+        yellow && <span className="cam-hint">{camera?.available ? 'Du schaust eine andere iRacing-Session' : 'Zum Springen in iRacing zuschauen'}</span>
+      )}
       {yellow && (
         <div className={warningNow ? 'cam-row yellow live' : 'cam-row yellow'}>
           <span className="cam-flag">{lastHazard ? 'Unfall voraus' : 'Gelb voraus'}</span>
           {lastHazard && <span className="cam-hint">{lastHazard.text}</span>}
-          {canJump
-            ? button('Zum Unfall', hotkeys.incident, 'incident')
-            : <span className="cam-hint">{camera?.available ? 'Du schaust eine andere iRacing-Session' : 'Zum Springen in iRacing zuschauen'}</span>}
         </div>
       )}
-      {away && (
-        <div className="cam-row">
-          <span className="cam-hint">Kamera: #{camera!.camCarNumber} {camera!.camCarName}</span>
-          {button(`Zurück zu ${state.active?.driverName ?? 'deinem Fahrer'}`, hotkeys.back, 'back')}
-        </div>
-      )}
+      {away && <div className="cam-hint">Kamera: #{camera!.camCarNumber} {camera!.camCarName} · „Zurück“ = {state.active?.driverName ?? 'dein Fahrer'}</div>}
       {showResult && <div className={result.ok ? 'cam-result' : 'cam-result bad'}>{result.text}</div>}
     </div>
   );

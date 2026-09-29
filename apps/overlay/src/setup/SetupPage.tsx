@@ -206,6 +206,7 @@ const PANEL_NAMES: [string, string][] = [
   ['fuel', 'Sprit'],
   ['tyres', 'Reifen'],
   ['weather', 'Wetter'],
+  ['standings', 'Position (Reihenfolge auf der Strecke)'],
 ];
 
 /** Which displays appear on the monitor overlay and as VR panels. */

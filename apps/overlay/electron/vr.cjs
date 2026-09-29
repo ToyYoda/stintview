@@ -22,6 +22,7 @@ const DEFAULT_LAYOUT = {
     fuel: { enabled: true, distance: 0.8, down: 0.3, right: -0.3, width: 0.2 },
     tyres: { enabled: true, distance: 0.8, down: 0.3, right: 0.3, width: 0.24 },
     weather: { enabled: true, distance: 0.8, down: 0.08, right: 0.3, width: 0.22 },
+    standings: { enabled: true, distance: 0.8, down: 0.08, right: -0.3, width: 0.22 },
   },
 };
 

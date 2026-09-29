@@ -1,6 +1,6 @@
 # StintView – Spezifikation
 
-Stand: 2026-09-29, Version 0.5.2. Diese Datei ist die maßgebliche Beschreibung von Zielen, Entscheidungen und Architektur.
+Stand: 2026-09-29, Version 0.6.0 (in Arbeit). Diese Datei ist die maßgebliche Beschreibung von Zielen, Entscheidungen und Architektur.
 `docs/konzept.md` ist das ursprüngliche Konzept (historisch; wo es abweicht, gilt diese Datei). Testplan für Team-Tests: [TESTPLAN.md](TESTPLAN.md).
 
 ## 1. Zweck und Anforderungen
@@ -21,6 +21,7 @@ Jedes Teammitglied fährt an seinem eigenen PC. Alle sollen die Daten des Teamko
 | A9 | Download-Website mit Beschreibung und Anleitung, Design von Outcast Endurance, **Deutsch und Englisch**. | umgesetzt (GitHub Pages) |
 | A11 | **Wetter** (GitHub-Issue #1): aktuelle Werte (Luft-/Streckentemperatur, Niederschlag, Wolken, Streckenzustand) und eine Liste der **Änderungen** statt iRacings 15-Minuten-Raster. **Vorhersage** gewünscht, aber über die Telemetrie nicht verfügbar (§5) – Issue bleibt dafür offen. | aktuell + Verlauf umgesetzt |
 | A12 | Jede Anzeige einzeln wählbar, getrennt für Monitor und VR. | umgesetzt |
+| A13 | **Position:** P1–3 und je 3 Autos vor/hinter dem Team-Auto, Reihenfolge **auf der Strecke** (nicht iRacings Runden-Position); Spalten Position, Startnummer, Name, Δ letzte Runde (unsere − seine; rot = wir langsamer, sonst grün). | umgesetzt |
 | A10 | **Live-Zuschauer:** Bekommt der Fahrer Gelb (Unfall voraus), kann ein zuschauender Teamkollege per Knopf die Kamera in seinem iRacing zum Unfall-Auto springen lassen (Verfolgerkamera „Far Chase“) und per Knopf zurück zum Team-Auto. Absprache mit dem Fahrer über Discord (außerhalb von StintView). In VR per Tastenkürzel (Maus kann SteamVR-Panels nicht treffen). | umgesetzt, live noch ungetestet (§7a) |
 
 Sprache für Nutzer: Deutsch (App-Oberfläche nur Deutsch; Website und Anleitung de/en).
@@ -80,6 +81,7 @@ WebSocket-Pfad `/ws`, binäre Frames, MessagePack. Erste Nachricht des Clients: 
 | `status` | Recorder → Overlays | 2/s | `sessionTime`, `lap`, `lapDistPct`, `fuelLevel`, `onPitRoad`, `odometer` je Rad, `flags` (SessionFlags des Fahrers; v3) |
 | `fuel` | Recorder → Overlays | pro Runde | letzte Runden `{lap, used, lapTime, pit}`, `tankCapacity` |
 | `tyres` | Recorder → Overlays | bei Messung | Messungen `{lap, odometer, carcass L/M/R, wear L/M/R}` je Rad |
+| `standings` | Recorder → Overlays | ~1/s | Zeilen `{pos, carIdx, number (CarNumber), name, lastLap, isTeam}`: Reihenfolge = `CarIdxLapCompleted + CarIdxLapDistPct`, bei mehreren Klassen innerhalb der Klasse des Team-Autos (`CarIdxClass`); `computeStandings` in `apps/recorder/src/standings.ts` (getestet); ohne Versionssprung |
 | `hazard` | Recorder → Overlays | bei Änderung + alle 2 s solange aktiv | „Unfall voraus“: `active`, `carIdx`, `carNumber`, `driverName`, `distance` (m), `reason` (`slow`/`offtrack`), `speed`; ohne Versionssprung ergänzt |
 | `weather` | Recorder → Overlays | alle 5 s + bei Änderung | `now` (Luft/Strecke °C + Trend, `skies` 0–3, `precipitation` 0–1, `wetness` 0–7, `declaredWet`, Tageszeit), `events` (Änderungen); ohne Versionssprung ergänzt (alte Clients ignorieren es, Server muss es kennen) |
 | `session` | Recorder → Overlays | bei Änderung | Strecke, Auto, Fahrer, Team, Session-Typ, `carIdx`, `carNumber` (CarNumberRaw), `sessionId` (v3) |
@@ -147,7 +149,7 @@ Sonstiges: Der Shared-Memory-Bereich existiert auch, wenn nur die iRacing-UI lä
 - **Erfolgskontrolle (seit 0.5.2):** Die Broadcast-Nachricht liefert keine Rückmeldung; Windows verwirft sie **stillschweigend**, wenn iRacing mit höheren Rechten (als Administrator) läuft als StintView (UIPI). Deshalb gilt ein Sprung erst als erfolgreich, wenn `CamCarIdx` innerhalb von **1,5 s** das Ziel-Auto zeigt; sonst Meldung „iRacing hat den Kamerawechsel nicht angenommen …“ mit Hinweis auf den Administrator-Modus. Anlass: Rennen 29.09.2026 – bei einem Teammitglied meldete die App den Sprung, die Kamera bewegte sich aber nicht (Ursache noch unbestätigt, Administrator-Modus vermutet). Nicht prüfbar: der Rückfall `FocusAtIncident` (iRacing wählt das Auto selbst).
 - **Protokoll:** jeder Kamera-Befehl steht im `recorder.log` (`[camera] incident car 12 requested`, `[camera] switch to car …`, `[camera] ok|failed: …`).
 - **Schutz:** nichts tun, wenn der Zuschauer selbst fährt (Regel §4.1), iRacing nicht läuft oder die lokale `sessionId` nicht zur Team-Session passt.
-- **Knopf „Zurück zu …“** erscheint, solange `CamCarIdx` ≠ Team-`carIdx`.
+- **Knöpfe (seit 0.6.0) fest** in der ersten Zeile: „Zum Unfall“ (aktiv bei Warnung) und „Zurück“ (aktiv, solange `CamCarIdx` ≠ Team-`carIdx`), feste Breite, „…“ bis zur Bestätigung. Anlass: Rennen 29.09. – Knöpfe verrutschten mit wechselndem Text/Zeilen unter dem Mauszeiger, wiederholte Klicks trafen abwechselnd beide (36 Befehle in 7 s). Zusätzlich ignoriert `camera.cjs` Befehle < 1 s nach dem vorigen. Ursache des ausbleibenden Sprungs war dort **iRacing im Administrator-Modus** (bestätigt).
 - **Klickbar im click-through-Overlay:** Seite meldet Zeiger über Knopf (`overlay:interactive`) → Fenster nimmt nur dann Maus-Eingaben an; bleibt nicht fokussierbar (iRacing behält den Fokus).
 - **Kürzel:** erstes freies aus Strg+Umschalt+J / Strg+Alt+J / Strg+Umschalt+F7 (zum Unfall) und Strg+Umschalt+K / Strg+Alt+K / Strg+Umschalt+F8 (zurück); im StintView-Fenster angezeigt, VR-Panels zeigen die Kürzel statt Knöpfen.
 - **Test:** Banner per `.ibt`-Replay (Minute 22,4) geprüft; `.ibt` enthält **keine** `CarIdx*`-Daten → Unfallsuche und Kamerasprung nur live testbar (z. B. offizielles Rennen als Zuschauer).

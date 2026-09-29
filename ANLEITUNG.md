@@ -51,6 +51,7 @@ Sobald du im Auto sitzt, sieht dein Team deine Daten. Steigst du aus, hört Stin
 
 Schalter **Overlay am Monitor** (standardmäßig an). In iRacing unter Grafikoptionen **randloses Fenster (Borderless)** einstellen – im Exklusiv-Vollbild ist das Overlay unsichtbar.
 
+- **Zum Unfall / Zurück:** stehen als feste Knöpfe oben in der Kopfzeile; „Zurück“ ist grau, solange die Kamera bei deinem Fahrer ist. Nach einem Klick zeigt der Knopf „…“, bis iRacing den Wechsel bestätigt.
 - **Anzeigen verschieben:** Knopf **Anzeigen verschieben** im StintView-Fenster (oder im Menü), dann die Anzeigen mit der Maus ziehen und im gelben Banner oben auf **Fertig** klicken.
 - Schneller per Tastenkürzel: **Strg+Umschalt+O**. Ist das schon von einem anderen Programm belegt (z. B. AMD Radeon Software), nimmt StintView **Strg+Alt+O** oder **Strg+Umschalt+F9** – welches aktiv ist, steht im StintView-Fenster.
 - Außerhalb des Bearbeiten-Modus gehen alle Klicks durch das Overlay zu iRacing.
@@ -90,6 +91,8 @@ Meta Quest per Link/Air Link ohne SteamVR wird noch nicht unterstützt.
 - **Sprit:** Tankinhalt, Runden übrig, Verbrauch letzte Runde / Ø 3 / Ø 5 Runden. Graue Balken = Runden mit Boxenstopp (zählen nicht zum Durchschnitt).
 - **Reifen:** iRacing misst Temperatur und Verschleiß **nur beim Boxenstopp**. Angezeigt werden die Messung vom letzten Stopp und eine Schätzung, wie viel Profil jetzt noch übrig ist.
 - **Wetter:** Luft- und Streckentemperatur (mit Trendpfeil über ~10 min), Wolken, Niederschlag, Streckenzustand und ob Regenreifen freigegeben sind – darunter die **Änderungen** im Rennen mit Uhrzeit (z. B. „13:29 Wolken: bedeckt → stark bewölkt“). Eine Vorhersage gibt iRacing an StintView nicht heraus.
+
+- **Position:** die Reihenfolge **auf der Strecke** (laufend, nicht iRacings Position, die nur einmal pro Runde springt), bei mehreren Klassen innerhalb eurer Klasse: Platz 1–3 sowie drei Autos vor und hinter euch. Spalte **Δ** = eure letzte Runde minus seine – **rot (+)**: ihr wart langsamer, **grün (−)**: ihr wart schneller.
 
 Welche Anzeigen am Monitor und welche in VR erscheinen, stellst du im StintView-Fenster unter **Anzeigen** ein (je ein Häkchen für Monitor und VR).
 

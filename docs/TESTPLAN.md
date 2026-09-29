@@ -129,6 +129,14 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 | 4.10 | Z | Z schaut eine **andere** Session (z. B. offizielles Rennen) und drückt J | Meldung „Du schaust … nicht dieselbe Session wie dein Team“ | |
 | 4.11 | alle | Gefühl: Kommt man mit „Zum Unfall“ schnell genug zur richtigen Stelle, um A per Discord zu warnen? Passt der Suchbereich (3 km)? | Notiz | |
 
+### Block 4b – Position (5 min)
+
+| # | Wer | Schritt | Erwartet | Ergebnis |
+|---|---|---|---|---|
+| 4b.1 | Z | Anzeige **Position** beobachten, während A überholt/überholt wird | Reihenfolge ändert sich sofort beim Überholen (nicht erst an der Ziellinie); P1–3 + 3 vor/hinter A | |
+| 4b.2 | Z | Δ-Spalte nach einer Runde | rot/+ bei Autos, die schneller waren als A, grün/− bei langsameren; A's Zeile zeigt A's letzte Rundenzeit | |
+| 4b.3 | alle | Mehrklassen-Rennen (falls vorhanden) | nur Autos der eigenen Klasse | |
+
 ### Block 5 – Overlay bedienen (5 min)
 
 | # | Wer | Schritt | Erwartet | Ergebnis |
