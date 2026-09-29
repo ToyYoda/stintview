@@ -1,6 +1,6 @@
 # StintView – Spezifikation
 
-Stand: 2026-09-29, Version 0.4.0 (in Arbeit). Diese Datei ist die maßgebliche Beschreibung von Zielen, Entscheidungen und Architektur.
+Stand: 2026-09-29, Version 0.4.0. Diese Datei ist die maßgebliche Beschreibung von Zielen, Entscheidungen und Architektur.
 `docs/konzept.md` ist das ursprüngliche Konzept (historisch; wo es abweicht, gilt diese Datei). Testplan für Team-Tests: [TESTPLAN.md](TESTPLAN.md).
 
 ## 1. Zweck und Anforderungen
@@ -150,7 +150,7 @@ Sonstiges: Der Shared-Memory-Bereich existiert auch, wenn nur die iRacing-UI lä
 ## 8. Installer, Updates, Website
 
 - **Installer:** electron-builder (`apps/overlay/electron-builder.yml`), NSIS one-click, pro Benutzer (keine Adminrechte), `StintView-Setup.exe` ~82 MB, **nicht signiert** (SmartScreen-Warnung, bewusst: erst mal ohne Zertifikat). appId `com.outcastendurance.stintview`. Installationsordner derzeit `%LOCALAPPDATA%\Programs\@stintviewoverlay` (Schönheitsfehler, s. §11).
-- **Release:** Tag `vX.Y.Z` pushen → `.github/workflows/release.yml` (windows-latest, pnpm aus `packageManager`, Tests, Version aus Tag) baut und veröffentlicht auf GitHub Releases. Veröffentlicht: v0.2.1, v0.2.2, v0.3.0 (Protokoll v3; `v0.2.0` = Tag ohne Release, erster Lauf scheiterte).
+- **Release:** Tag `vX.Y.Z` pushen → `.github/workflows/release.yml` (windows-latest, pnpm aus `packageManager`, Tests, Version aus Tag) baut und veröffentlicht auf GitHub Releases. Veröffentlicht: v0.2.1, v0.2.2, v0.3.0 (Protokoll v3), v0.4.0 (Wetter, Anzeigen-Auswahl; `v0.2.0` = Tag ohne Release, erster Lauf scheiterte).
 - **Auto-Update:** electron-updater (GitHub-Provider), Prüfung beim Start und alle 6 h, Installation beim Beenden. Erster echter Update-Test (0.2.1 → 0.2.2) steht aus.
 - **Website:** <https://toyyoda.github.io/stintview/> (de) und `/en/`, gebaut von `.github/workflows/pages.yml` bei jedem Push auf `main` aus `site/template.html` + `site/strings.mjs` + `ANLEITUNG.md`/`INSTALL.md` (Titel und Intro bis zur ersten `---` werden entfernt). Download-Knopf → `releases/latest/download/StintView-Setup.exe`. Build bricht bei kaputten lokalen Verweisen ab.
 - **Design Outcast Endurance:** Farben `#E5E5E5`, `#D10F0F`, `#1A1A1A` auf fast Schwarz; kursive fette Großbuchstaben; gesperrte rote Zwischenzeilen; Parallelogramm-Knöpfe; „O“-Emblem mit rotem Schrägstrich (SVG-Nachbau); Slogan „Race together. Outperform. Never belong.“; Auto-Bild `site/assets/livery.webp` (Design-Blatt, per CSS beschnitten). Keine Sponsorenlogos nachbauen. Keine externen Fonts (Datenschutz).
