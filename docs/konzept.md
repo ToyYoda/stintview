@@ -1,5 +1,7 @@
 # StintView – Konzept
 
+> **Historisch.** Ursprüngliches Konzept aus der Planungsphase. Maßgeblich ist [SPEC.md](SPEC.md) – dort sind spätere Entscheidungen (Desktop-App mit Installer, D3D11-VR, Übernahme-Regeln, Messergebnisse) festgehalten.
+
 Live-Telemetrie des aktuell fahrenden Teammitglieds als Overlay über iRacing – für Endurance-Teams, deren Fahrer an eigenen PCs sitzen.
 
 ## Ziel
