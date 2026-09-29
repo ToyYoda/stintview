@@ -1,7 +1,7 @@
 # StintView – Spezifikation
 
 Stand: 2026-09-29, Version 0.3.0. Diese Datei ist die maßgebliche Beschreibung von Zielen, Entscheidungen und Architektur.
-`docs/konzept.md` ist das ursprüngliche Konzept (historisch; wo es abweicht, gilt diese Datei).
+`docs/konzept.md` ist das ursprüngliche Konzept (historisch; wo es abweicht, gilt diese Datei). Testplan für Team-Tests: [TESTPLAN.md](TESTPLAN.md).
 
 ## 1. Zweck und Anforderungen
 
