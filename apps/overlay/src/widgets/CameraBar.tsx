@@ -5,6 +5,7 @@ import type { FeedState } from '../feed.ts';
 /** Keep the banner up this long after the warning clears (local yellows last ~10 s). */
 const HOLD_MS = 20_000;
 const RESULT_MS = 7000;
+const RESULT_FAILED_MS = 15_000; // failures carry longer hints (e.g. iRacing running as administrator)
 
 interface CameraState {
   t: 'camera-state';
@@ -73,7 +74,7 @@ export function CameraBar({ state, interactive }: { state: FeedState; interactiv
   const yellow = warningNow || now < holdUntil;
   const sameSession = Boolean(camera && session && camera.sessionId === session.sessionId);
   const away = Boolean(camera?.available && sameSession && camera.camCarIdx >= 0 && camera.camCarIdx !== session?.carIdx);
-  const showResult = result && now - result.at < RESULT_MS;
+  const showResult = result && now - result.at < (result.ok ? RESULT_MS : RESULT_FAILED_MS);
   if (!yellow && !away && !showResult) return null;
 
   const canJump = Boolean(camera?.available && sameSession);

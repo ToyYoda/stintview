@@ -96,9 +96,8 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
   // Camera commands from the desktop app (teammate watching the team car in iRacing).
   parentPort?.on('message', (e) => {
     if (e.data?.t !== 'camera' || !spectator) return;
-    const result = spectator.command(e.data);
-    console.log(`[camera] ${e.data.action}${e.data.targetCarIdx !== undefined ? ` car ${e.data.targetCarIdx}` : ''} -> ${result.ok ? 'ok' : 'refused'}: ${result.text}`);
-    report(result);
+    console.log(`[camera] ${e.data.action}${e.data.targetCarIdx !== undefined ? ` car ${e.data.targetCarIdx}` : ''} requested`);
+    spectator.command(e.data); // result is reported (and logged) once iRacing's camera moved – or didn't
   });
 
   const shutdown = () => {
@@ -119,7 +118,7 @@ async function main() {
       return register('/api/join', { inviteCode: values.code ?? '', memberName: values.name ?? '' });
     case 'run': {
       const { LiveSource } = await import('./irsdk/live.ts');
-      const spectator = new Spectator(report);
+      const spectator = new Spectator(report, undefined, (line) => console.log(line));
       const source = new LiveSource((c) => {
         console.log(c ? '[iracing] connected' : '[iracing] waiting for iRacing session…');
         report({ t: 'iracing', connected: c });

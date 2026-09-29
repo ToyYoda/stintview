@@ -1,6 +1,6 @@
 # StintView – Spezifikation
 
-Stand: 2026-09-29, Version 0.5.1. Diese Datei ist die maßgebliche Beschreibung von Zielen, Entscheidungen und Architektur.
+Stand: 2026-09-29, Version 0.5.2 (in Arbeit). Diese Datei ist die maßgebliche Beschreibung von Zielen, Entscheidungen und Architektur.
 `docs/konzept.md` ist das ursprüngliche Konzept (historisch; wo es abweicht, gilt diese Datei). Testplan für Team-Tests: [TESTPLAN.md](TESTPLAN.md).
 
 ## 1. Zweck und Anforderungen
@@ -144,7 +144,8 @@ Sonstiges: Der Shared-Memory-Bereich existiert auch, wenn nur die iRacing-UI lä
 - **Ablauf:** Overlay-Knopf bzw. Kürzel → `electron/camera.cjs` → Recorder-Utility-Process (`postMessage`) → `apps/recorder/src/spectator.ts` auf dem **lokalen** iRacing des Zuschauers.
 - **Unfall-Auto:** `findIncidentCar` (getestet): nächstes Auto **vor** dem Team-Auto (≤ 3 km, über Start/Ziel), das `CarIdxTrackSurface = OffTrack` hat oder < 30 km/h fährt (Geschwindigkeit aus `CarIdxLapDistPct` zweier Momentaufnahmen ~1 s, Streckenlänge aus `WeekendInfo.TrackLength`); Box/NotInWorld ausgenommen. Nichts gefunden → `CamFocus.AtIncident (-3)` (iRacings letzter Unfall).
 - **Kamera:** Broadcast `CamSwitchNum` (= 1) mit `CarNumberRaw`, Gruppe „Far Chase“ (GroupNum aus `CameraInfo`), Kamera 0; Nachricht `IRSDK_BROADCASTMSG` per `SendNotifyMessageA(HWND_BROADCAST, id, MAKELONG(msg, var1), MAKELONG(var2, var3))`. Konstanten aus `vendor/irsdk/irsdk_defines.h` (zwei unabhängige Kopien verglichen). „Zurück“ stellt die vorherige Kameragruppe wieder her.
-- **Protokoll:** jeder Kamera-Befehl steht im `recorder.log` (`[camera] incident car 12 -> ok: …`).
+- **Erfolgskontrolle (seit 0.5.2):** Die Broadcast-Nachricht liefert keine Rückmeldung; Windows verwirft sie **stillschweigend**, wenn iRacing mit höheren Rechten (als Administrator) läuft als StintView (UIPI). Deshalb gilt ein Sprung erst als erfolgreich, wenn `CamCarIdx` innerhalb von **1,5 s** das Ziel-Auto zeigt; sonst Meldung „iRacing hat den Kamerawechsel nicht angenommen …“ mit Hinweis auf den Administrator-Modus. Anlass: Rennen 29.09.2026 – bei einem Teammitglied meldete die App den Sprung, die Kamera bewegte sich aber nicht (Ursache noch unbestätigt, Administrator-Modus vermutet). Nicht prüfbar: der Rückfall `FocusAtIncident` (iRacing wählt das Auto selbst).
+- **Protokoll:** jeder Kamera-Befehl steht im `recorder.log` (`[camera] incident car 12 requested`, `[camera] switch to car …`, `[camera] ok|failed: …`).
 - **Schutz:** nichts tun, wenn der Zuschauer selbst fährt (Regel §4.1), iRacing nicht läuft oder die lokale `sessionId` nicht zur Team-Session passt.
 - **Knopf „Zurück zu …“** erscheint, solange `CamCarIdx` ≠ Team-`carIdx`.
 - **Klickbar im click-through-Overlay:** Seite meldet Zeiger über Knopf (`overlay:interactive`) → Fenster nimmt nur dann Maus-Eingaben an; bleibt nicht fokussierbar (iRacing behält den Fokus).

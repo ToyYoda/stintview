@@ -10,6 +10,11 @@ export const MAX_AHEAD_M = 3000;
 /** Slower than this on track counts as "involved" (stopped, spun, crawling back). */
 export const SLOW_MPS = 30 / 3.6;
 const PREFERRED_GROUP = /^far chase$/i;
+/** iRacing must show the target car within this time, else the switch counts as refused. */
+export const VERIFY_MS = 1500;
+export const NOT_ACCEPTED =
+  'iRacing hat den Kamerawechsel nicht angenommen. Läuft iRacing als Administrator? Dann blockiert Windows ' +
+  'die Steuerung – iRacing normal starten oder StintView ebenfalls als Administrator starten.';
 
 export interface CarSnapshot {
   pct: number;
@@ -156,7 +161,15 @@ export class Spectator {
   private inCar = false;
   private connected = false;
 
-  constructor(private readonly report: (m: CameraState) => void) {}
+  /** A sent camera switch waiting for iRacing to show the expected car. */
+  private pending: { expectIdx: number; text: string; deadline: number } | null = null;
+
+  constructor(
+    private readonly report: (m: CameraState | CameraResult) => void,
+    private readonly switchTo: (carNumber: number, group: number, camera: number) => void = switchCamera,
+    private readonly log: (line: string) => void = () => {},
+    private readonly clock: () => number = Date.now,
+  ) {}
 
   onSessionInfo(text: string) {
     this.session = parseSessionCars(text);
@@ -174,9 +187,45 @@ export class Spectator {
     this.cam = { idx: f.num('CamCarIdx'), group: f.num('CamGroupNumber'), camera: f.num('CamCameraNumber') };
     this.cars.update(f);
     this.publish();
+    this.verify();
   }
 
-  command(cmd: CameraCommand): CameraResult {
+  /**
+   * Handles a camera command. Refusals are reported at once; a sent switch is only reported
+   * as done once iRacing's camera (CamCarIdx) actually shows the car – the broadcast message
+   * itself gives no feedback, and Windows silently drops it when iRacing runs elevated.
+   */
+  command(cmd: CameraCommand) {
+    const result = this.execute(cmd);
+    if (result) this.finish(result);
+  }
+
+  private finish(result: CameraResult) {
+    this.log(`[camera] ${result.ok ? 'ok' : 'failed'}: ${result.text}`);
+    this.report(result);
+  }
+
+  /** Reports the pending switch once the camera is there, or as refused after VERIFY_MS. */
+  private verify() {
+    const p = this.pending;
+    if (!p) return;
+    if (this.cam.idx === p.expectIdx) {
+      this.pending = null;
+      this.finish({ t: 'camera-result', ok: true, text: p.text });
+    } else if (this.clock() > p.deadline) {
+      this.pending = null;
+      this.finish({ t: 'camera-result', ok: false, text: NOT_ACCEPTED });
+    }
+  }
+
+  private send(carIdx: number, carNumber: number, group: number, camera: number, text: string): null {
+    this.switchTo(carNumber, group, camera);
+    this.pending = { expectIdx: carIdx, text, deadline: this.clock() + VERIFY_MS };
+    this.log(`[camera] switch to car ${carIdx} (#${carNumber}), group ${group}, camera ${camera}`);
+    return null;
+  }
+
+  private execute(cmd: CameraCommand): CameraResult | null {
     if (!this.connected) return { t: 'camera-result', ok: false, text: 'iRacing läuft nicht' };
     if (this.inCar) return { t: 'camera-result', ok: false, text: 'Du fährst gerade – Kamera wird nicht umgeschaltet' };
     if (cmd.team.sessionId !== this.session.sessionId) {
@@ -186,26 +235,25 @@ export class Spectator {
       const group = this.before?.group ?? this.cam.group;
       const camera = this.before?.camera ?? this.cam.camera;
       this.before = null;
-      switchCamera(cmd.team.carNumber, group, camera);
-      return { t: 'camera-result', ok: true, text: 'Kamera zurück beim Team-Auto' };
+      return this.send(cmd.team.carIdx, cmd.team.carNumber, group, camera, 'Kamera zurück beim Team-Auto');
     }
 
     if (this.cam.idx === cmd.team.carIdx || !this.before) this.before = { group: this.cam.group, camera: this.cam.camera };
     // The driver's recorder already named the car ("Unfall voraus"): go straight there.
     const target = cmd.targetCarIdx !== undefined ? this.session.drivers.get(cmd.targetCarIdx) : undefined;
     if (target && target.number >= 0) {
-      switchCamera(target.number, this.session.farChaseGroup, 0);
-      return { t: 'camera-result', ok: true, text: `#${target.number} ${target.name}` };
+      return this.send(cmd.targetCarIdx!, target.number, this.session.farChaseGroup, 0, `#${target.number} ${target.name}`);
     }
     const hit = this.cars.find(cmd.team.carIdx, this.session.trackLength);
     if (hit) {
       const d = this.session.drivers.get(hit.carIdx);
-      switchCamera(d?.number ?? -1, this.session.farChaseGroup, 0);
       const what = hit.reason === 'offtrack' ? 'neben der Strecke' : 'steht/langsam';
-      return { t: 'camera-result', ok: true, text: `#${d?.number ?? '?'} ${d?.name ?? ''} – ${what}, ${Math.round(hit.distanceAhead)} m voraus` };
+      return this.send(hit.carIdx, d?.number ?? -1, this.session.farChaseGroup, 0,
+        `#${d?.number ?? '?'} ${d?.name ?? ''} – ${what}, ${Math.round(hit.distanceAhead)} m voraus`);
     }
     // Nothing found near the team car: fall back to iRacing's own incident focus.
-    switchCamera(CamFocus.AtIncident, this.session.farChaseGroup, 0);
+    // iRacing picks the car itself here, so there is nothing to verify against.
+    this.switchTo(CamFocus.AtIncident, this.session.farChaseGroup, 0);
     return { t: 'camera-result', ok: true, text: 'Kein stehendes Auto vor deinem Fahrer gefunden – iRacing zeigt den letzten Unfall' };
   }
 

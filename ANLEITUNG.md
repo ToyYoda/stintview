@@ -115,6 +115,7 @@ StintView aktualisiert sich selbst. Liegt ein Update bereit, steht im Menü **�
 | Overlay am Monitor unsichtbar | iRacing auf randloses Fenster stellen. |
 | Strg+Umschalt+O verschiebt nichts (bei AMD öffnet sich stattdessen deren Leistungs-Overlay) | Das Kürzel gehört einem anderen Programm. Das aktive StintView-Kürzel steht im Fenster – oder den Knopf **Anzeigen verschieben** nutzen. |
 | VR: **wartet auf SteamVR** | SteamVR starten – StintView verbindet sich dann automatisch. |
+| „iRacing hat den Kamerawechsel nicht angenommen“ | iRacing läuft vermutlich **als Administrator** – dann blockiert Windows die Kamera-Steuerung. iRacing normal starten (Verknüpfung → Eigenschaften → Kompatibilität → Haken bei „Als Administrator ausführen“ entfernen) oder StintView ebenfalls als Administrator starten. |
 | Das StintView-Symbol fehlt | StintView über das Startmenü starten. |
 
 Bei anderen Problemen: im Menü **Protokolle öffnen** und die Dateien `recorder.log` bzw. `server.log` an den Teamchef schicken.
