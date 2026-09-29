@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import type { AppState } from '../feed.ts';
+import type { AppState, HotkeyGroup } from '../feed.ts';
 import './setup.css';
 
 const api = () => window.stintview!;
@@ -129,8 +129,12 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
   const set = async (patch: Partial<AppState['settings']>) => onState(await api().updateSettings(patch));
   const serverDot = status.server === 'connected' || status.server === 'standby' ? 'ok' : status.server === 'error' ? 'bad' : 'warn';
 
+  // Opened via "Tastaturkürzel …" in the tray menu: the overview comes first.
+  const keysFirst = location.hash.endsWith('/keys');
+
   return (
     <>
+      {keysFirst && <HotkeyCard groups={state.hotkeys} />}
       {state.update.phase === 'ready' && (
         <section className="card update-ready">
           <h2>Update bereit</h2>
@@ -165,7 +169,8 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
         <PanelTable panels={settings.panels} onChange={(panels) => set({ panels })} />
         <p className="hint cam-keys">
           Als Zuschauer bei Gelb für deinen Fahrer: <b>{state.cameraHotkeys.incident ?? '–'}</b> springt mit der Kamera zum Unfall vor ihm,{' '}
-          <b>{state.cameraHotkeys.back ?? '–'}</b> zurück zu ihm. Am Monitor gibt es dafür auch Knöpfe in der Kopfzeile.
+          <b>{state.cameraHotkeys.back ?? '–'}</b> zurück zu ihm. Am Monitor gibt es dafür auch Knöpfe in der Kopfzeile.{' '}
+          <a href="#keys" onClick={(e) => { e.preventDefault(); document.getElementById('keys')?.scrollIntoView({ behavior: 'smooth' }); }}>Alle Tastaturkürzel</a>
         </p>
       </section>
 
@@ -182,6 +187,8 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
         <button className="btn ghost" onClick={async () => onState(await api().leave())}>Team verlassen …</button>
       </section>
 
+      {!keysFirst && <HotkeyCard groups={state.hotkeys} />}
+
       <p className="foot">
         Version {state.version}
         {state.update.phase !== 'unavailable' && state.update.phase !== 'ready' && (
@@ -197,6 +204,36 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
         Du kannst dieses Fenster schließen – StintView läuft im Infobereich der Taskleiste weiter.
       </p>
     </>
+  );
+}
+
+/** All global hotkeys with the key each function actually got ("Tastaturkürzel" in the tray menu). */
+function HotkeyCard({ groups }: { groups: HotkeyGroup[] }) {
+  return (
+    <section className="card" id="keys">
+      <h2>Tastaturkürzel</h2>
+      <p className="hint">Gelten überall, auch während iRacing im Vordergrund ist. Ist ein Kürzel schon von einem anderen Programm belegt, nimmt StintView das nächste freie.</p>
+      {groups.map((g) => (
+        <div key={g.title} className="keys-group">
+          <h3>{g.title}</h3>
+          {g.note && <p className="hint">{g.note}</p>}
+          <table className="keys">
+            <tbody>
+              {g.items.map((k) => (
+                <tr key={k.label} className={k.active ? '' : 'inactive'}>
+                  <td>{k.label}</td>
+                  <td className="keys-key">
+                    {k.key ? <kbd>{k.key}</kbd> : <span className="bad">belegt – bitte Knopf nutzen</span>}
+                    {k.taken.length > 0 && <small>belegt von anderem Programm: {k.taken.join(' / ')}</small>}
+                    {k.alternatives.length > 0 && <small>Ausweich: {k.alternatives.join(' / ')}</small>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ))}
+    </section>
   );
 }
 

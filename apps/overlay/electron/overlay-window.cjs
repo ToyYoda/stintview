@@ -92,7 +92,9 @@ const setEditMode = (on) => setEdit(Boolean(on));
 const overlayRunning = () => win !== null;
 const editHotkey = () => displayHotkey(hotkey);
 const editing = () => edit;
+/** For the hotkey overview: registered key (null if none/not running) and the candidates. */
+const editHotkeyInfo = () => ({ key: hotkey, candidates: EDIT_HOTKEYS });
 
 module.exports = {
-  startOverlay, stopOverlay, toggleEdit, setEditMode, overlayRunning, editHotkey, editing, onOverlayChange, setOverlayPanels,
+  startOverlay, stopOverlay, toggleEdit, setEditMode, overlayRunning, editHotkey, editHotkeyInfo, editing, onOverlayChange, setOverlayPanels,
 };

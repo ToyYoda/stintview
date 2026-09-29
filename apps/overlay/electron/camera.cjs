@@ -59,7 +59,11 @@ function onRecorderMessage(m) {
   if (m.t === 'camera-state' || m.t === 'camera-result') broadcast('camera', m);
 }
 
+/** For the hotkey overview: registered keys (raw accelerators) and the candidates. */
+const cameraHotkeyInfo = () => ({ keys: { ...keys }, candidates: HOTKEYS });
+
 module.exports = {
+  cameraHotkeyInfo,
   startCamera,
   stopCamera,
   onRecorderMessage,

@@ -244,6 +244,21 @@ function adjust(fn) {
 }
 
 const STEP = 0.02;
+const HOTKEY_LABELS = {
+  'Control+Shift+V': 'Nächstes Panel auswählen',
+  'Control+Shift+Left': 'Panel nach links',
+  'Control+Shift+Right': 'Panel nach rechts',
+  'Control+Shift+Up': 'Panel nach oben',
+  'Control+Shift+Down': 'Panel nach unten',
+  'Control+Shift+PageUp': 'Panel weiter weg',
+  'Control+Shift+PageDown': 'Panel näher heran',
+  'Control+Shift+Plus': 'Panel größer',
+  'Control+Shift+-': 'Panel kleiner',
+  'Control+Shift+H': 'Alle Panels aus-/einblenden',
+};
+/** Keys another program already holds (registration failed). */
+const failedHotkeys = new Set();
+
 const HOTKEYS = {
   'Control+Shift+V': () => { selected = (selected + 1) % ids.length; highlight(ids[selected]); },
   'Control+Shift+Left': () => adjust((p) => { p.right -= STEP; }),
@@ -281,7 +296,11 @@ async function startVr(changed = () => {}, panelIds = null) {
     if (!running) return; // stopped while starting
   }
   for (const [key, fn] of Object.entries(HOTKEYS)) {
-    if (!globalShortcut.register(key, fn)) log(`hotkey ${key} unavailable`);
+    failedHotkeys.delete(key);
+    if (!globalShortcut.register(key, fn)) {
+      failedHotkeys.add(key);
+      log(`hotkey ${key} unavailable`);
+    }
   }
   connectVr();
   retryTimer = setInterval(connectVr, RETRY_MS);
@@ -309,4 +328,10 @@ function stopVr() {
 
 const vrStatus = () => (!running ? 'off' : vr ? 'connected' : 'waiting');
 
-module.exports = { startVr, stopVr, vrStatus };
+/** For the hotkey overview. */
+const vrHotkeyInfo = () => ({
+  running,
+  keys: Object.keys(HOTKEYS).map((key) => ({ key, label: HOTKEY_LABELS[key] ?? key, ok: !failedHotkeys.has(key) })),
+});
+
+module.exports = { startVr, stopVr, vrStatus, vrHotkeyInfo };

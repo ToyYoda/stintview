@@ -99,3 +99,13 @@ body.setup-body #root { height: auto; }
 .setup .toggle input:focus-visible + .knob { outline: 2px solid var(--o-red-hi); outline-offset: 2px; }
 .setup .toggle .label { display: flex; flex-direction: column; font-weight: 600; }
 .setup .toggle .label small { font-weight: 400; }
+
+/* Hotkey overview */
+.keys-group h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted, #8a93a0); margin: 14px 0 4px; }
+.keys { width: 100%; border-collapse: collapse; font-size: 13px; }
+.keys td { padding: 4px 0; border-top: 1px solid rgba(255, 255, 255, 0.06); vertical-align: top; }
+.keys-key { text-align: right; white-space: nowrap; }
+.keys-key small { display: block; font-size: 11px; opacity: 0.6; }
+.keys kbd { font-family: ui-monospace, Consolas, monospace; font-size: 12px; background: #222; border: 1px solid #444; border-bottom-width: 2px; border-radius: 4px; padding: 1px 6px; }
+.keys tr.inactive td { opacity: 0.55; }
+.keys .bad { color: #ff4d4d; }

@@ -8,6 +8,15 @@ import {
 export interface LocalConfig { serverUrl: string; token: string; teamName: string; memberName: string }
 
 /** Desktop app state, see electron/app.cjs appState(). */
+export interface HotkeyGroup {
+  title: string;
+  /** Why the group is inactive right now, null if active. */
+  note: string | null;
+  /** key: the key this function got (null = all candidates taken by other programs). */
+  /** taken: preferred keys another program holds; alternatives: spares if this one gets taken. */
+  items: { label: string; key: string | null; taken: string[]; alternatives: string[]; active: boolean }[];
+}
+
 export interface AppState {
   version: string;
   configured: boolean;
@@ -30,6 +39,7 @@ export interface AppState {
   };
   autostartAvailable: boolean;
   cameraHotkeys: { incident: string | null; back: string | null };
+  hotkeys: HotkeyGroup[];
   update: {
     phase: 'unavailable' | 'idle' | 'checking' | 'downloading' | 'ready' | 'latest' | 'error';
     version: string;

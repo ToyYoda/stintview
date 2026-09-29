@@ -21,6 +21,7 @@ Jedes Teammitglied fährt an seinem eigenen PC. Alle sollen die Daten des Teamko
 | A9 | Download-Website mit Beschreibung und Anleitung, Design von Outcast Endurance, **Deutsch und Englisch**. | umgesetzt (GitHub Pages) |
 | A11 | **Wetter** (GitHub-Issue #1): aktuelle Werte (Luft-/Streckentemperatur, Niederschlag, Wolken, Streckenzustand) und eine Liste der **Änderungen** statt iRacings 15-Minuten-Raster. **Vorhersage** gewünscht, aber über die Telemetrie nicht verfügbar (§5) – Issue bleibt dafür offen. | aktuell + Verlauf umgesetzt |
 | A12 | Jede Anzeige einzeln wählbar, getrennt für Monitor und VR. | umgesetzt |
+| A14 | **Übersicht aller Tastaturkürzel** im Einrichtungsfenster (Tray-Menü „Tastaturkürzel …“ öffnet `#/setup/keys`, Übersicht dann oben): tatsächlich registriertes Kürzel je Funktion, von anderen Programmen belegte Wunsch-Kürzel, Ausweich-Kürzel, inaktive Gruppen (Overlay/VR aus) ausgegraut. | umgesetzt |
 | A13 | **Position:** P1–3 und je 3 Autos vor/hinter dem Team-Auto, Reihenfolge **auf der Strecke** (nicht iRacings Runden-Position); Spalten Position, Startnummer, Länderflagge + Name, Abstand in s (+ vor uns, ganze Runden als „R“; Farben: <1 s vor uns gelb, <1 s hinter uns rot, 1–3 s normal, >3 s grau, andere Runde blau), Reifenalter in Runden (eigenes Auto exakt über `xxodometer`/Streckenlänge, andere = Runden seit Verlassen der Boxengasse, „Box“ in der Boxengasse), Δ letzte Runde (unsere − seine; rot = wir langsamer, sonst grün). | umgesetzt |
 | A10 | **Live-Zuschauer:** Bekommt der Fahrer Gelb (Unfall voraus), kann ein zuschauender Teamkollege per Knopf die Kamera in seinem iRacing zum Unfall-Auto springen lassen (Verfolgerkamera „Far Chase“) und per Knopf zurück zum Team-Auto. Absprache mit dem Fahrer über Discord (außerhalb von StintView). In VR per Tastenkürzel (Maus kann SteamVR-Panels nicht treffen). | umgesetzt, live noch ungetestet (§7a) |
 
@@ -60,6 +61,7 @@ Eine einzige Electron-App auf jedem PC. Recorder läuft immer; Monitor-Overlay, 
 | `app.cjs` | Einstieg: Einzelinstanz, Tray-Menü, Einrichtungsfenster `#/setup`, Hintergrundprozesse überwachen/neu starten (5 s), Autostart (`--hidden`), Auto-Update, IPC |
 | `config.cjs` | `%APPDATA%\StintView`: `config.json` (Team-Zugang), `app.json` (Einstellungen), `logs/`; Beitreten/Anlegen per HTTP |
 | `overlay-window.cjs` | Monitor-Overlay: transparentes Vollbildfenster, `alwaysOnTop('screen-saver')`, click-through; Bearbeiten-Modus |
+| `hotkeys.cjs` | Übersicht der globalen Tastaturkürzel (`hotkeyGroups`) aus `editHotkeyInfo` (overlay-window), `cameraHotkeyInfo` (camera), `vrHotkeyInfo` (vr); Anzeige „Strg/Umschalt/Bild↑“ |
 | `vr.cjs` | VR-Host: Widgets offscreen rendern → D3D11-Texturen → SteamVR-Overlays; Platzierungs-Tastenkürzel |
 | `openvr.cjs`, `d3d11.cjs` | FFI-Bindings per **koffi** (kein nativer Build) |
 | `renderer.cjs`, `preload.cjs` | UI-Routen laden; `window.stintview`-API |

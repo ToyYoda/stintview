@@ -53,6 +53,7 @@ Schalter **Overlay am Monitor** (standardmäßig an). In iRacing unter Grafikopt
 
 - **Zum Unfall / Zurück:** stehen als feste Knöpfe oben in der Kopfzeile; „Zurück“ ist grau, solange die Kamera bei deinem Fahrer ist. Nach einem Klick zeigt der Knopf „…“, bis iRacing den Wechsel bestätigt.
 - **Anzeigen verschieben:** Knopf **Anzeigen verschieben** im StintView-Fenster (oder im Menü), dann die Anzeigen mit der Maus ziehen und im gelben Banner oben auf **Fertig** klicken.
+- **Alle Tastaturkürzel:** Rechtsklick auf das StintView-Symbol → **Tastaturkürzel …** (oder unten im StintView-Fenster). Dort steht, welches Kürzel StintView auf deinem PC tatsächlich bekommen hat – ist eines von einem anderen Programm belegt (z. B. AMD Radeon Software), nimmt StintView automatisch ein Ausweich-Kürzel.
 - Schneller per Tastenkürzel: **Strg+Umschalt+O**. Ist das schon von einem anderen Programm belegt (z. B. AMD Radeon Software), nimmt StintView **Strg+Alt+O** oder **Strg+Umschalt+F9** – welches aktiv ist, steht im StintView-Fenster.
 - Außerhalb des Bearbeiten-Modus gehen alle Klicks durch das Overlay zu iRacing.
 

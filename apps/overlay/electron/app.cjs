@@ -7,11 +7,12 @@ const {
   cleanPanels, clearConfig, configPath, dataDir, loadConfig, loadSettings, logDir, normalizeUrl, panelsFor, register, saveSettings,
 } = require('./config.cjs');
 const {
-  editHotkey, editing, onOverlayChange, overlayRunning, setEditMode, setOverlayPanels, startOverlay, stopOverlay, toggleEdit,
+  editHotkey, editing, onOverlayChange, overlayRunning, editHotkeyInfo, setEditMode, setOverlayPanels, startOverlay, stopOverlay, toggleEdit,
 } = require('./overlay-window.cjs');
 const { PRELOAD, loadRoute } = require('./renderer.cjs');
-const { cameraCommand, cameraInfo, onRecorderMessage, setHazardCar, setTeamCar, startCamera, stopCamera } = require('./camera.cjs');
-const { startVr, stopVr, vrStatus } = require('./vr.cjs');
+const { cameraCommand, cameraHotkeyInfo, cameraInfo, onRecorderMessage, setHazardCar, setTeamCar, startCamera, stopCamera } = require('./camera.cjs');
+const { startVr, stopVr, vrHotkeyInfo, vrStatus } = require('./vr.cjs');
+const { hotkeyGroups } = require('./hotkeys.cjs');
 const { checkNow, installNow, setupUpdates, updateInfo, updateLabel } = require('./updates.cjs');
 
 const BUNDLES = path.join(__dirname, '..', 'dist-bundles');
@@ -206,7 +207,8 @@ function buildMenu() {
       type: 'checkbox', checked: settings.vr, enabled: configured, click: (i) => updateSettings({ vr: i.checked }),
     },
     { type: 'separator' },
-    { label: 'Einstellungen …', click: openSetup },
+    { label: 'Einstellungen …', click: () => openSetup() },
+    { label: 'Tastaturkürzel …', click: () => openSetup('/setup/keys') },
     { label: 'Mit Windows starten', type: 'checkbox', checked: settings.autostart, enabled: app.isPackaged, click: (i) => updateSettings({ autostart: i.checked }) },
     { label: `Team-Server auf diesem PC (Port ${settings.serverPort})`, type: 'checkbox', checked: settings.server, click: (i) => updateSettings({ server: i.checked }) },
     { label: 'Protokolle öffnen', click: () => shell.openPath(logDir) },
@@ -221,8 +223,10 @@ function updateMenuItem() {
   return { label: updateLabel(), enabled: u.phase !== 'unavailable' && u.phase !== 'checking' && u.phase !== 'downloading', click: checkNow };
 }
 
-function openSetup() {
+/** `route` '/setup/keys' opens the window scrolled to the hotkey overview. */
+function openSetup(route = '/setup') {
   if (setupWin && !setupWin.isDestroyed()) {
+    if (route !== '/setup') loadRoute(setupWin, route);
     setupWin.show();
     setupWin.focus();
     return;
@@ -239,7 +243,7 @@ function openSetup() {
     webPreferences: { preload: PRELOAD, contextIsolation: true, sandbox: true },
   });
   setupWin.on('closed', () => { setupWin = null; });
-  loadRoute(setupWin, '/setup');
+  loadRoute(setupWin, route);
 }
 
 function appState() {
@@ -252,6 +256,10 @@ function appState() {
     status: { ...status, line: statusLine(), vr: vrStatus(), overlay: overlayRunning(), editing: editing(), editHotkey: editHotkey() },
     autostartAvailable: app.isPackaged,
     cameraHotkeys: cameraInfo().hotkeys,
+    hotkeys: (() => {
+      const cam = cameraHotkeyInfo();
+      return hotkeyGroups(editHotkeyInfo(), cam.keys, cam.candidates, vrHotkeyInfo(), { overlay: overlayRunning() });
+    })(),
     update: { ...updateInfo(), label: updateLabel() },
   };
 }
