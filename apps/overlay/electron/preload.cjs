@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('stintview', {
   setEditMode: (on) => ipcRenderer.invoke('app:edit', on),
   // Clickable buttons in the otherwise click-through overlay
   setInteractive: (on) => ipcRenderer.send('overlay:interactive', on),
+  onPanels: (cb) => ipcRenderer.on('panels', (_e, ids) => cb(ids)),
   // Spectator camera
   setTeamCar: (team) => ipcRenderer.send('app:team-car', team),
   camera: (action) => ipcRenderer.invoke('app:camera', action),

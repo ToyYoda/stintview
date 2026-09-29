@@ -1,5 +1,5 @@
 import type {
-  ActiveDriver, Fuel, FuelLap, ServerMessage, SessionInfo, Snapshot, Telemetry, Tyres,
+  ActiveDriver, Fuel, FuelLap, ServerMessage, SessionInfo, Snapshot, Telemetry, Tyres, WeatherEvent,
 } from '@stintview/protocol';
 
 export interface Peer {
@@ -36,6 +36,7 @@ export class Room {
   private fuelLaps = new Map<number, FuelLap>();
   private tankCapacity = 0;
   private tyreMeasurements: Tyres['measurements'] = [];
+  private weatherEvents: WeatherEvent[] = [];
   private sessionKey: string | null = null;
   /** iRacing session of the most recent active driver, and when it last sent data. */
   private raceSession: string | null = null;
@@ -114,6 +115,14 @@ export class Room {
         this.tyreMeasurements = [...byTime.values()].sort((a, b) => a.sessionTime - b.sessionTime).slice(-20);
         return { t: 'tyres', measurements: this.tyreMeasurements };
       }
+      case 'weather': {
+        // Each driver's recorder only knows the changes it saw; keep the team's whole list.
+        const key = (e: WeatherEvent) => `${e.sessionTime}|${e.kind}`;
+        const byKey = new Map(this.weatherEvents.map((e) => [key(e), e]));
+        for (const e of msg.events) byKey.set(key(e), e);
+        this.weatherEvents = [...byKey.values()].sort((a, b) => a.sessionTime - b.sessionTime).slice(-30);
+        return { t: 'weather', now: msg.now, events: this.weatherEvents };
+      }
       default: return msg;
     }
   }
@@ -129,6 +138,7 @@ export class Room {
   private clearHistory() {
     this.fuelLaps.clear();
     this.tyreMeasurements = [];
+    this.weatherEvents = [];
     this.latest.clear();
   }
 

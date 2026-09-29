@@ -89,6 +89,9 @@ Meta Quest per Link/Air Link ohne SteamVR wird noch nicht unterstützt.
 - **Eingaben:** Lenkrad, Gas (grün), Bremse (rot) live und als Verlauf der letzten 5 Sekunden.
 - **Sprit:** Tankinhalt, Runden übrig, Verbrauch letzte Runde / Ø 3 / Ø 5 Runden. Graue Balken = Runden mit Boxenstopp (zählen nicht zum Durchschnitt).
 - **Reifen:** iRacing misst Temperatur und Verschleiß **nur beim Boxenstopp**. Angezeigt werden die Messung vom letzten Stopp und eine Schätzung, wie viel Profil jetzt noch übrig ist.
+- **Wetter:** Luft- und Streckentemperatur (mit Trendpfeil über ~10 min), Wolken, Niederschlag, Streckenzustand und ob Regenreifen freigegeben sind – darunter die **Änderungen** im Rennen mit Uhrzeit (z. B. „13:29 Wolken: bedeckt → stark bewölkt“). Eine Vorhersage gibt iRacing an StintView nicht heraus.
+
+Welche Anzeigen am Monitor und welche in VR erscheinen, stellst du im StintView-Fenster unter **Anzeigen** ein (je ein Häkchen für Monitor und VR).
 
 ---
 

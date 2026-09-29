@@ -155,6 +155,7 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
           </div>
         )}
         <Toggle checked={settings.vr} onChange={(v) => set({ vr: v })} label="VR-Overlay (SteamVR)" hint="Panels in der Brille. Strg+Umschalt+V wählt, Pfeiltasten verschieben." />
+        <PanelTable panels={settings.panels} onChange={(panels) => set({ panels })} />
         <p className="hint cam-keys">
           Als Zuschauer bei Gelb für deinen Fahrer: <b>{state.cameraHotkeys.incident ?? '–'}</b> springt mit der Kamera zum Unfall vor ihm,{' '}
           <b>{state.cameraHotkeys.back ?? '–'}</b> zurück zu ihm. Am Monitor gibt es dafür auch Knöpfe in der Kopfzeile.
@@ -176,6 +177,41 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
 
       <p className="foot">Du kannst dieses Fenster schließen – StintView läuft im Infobereich der Taskleiste weiter.</p>
     </>
+  );
+}
+
+const PANEL_NAMES: [string, string][] = [
+  ['header', 'Kopfzeile (Fahrer, Gelb-Knopf)'],
+  ['inputs', 'Eingaben (Lenkung, Gas, Bremse)'],
+  ['fuel', 'Sprit'],
+  ['tyres', 'Reifen'],
+  ['weather', 'Wetter'],
+];
+
+/** Which displays appear on the monitor overlay and as VR panels. */
+function PanelTable({ panels, onChange }: {
+  panels: AppState['settings']['panels'];
+  onChange(p: AppState['settings']['panels']): void;
+}) {
+  const toggle = (id: string, where: 'monitor' | 'vr') =>
+    onChange({ ...panels, [id]: { ...panels[id]!, [where]: !panels[id]?.[where] } });
+  return (
+    <table className="panels">
+      <thead><tr><th>Anzeige</th><th>Monitor</th><th>VR</th></tr></thead>
+      <tbody>
+        {PANEL_NAMES.map(([id, name]) => (
+          <tr key={id}>
+            <td>{name}</td>
+            {(['monitor', 'vr'] as const).map((where) => (
+              <td key={where}>
+                <input type="checkbox" aria-label={`${name} – ${where === 'vr' ? 'VR' : 'Monitor'}`}
+                  checked={Boolean(panels[id]?.[where])} onChange={() => toggle(id, where)} />
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 

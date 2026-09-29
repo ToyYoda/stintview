@@ -84,3 +84,14 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .temp.hot { background: color-mix(in srgb, var(--bad) 40%, transparent); }
 .wear { display: flex; justify-content: space-between; align-items: baseline; }
 .note { margin-top: 6px; }
+
+.weather { width: 300px; }
+.wx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin-bottom: 8px; }
+.wx-grid > div { display: flex; flex-direction: column; }
+.wx-grid i { font-style: normal; color: var(--accent); }
+.wx-wide { grid-column: 1 / -1; flex-direction: row !important; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.wx-wet { color: var(--cold); font-weight: 600; }
+.wx-badge { background: var(--cold); color: #000; font-weight: 700; font-size: 11px; padding: 1px 6px; border-radius: 3px; }
+.wx-events { border-top: 1px solid var(--border); padding-top: 6px; display: flex; flex-direction: column; gap: 3px; }
+.wx-event { display: flex; gap: 8px; font-size: 12px; }
+.wx-time { font-family: var(--mono); color: var(--muted); }

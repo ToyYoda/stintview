@@ -21,6 +21,7 @@ const DEFAULT_LAYOUT = {
     inputs: { enabled: true, distance: 0.8, down: 0.3, right: 0.0, width: 0.3 },
     fuel: { enabled: true, distance: 0.8, down: 0.3, right: -0.3, width: 0.2 },
     tyres: { enabled: true, distance: 0.8, down: 0.3, right: 0.3, width: 0.24 },
+    weather: { enabled: true, distance: 0.8, down: 0.08, right: 0.3, width: 0.22 },
   },
 };
 
@@ -265,12 +266,13 @@ const HOTKEYS = {
 // ---------------------------------------------------------------------------
 
 /** Starts rendering the panels and keeps (re)connecting to SteamVR while it runs. */
-async function startVr(changed = () => {}) {
+async function startVr(changed = () => {}, panelIds = null) {
   if (running) return;
   running = true;
   onChange = changed;
   layout = loadLayout();
-  ids = Object.keys(layout.panels).filter((id) => layout.panels[id].enabled);
+  // Which panels: chosen in the StintView window; vr.json "enabled" can still switch one off.
+  ids = Object.keys(layout.panels).filter((id) => layout.panels[id].enabled && (!panelIds || panelIds.includes(id)));
   selected = 0;
   d3d = new D3D11();
   for (const id of ids) {

@@ -1,6 +1,6 @@
 # StintView – Spezifikation
 
-Stand: 2026-09-29, Version 0.3.0. Diese Datei ist die maßgebliche Beschreibung von Zielen, Entscheidungen und Architektur.
+Stand: 2026-09-29, Version 0.4.0 (in Arbeit). Diese Datei ist die maßgebliche Beschreibung von Zielen, Entscheidungen und Architektur.
 `docs/konzept.md` ist das ursprüngliche Konzept (historisch; wo es abweicht, gilt diese Datei). Testplan für Team-Tests: [TESTPLAN.md](TESTPLAN.md).
 
 ## 1. Zweck und Anforderungen
@@ -19,6 +19,8 @@ Jedes Teammitglied fährt an seinem eigenen PC. Alle sollen die Daten des Teamko
 | A7 | Einfache Installation für Teammitglieder ohne Git/Node/Kommandozeile. | umgesetzt (Windows-Installer) |
 | A8 | Der Team-Server läuft beim Teamchef zu Hause (Portfreigabe im Router, kein Cloud-Hosting). | umgesetzt (Relay in der App) |
 | A9 | Download-Website mit Beschreibung und Anleitung, Design von Outcast Endurance, **Deutsch und Englisch**. | umgesetzt (GitHub Pages) |
+| A11 | **Wetter** (GitHub-Issue #1): aktuelle Werte (Luft-/Streckentemperatur, Niederschlag, Wolken, Streckenzustand) und eine Liste der **Änderungen** statt iRacings 15-Minuten-Raster. **Vorhersage** gewünscht, aber über die Telemetrie nicht verfügbar (§5) – Issue bleibt dafür offen. | aktuell + Verlauf umgesetzt |
+| A12 | Jede Anzeige einzeln wählbar, getrennt für Monitor und VR. | umgesetzt |
 | A10 | **Live-Zuschauer:** Bekommt der Fahrer Gelb (Unfall voraus), kann ein zuschauender Teamkollege per Knopf die Kamera in seinem iRacing zum Unfall-Auto springen lassen (Verfolgerkamera „Far Chase“) und per Knopf zurück zum Team-Auto. Absprache mit dem Fahrer über Discord (außerhalb von StintView). In VR per Tastenkürzel (Maus kann SteamVR-Panels nicht treffen). | umgesetzt, live noch ungetestet (§7a) |
 
 Sprache für Nutzer: Deutsch (App-Oberfläche nur Deutsch; Website und Anleitung de/en).
@@ -65,7 +67,7 @@ Recorder und Relay werden per esbuild (`scripts/bundle.mjs`) zu `dist-bundles/*.
 
 React-UI-Routen: `#/` alle Widgets (Monitor-Overlay), `#/widget/<header|inputs|fuel|tyres>` Einzel-Widget (VR, OpenKneeboard), `#/setup` Einrichtung/Status.
 
-Einstellungen `app.json` (Default): `overlay: true`, `vr: false`, `autostart: true`, `server: false`, `serverPort: 8787`.
+Einstellungen `app.json` (Default): `overlay: true`, `vr: false`, `autostart: true`, `server: false`, `serverPort: 8787`, `panels: { header|inputs|fuel|tyres|weather: { monitor, vr } }` (Wetter in VR standardmäßig aus). Geänderte VR-Auswahl startet den VR-Host neu; `vr.json` hält nur noch die Platzierung.
 
 ## 3. Protokoll (Version 3)
 
@@ -78,6 +80,7 @@ WebSocket-Pfad `/ws`, binäre Frames, MessagePack. Erste Nachricht des Clients: 
 | `status` | Recorder → Overlays | 2/s | `sessionTime`, `lap`, `lapDistPct`, `fuelLevel`, `onPitRoad`, `odometer` je Rad, `flags` (SessionFlags des Fahrers; v3) |
 | `fuel` | Recorder → Overlays | pro Runde | letzte Runden `{lap, used, lapTime, pit}`, `tankCapacity` |
 | `tyres` | Recorder → Overlays | bei Messung | Messungen `{lap, odometer, carcass L/M/R, wear L/M/R}` je Rad |
+| `weather` | Recorder → Overlays | alle 5 s + bei Änderung | `now` (Luft/Strecke °C + Trend, `skies` 0–3, `precipitation` 0–1, `wetness` 0–7, `declaredWet`, Tageszeit), `events` (Änderungen); ohne Versionssprung ergänzt (alte Clients ignorieren es, Server muss es kennen) |
 | `session` | Recorder → Overlays | bei Änderung | Strecke, Auto, Fahrer, Team, Session-Typ, `carIdx`, `carNumber` (CarNumberRaw), `sessionId` (v3) |
 | `active` | Server → Overlays | bei Wechsel | aktiver Fahrer (Name, Mitglied) |
 | `snapshot` | Server → Overlay | beim Verbinden | `active` + letzte Telemetrie |
@@ -114,6 +117,8 @@ Gemessen an `D:\iRacing\telemetry\porsche992rgt3_nurburgring combinedshortb 2026
 
 Folge für das Reifen-Widget: letzte Messung (Karkasse, Verschleiß) + km auf dem Satz + Verschleiß-Prognose (`(1 − Verschleiß) / km` der letzten Messung × aktuelle km). Keine Umgehungen (Hooks o. ä.) wegen Anti-Cheat.
 Fahrer-Name im Overlay kommt aus der iRacing-Session (`UserName`), nicht aus dem StintView-Mitgliedsnamen; Namen spielen für die Erkennung keine Rolle.
+
+**Wetter:** live verfügbar sind `AirTemp`, `TrackTempCrew`, `Skies` (0 klar … 3 bedeckt), `Precipitation` (0–1), `TrackWetness` (irsdk_TrackWetness 0–7), `WeatherDeclaredWet`, `SessionTimeOfDay` (auch in der `.ibt`). Eine **Vorhersage** steht weder in der Telemetrie noch in den Session-Infos (nur Wetter-Einstellungen wie „Realistic/Dynamic“); möglich wäre nur iRacings Web-Data-API mit iRacing-Login (nicht geprüft). Änderungen erkennt `WeatherTracker` (`packages/telemetry/src/weather.ts`, getestet): Kategorien müssen 30 s stabil sein, Temperatur-Ereignisse ab 2 °C (Luft) / 3 °C (Strecke), Trend über 10 min ab 1 °C. Der Server führt die Ereignisse über Fahrerwechsel zusammen.
 
 Sonstiges: Der Shared-Memory-Bereich existiert auch, wenn nur die iRacing-UI läuft, teils mit **eingefrorenem** letzten Frame → der Recorder gilt nach 2 s ohne neuen Tick als „iRacing nicht aktiv“.
 
@@ -181,6 +186,7 @@ Sonstiges: Der Shared-Memory-Bereich existiert auch, wenn nur die iRacing-UI lä
 2. Recorder mit **laufendem iRacing** in der App testen (neue `RtlMoveMemory`-Auslese nur ohne Sim geprüft); VR in der installierten App mit SteamVR testen.
 3. Erster Start auf einem PC ohne Node.js (Teamkollege); Firewall-Abfrage des Relays.
 4. Installationsordner `@stintviewoverlay` → `StintView` (electron-builder `extraMetadata.name`; Update-Verhalten vorher prüfen).
+4a. Wettervorhersage (Issue #1): prüfen, ob iRacings Data API eine Vorhersage für gehostete/offizielle Sessions liefert und wie ein Login dafür aussähe.
 5. Stint-Zusammenfassung nach dem Aussteigen aus der dann freigegebenen `.ibt` (Oberflächentemperaturen, Drücke je Runde) – im Konzept vorgesehen, nicht gebaut.
 6. App-Oberfläche/Overlay zweisprachig (derzeit nur Deutsch).
 7. TLS für das Relay; Code-Signing-Zertifikat (z. B. Azure Trusted Signing) gegen SmartScreen.

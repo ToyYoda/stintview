@@ -15,7 +15,16 @@ const DEFAULT_SETTINGS = {
   autostart: true, // start with Windows
   server: false, // run the team relay on this PC
   serverPort: 8787,
+  // Which displays show on the monitor overlay and as VR panels.
+  panels: {
+    header: { monitor: true, vr: true },
+    inputs: { monitor: true, vr: true },
+    fuel: { monitor: true, vr: true },
+    tyres: { monitor: true, vr: true },
+    weather: { monitor: true, vr: false },
+  },
 };
+const PANEL_IDS = Object.keys(DEFAULT_SETTINGS.panels);
 
 function readJson(file) {
   try {
@@ -35,7 +44,22 @@ const loadConfig = () => readJson(configPath());
 const saveConfig = (c) => writeJson(configPath(), c);
 const clearConfig = () => writeJson(configPath(), null);
 
-const loadSettings = () => ({ ...DEFAULT_SETTINGS, ...readJson(settingsPath) });
+function loadSettings() {
+  const saved = readJson(settingsPath) ?? {};
+  return { ...DEFAULT_SETTINGS, ...saved, panels: cleanPanels(saved.panels) };
+}
+
+/** Known panel ids only, each with boolean monitor/vr flags (defaults for missing ones). */
+function cleanPanels(p) {
+  const out = {};
+  for (const id of PANEL_IDS) {
+    const d = DEFAULT_SETTINGS.panels[id];
+    out[id] = { monitor: typeof p?.[id]?.monitor === 'boolean' ? p[id].monitor : d.monitor, vr: typeof p?.[id]?.vr === 'boolean' ? p[id].vr : d.vr };
+  }
+  return out;
+}
+
+const panelsFor = (settings, where) => PANEL_IDS.filter((id) => settings.panels[id]?.[where]);
 const saveSettings = (s) => writeJson(settingsPath, s);
 
 /** Joins or creates a team on the relay and stores the credentials. */
@@ -75,4 +99,5 @@ function normalizeUrl(input) {
 
 module.exports = {
   dataDir, logDir, configPath, loadConfig, saveConfig, clearConfig, loadSettings, saveSettings, register, normalizeUrl,
+  cleanPanels, panelsFor,
 };

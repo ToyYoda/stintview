@@ -117,7 +117,49 @@ export interface SessionInfo {
   sessionId: string;
 }
 
-export type Telemetry = Inputs | Status | Fuel | Tyres | SessionInfo;
+export type WeatherKind = 'skies' | 'precip' | 'wetness' | 'declaredWet' | 'airTemp' | 'trackTemp';
+
+/** A real change of the weather (not the 15-minute grid iRacing shows). */
+export interface WeatherEvent {
+  sessionTime: number;
+  /** In-sim time of day, seconds since midnight. */
+  timeOfDay: number;
+  kind: WeatherKind;
+  /** skies 0–3, precip level 0–3, wetness 0–7 (irsdk_TrackWetness), declaredWet 0/1, temperatures in °C */
+  from: number;
+  to: number;
+}
+
+export interface WeatherNow {
+  sessionTime: number;
+  timeOfDay: number;
+  airTemp: number;
+  trackTemp: number;
+  /** 0 clear, 1 partly cloudy, 2 mostly cloudy, 3 overcast */
+  skies: number;
+  /** 0..1 */
+  precipitation: number;
+  /** irsdk_TrackWetness: 0 unknown, 1 dry … 7 extremely wet */
+  wetness: number;
+  /** Stewards allow rain tyres. */
+  declaredWet: boolean;
+  /** −1 falling, 0 steady, 1 rising over ~10 min */
+  airTrend: number;
+  trackTrend: number;
+}
+
+/**
+ * Current weather and the changes seen so far, every few seconds.
+ * Added without a protocol version bump: older clients ignore it.
+ */
+export interface Weather {
+  t: 'weather';
+  now: WeatherNow;
+  /** Oldest first. */
+  events: WeatherEvent[];
+}
+
+export type Telemetry = Inputs | Status | Fuel | Tyres | SessionInfo | Weather;
 export type TelemetryType = Telemetry['t'];
 
 // ---------------------------------------------------------------------------
@@ -160,7 +202,7 @@ export interface Snapshot {
 export type ClientMessage = Hello | DrivingState | Telemetry;
 export type ServerMessage = Welcome | ErrorMsg | Standby | ActiveDriver | Snapshot | Telemetry;
 
-const TELEMETRY_TYPES = new Set<string>(['inputs', 'status', 'fuel', 'tyres', 'session']);
+const TELEMETRY_TYPES = new Set<string>(['inputs', 'status', 'fuel', 'tyres', 'session', 'weather']);
 
 export function isTelemetry(msg: { t: string }): msg is Telemetry {
   return TELEMETRY_TYPES.has(msg.t);

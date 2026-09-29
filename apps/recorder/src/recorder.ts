@@ -1,11 +1,13 @@
 import {
-  WHEELS, type ClientMessage, type Fuel, type SessionInfo, type Triple, type Tyres, type Wheel,
+  WHEELS, type ClientMessage, type Fuel, type SessionInfo, type Triple, type Tyres, type Weather, type Wheel,
 } from '@stintview/protocol';
-import { FuelTracker, InputBatcher, TyreTracker } from '@stintview/telemetry';
+import { FuelTracker, InputBatcher, TyreTracker, WeatherTracker } from '@stintview/telemetry';
 import type { Frame } from './irsdk/layout.ts';
 import { parseSession, type SessionMeta } from './session.ts';
 
 const STATUS_INTERVAL = 0.5; // seconds of session time
+const WEATHER_SAMPLE = 1; // weather changes slowly
+const WEATHER_INTERVAL = 5;
 /** Re-send the driving claim this often so the server can hand over after a driver change. */
 const CLAIM_INTERVAL = 2;
 /** IsOnTrack must stay false this long before we report leaving the car (blips on resets). */
@@ -25,6 +27,9 @@ export class Recorder {
   private fuel = new FuelTracker();
   private tyres = new TyreTracker();
   private inputs = new InputBatcher();
+  private weather = new WeatherTracker();
+  private lastWeatherSample = -Infinity;
+  private lastWeatherSent = -Infinity;
 
   constructor(private readonly emit: (msg: ClientMessage) => void) {}
 
@@ -83,6 +88,21 @@ export class Recorder {
       this.lastStatus = t;
       this.emit({ t: 'status', ...fuelSample, odometer, flags: f.num('SessionFlags') >>> 0 });
     }
+
+    if (t - this.lastWeatherSample >= WEATHER_SAMPLE || t < this.lastWeatherSample) {
+      this.lastWeatherSample = t;
+      const changed = this.weather.feed({
+        sessionTime: t, timeOfDay: f.num('SessionTimeOfDay'),
+        airTemp: f.num('AirTemp'), trackTemp: f.num('TrackTempCrew'),
+        skies: f.num('Skies'), precipitation: f.num('Precipitation'),
+        wetness: f.num('TrackWetness'), declaredWet: f.bool('WeatherDeclaredWet'),
+      }).length > 0;
+      if (changed || t - this.lastWeatherSent >= WEATHER_INTERVAL || t < this.lastWeatherSent) {
+        this.lastWeatherSent = t;
+        const msg = this.weatherMsg();
+        if (msg) this.emit(msg);
+      }
+    }
   }
 
   /** Full state for (re)connects and driver changes. */
@@ -92,6 +112,8 @@ export class Recorder {
       msgs.push(this.sessionMsg());
       if (this.fuel.laps.length) msgs.push(this.fuelMsg());
       if (this.tyres.measurements.length) msgs.push(this.tyresMsg());
+      const weather = this.weatherMsg();
+      if (weather) msgs.push(weather);
     }
     return msgs;
   }
@@ -124,6 +146,7 @@ export class Recorder {
   private resetTrackers() {
     this.fuel = new FuelTracker();
     this.tyres = new TyreTracker();
+    this.weather = new WeatherTracker();
     this.inputs.reset();
   }
 
@@ -140,6 +163,11 @@ export class Recorder {
 
   private fuelMsg(): Fuel {
     return { t: 'fuel', laps: this.fuel.laps.slice(-10), tankCapacity: this.meta?.tankCapacity ?? 0 };
+  }
+
+  private weatherMsg(): Weather | null {
+    const now = this.weather.current();
+    return now ? { t: 'weather', now, events: [...this.weather.events] } : null;
   }
 
   private tyresMsg(): Tyres {

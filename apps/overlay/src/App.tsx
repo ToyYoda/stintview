@@ -4,8 +4,9 @@ import { FuelWidget } from './widgets/FuelWidget.tsx';
 import { HeaderWidget } from './widgets/HeaderWidget.tsx';
 import { InputsWidget } from './widgets/InputsWidget.tsx';
 import { TyresWidget } from './widgets/TyresWidget.tsx';
+import { WeatherWidget } from './widgets/WeatherWidget.tsx';
 
-type WidgetId = 'header' | 'inputs' | 'fuel' | 'tyres';
+type WidgetId = 'header' | 'inputs' | 'fuel' | 'tyres' | 'weather';
 type Positions = Record<WidgetId, { x: number; y: number }>;
 
 const DEFAULT_POSITIONS: Positions = {
@@ -13,6 +14,7 @@ const DEFAULT_POSITIONS: Positions = {
   inputs: { x: 40, y: 100 },
   fuel: { x: 500, y: 100 },
   tyres: { x: 780, y: 100 },
+  weather: { x: 1100, y: 100 },
 };
 const STORAGE_KEY = 'stintview.positions';
 
@@ -35,6 +37,8 @@ export function App() {
   const [edit, setEdit] = useState(!window.stintview && !location.hash.startsWith('#/widget/'));
   const [positions, setPositions] = useState(loadPositions);
   const [hotkey, setHotkey] = useState<string | null>(null);
+  // Widgets chosen for the monitor overlay in the StintView window (null = all, e.g. in a browser).
+  const [shown, setShown] = useState<string[] | null>(null);
 
   useEffect(() => {
     const onHash = () => setRoute(location.hash);
@@ -43,6 +47,7 @@ export function App() {
       setEdit(on);
       setHotkey(key);
     });
+    window.stintview?.onPanels?.(setShown);
     return () => removeEventListener('hashchange', onHash);
   }, []);
 
@@ -52,6 +57,7 @@ export function App() {
     inputs: <InputsWidget inputs={inputs} />,
     fuel: <FuelWidget fuel={state.fuel} status={state.status} />,
     tyres: <TyresWidget tyres={state.tyres} status={state.status} />,
+    weather: <WeatherWidget weather={state.weather} />,
   };
 
   const single = /^#\/widget\/(\w+)/.exec(route)?.[1] as WidgetId | undefined;
@@ -72,7 +78,7 @@ export function App() {
           <button type="button" onClick={() => window.stintview?.setEditMode(false)}>Fertig</button>
         </div>
       )}
-      {(Object.keys(widgets) as WidgetId[]).map((id) => (
+      {(Object.keys(widgets) as WidgetId[]).filter((id) => !shown || shown.includes(id)).map((id) => (
         <Draggable key={id} pos={positions[id]} enabled={edit} onMove={(x, y) => move(id, x, y)}>
           {widgets[id]}
         </Draggable>

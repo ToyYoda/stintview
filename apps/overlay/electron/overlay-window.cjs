@@ -10,6 +10,7 @@ let win = null;
 let edit = false;
 let hotkey = null;
 let notify = () => {};
+let panels = null; // widget ids to show, null = all
 
 /** Called whenever edit mode or the overlay changes (tray menu, setup window). */
 const onOverlayChange = (fn) => { notify = fn; };
@@ -61,8 +62,11 @@ function startOverlay() {
   win.setAlwaysOnTop(true, 'screen-saver');
   win.setVisibleOnAllWorkspaces(true);
   win.on('closed', () => { win = null; });
-  // Re-send the mode once the page can receive it.
-  win.webContents.on('did-finish-load', () => setEdit(edit));
+  // Re-send the mode and the chosen widgets once the page can receive them.
+  win.webContents.on('did-finish-load', () => {
+    setEdit(edit);
+    if (panels) win.webContents.send('panels', panels);
+  });
   setEdit(false);
   loadRoute(win, '/');
   registerHotkey();
@@ -77,10 +81,18 @@ function stopOverlay() {
   win = null;
 }
 
+/** Widgets to show on the monitor overlay. */
+function setOverlayPanels(ids) {
+  panels = ids;
+  if (win) win.webContents.send('panels', ids);
+}
+
 const toggleEdit = () => setEdit(!edit);
 const setEditMode = (on) => setEdit(Boolean(on));
 const overlayRunning = () => win !== null;
 const editHotkey = () => displayHotkey(hotkey);
 const editing = () => edit;
 
-module.exports = { startOverlay, stopOverlay, toggleEdit, setEditMode, overlayRunning, editHotkey, editing, onOverlayChange };
+module.exports = {
+  startOverlay, stopOverlay, toggleEdit, setEditMode, overlayRunning, editHotkey, editing, onOverlayChange, setOverlayPanels,
+};

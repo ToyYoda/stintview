@@ -4,10 +4,10 @@ const { app, BrowserWindow, Menu, Tray, dialog, ipcMain, nativeImage, shell, uti
 const { createWriteStream, mkdirSync } = require('node:fs');
 const path = require('node:path');
 const {
-  clearConfig, configPath, dataDir, loadConfig, loadSettings, logDir, normalizeUrl, register, saveSettings,
+  cleanPanels, clearConfig, configPath, dataDir, loadConfig, loadSettings, logDir, normalizeUrl, panelsFor, register, saveSettings,
 } = require('./config.cjs');
 const {
-  editHotkey, editing, onOverlayChange, overlayRunning, setEditMode, startOverlay, stopOverlay, toggleEdit,
+  editHotkey, editing, onOverlayChange, overlayRunning, setEditMode, setOverlayPanels, startOverlay, stopOverlay, toggleEdit,
 } = require('./overlay-window.cjs');
 const { PRELOAD, loadRoute } = require('./renderer.cjs');
 const { cameraCommand, cameraInfo, onRecorderMessage, setTeamCar, startCamera, stopCamera } = require('./camera.cjs');
@@ -92,6 +92,7 @@ function supervise(name, file, args, env, onMessage) {
 
 let recorder = null;
 let relay = null;
+let runningVrPanels = '';
 
 function startRecorder() {
   recorder?.stop();
@@ -145,8 +146,17 @@ async function waitForRelay() {
 function applySettings() {
   const configured = Boolean(loadConfig());
   if (settings.server) startRelay(); else stopRelay();
+  setOverlayPanels(panelsFor(settings, 'monitor'));
   if (configured && settings.overlay) startOverlay(); else stopOverlay();
-  if (configured && settings.vr) startVr(refresh).catch((e) => console.error('[vr]', e)); else stopVr();
+  // VR panels are separate windows: restart the VR host when the selection changes.
+  const vrPanels = panelsFor(settings, 'vr');
+  if (configured && settings.vr) {
+    if (vrStatus() !== 'off' && vrPanels.join() !== runningVrPanels) stopVr();
+    runningVrPanels = vrPanels.join();
+    startVr(refresh, vrPanels).catch((e) => console.error('[vr]', e));
+  } else {
+    stopVr();
+  }
   if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: settings.autostart, args: ['--hidden'] });
   refresh();
 }
@@ -270,8 +280,10 @@ ipcMain.handle('app:create', async (_e, { serverUrl, teamName, memberName, hostH
 });
 
 ipcMain.handle('app:settings', (_e, patch) => {
-  const allowed = ['overlay', 'vr', 'autostart', 'server'];
-  updateSettings(Object.fromEntries(Object.entries(patch ?? {}).filter(([k]) => allowed.includes(k))));
+  const allowed = ['overlay', 'vr', 'autostart', 'server', 'panels'];
+  const clean = Object.fromEntries(Object.entries(patch ?? {}).filter(([k]) => allowed.includes(k)));
+  if (clean.panels) clean.panels = cleanPanels(clean.panels);
+  updateSettings(clean);
   return appState();
 });
 

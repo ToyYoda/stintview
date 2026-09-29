@@ -91,6 +91,9 @@ Meta Quest via Link/Air Link without SteamVR is not supported yet.
 - **Inputs:** steering wheel, throttle (green), brake (red) live and as a trace of the last 5 seconds.
 - **Fuel (Sprit):** fuel in the tank, laps remaining, fuel used last lap / avg of 3 / avg of 5 laps. Grey bars = laps with a pit stop (not included in the averages).
 - **Tyres (Reifen):** iRacing measures temperature and wear **only at a pit stop**. Shown are the measurement from the last stop and an estimate of how much tread is left now.
+- **Weather (Wetter):** air and track temperature (with a trend arrow over ~10 min), clouds, precipitation, track wetness and whether rain tyres are allowed – below that the **changes** during the race with time of day (e.g. "13:29 Wolken: bedeckt → stark bewölkt"). iRacing doesn't provide a forecast to StintView.
+
+Which displays appear on the monitor and which in VR is set in the StintView window under **Anzeigen** (one checkbox each for monitor and VR).
 
 ---
 

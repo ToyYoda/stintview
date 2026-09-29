@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   PROTOCOL_VERSION, pack, unpack,
   type ActiveDriver, type Fuel, type InputSample, type Inputs, type ServerMessage,
-  type SessionInfo, type Status, type Telemetry, type Tyres,
+  type SessionInfo, type Status, type Telemetry, type Tyres, type Weather,
 } from '@stintview/protocol';
 
 export interface LocalConfig { serverUrl: string; token: string; teamName: string; memberName: string }
@@ -12,7 +12,10 @@ export interface AppState {
   version: string;
   configured: boolean;
   team: { teamName: string; memberName: string; serverUrl: string; inviteCode: string } | null;
-  settings: { overlay: boolean; vr: boolean; autostart: boolean; server: boolean; serverPort: number };
+  settings: {
+    overlay: boolean; vr: boolean; autostart: boolean; server: boolean; serverPort: number;
+    panels: Record<string, { monitor: boolean; vr: boolean }>;
+  };
   status: {
     line: string;
     iracing: boolean;
@@ -37,6 +40,7 @@ declare global {
       onEditMode(cb: (edit: boolean, hotkey: string | null) => void): void;
       setEditMode(on?: boolean): Promise<AppState>;
       setInteractive(on: boolean): void;
+      onPanels?(cb: (ids: string[]) => void): void;
       setTeamCar(team: { carIdx: number; carNumber: number; sessionId: string }): void;
       camera(action: 'incident' | 'back'): Promise<void>;
       getCameraInfo(): Promise<{ state: unknown; hotkeys: { incident: string | null; back: string | null } }>;
@@ -130,13 +134,14 @@ export interface FeedState {
   status: Status | null;
   fuel: Fuel | null;
   tyres: Tyres | null;
+  weather: Weather | null;
   /** Local time (ms) of the last telemetry message, for the data-age indicator. */
   lastData: number;
 }
 
 const initial: FeedState = {
   conn: 'connecting', error: null, teamName: '', active: null,
-  session: null, status: null, fuel: null, tyres: null, lastData: 0,
+  session: null, status: null, fuel: null, tyres: null, weather: null, lastData: 0,
 };
 
 /** Connects to the team relay and exposes the latest telemetry. */
@@ -157,6 +162,7 @@ export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
         case 'status': return { ...s, status: m, lastData: now };
         case 'fuel': return { ...s, fuel: m, lastData: now };
         case 'tyres': return { ...s, tyres: m, lastData: now };
+        case 'weather': return { ...s, weather: m, lastData: now };
         case 'session':
           // Lets the desktop app (hotkeys) know which car to jump back to.
           window.stintview?.setTeamCar?.({ carIdx: m.carIdx, carNumber: m.carNumber, sessionId: m.sessionId });
