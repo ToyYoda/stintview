@@ -67,6 +67,12 @@ body.setup-body #root { height: auto; }
 .setup .panels th:not(:first-child), .setup .panels td:not(:first-child) { text-align: center; width: 70px; }
 .setup .panels td { padding: 5px 6px; border-top: 1px solid var(--o-line); }
 .setup .panels input { accent-color: var(--o-red); width: 16px; height: 16px; cursor: pointer; }
+.setup .update-ready { border-top-color: #3ddc84; }
+.setup .update-ready h2 { color: #3ddc84; }
+.setup .update-ready p { margin: 0 0 12px; }
+.setup .linkish { background: none; border: 0; padding: 0; color: var(--o-muted); text-decoration: underline; cursor: pointer; font: inherit; }
+.setup .linkish:hover:not(:disabled) { color: var(--o-white); }
+.setup .linkish:disabled { text-decoration: none; cursor: default; }
 .setup .foot { color: #6f6f6f; font-size: 12.5px; text-align: center; }
 
 .setup .check { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 14px; cursor: pointer; }

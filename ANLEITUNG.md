@@ -97,7 +97,9 @@ Welche Anzeigen am Monitor und welche in VR erscheinen, stellst du im StintView-
 
 ## Updates
 
-StintView aktualisiert sich selbst. Liegt ein Update bereit, steht im Menü **„Update … wird beim Beenden installiert“** – beim nächsten Neustart (oder nach *StintView beenden*) ist es drin.
+StintView sucht beim Start und danach stündlich nach Updates und lädt sie im Hintergrund. Ist eines geladen, meldet sich StintView unten rechts, und im StintView-Fenster sowie im Menü (Rechtsklick auf das Symbol) steht **„Update … installieren und neu starten“** – ein Klick, ein paar Sekunden, fertig. Wer nicht klickt, bekommt das Update beim nächsten Beenden.
+
+Sofort nachsehen: im Menü **„Nach Updates suchen“** (oder unten im StintView-Fenster).
 
 ---
 

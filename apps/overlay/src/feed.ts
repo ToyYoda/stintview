@@ -27,10 +27,16 @@ export interface AppState {
     overlay: boolean;
     editing: boolean;
     editHotkey: string | null;
-    update: string;
   };
   autostartAvailable: boolean;
   cameraHotkeys: { incident: string | null; back: string | null };
+  update: {
+    phase: 'unavailable' | 'idle' | 'checking' | 'downloading' | 'ready' | 'latest' | 'error';
+    version: string;
+    percent: number;
+    error: string;
+    label: string;
+  };
 }
 
 declare global {
@@ -52,6 +58,8 @@ declare global {
       create(data: { serverUrl: string; teamName: string; memberName: string; hostHere: boolean }): Promise<AppState>;
       updateSettings(patch: Partial<AppState['settings']>): Promise<AppState>;
       leave(): Promise<AppState>;
+      checkUpdate(): Promise<AppState>;
+      installUpdate(): Promise<void>;
     };
   }
 }

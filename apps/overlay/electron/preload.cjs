@@ -21,4 +21,6 @@ contextBridge.exposeInMainWorld('stintview', {
   create: (data) => ipcRenderer.invoke('app:create', data),
   updateSettings: (patch) => ipcRenderer.invoke('app:settings', patch),
   leave: () => ipcRenderer.invoke('app:leave'),
+  checkUpdate: () => ipcRenderer.invoke('app:update-check'),
+  installUpdate: () => ipcRenderer.invoke('app:update-install'),
 });

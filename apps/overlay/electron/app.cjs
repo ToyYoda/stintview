@@ -12,6 +12,7 @@ const {
 const { PRELOAD, loadRoute } = require('./renderer.cjs');
 const { cameraCommand, cameraInfo, onRecorderMessage, setHazardCar, setTeamCar, startCamera, stopCamera } = require('./camera.cjs');
 const { startVr, stopVr, vrStatus } = require('./vr.cjs');
+const { checkNow, installNow, setupUpdates, updateInfo, updateLabel } = require('./updates.cjs');
 
 const BUNDLES = path.join(__dirname, '..', 'dist-bundles');
 const ICON = path.join(__dirname, 'icons', 'tray.png');
@@ -41,7 +42,6 @@ const status = {
   serverText: '',
   inCar: false,
   relay: 'off', // 'off' | 'running' | 'error'
-  update: '',
 };
 
 // ---------------------------------------------------------------------------
@@ -194,7 +194,7 @@ function buildMenu() {
   const vr = vrStatus();
   return Menu.buildFromTemplate([
     { label: statusLine(), enabled: false },
-    ...(status.update ? [{ label: status.update, enabled: false }] : []),
+    updateMenuItem(),
     { type: 'separator' },
     { label: 'Overlay am Monitor', type: 'checkbox', checked: settings.overlay, enabled: configured, click: (i) => updateSettings({ overlay: i.checked }) },
     {
@@ -213,6 +213,12 @@ function buildMenu() {
     { type: 'separator' },
     { label: 'StintView beenden', click: () => app.quit() },
   ]);
+}
+
+function updateMenuItem() {
+  const u = updateInfo();
+  if (u.phase === 'ready') return { label: updateLabel(), click: installNow };
+  return { label: updateLabel(), enabled: u.phase !== 'unavailable' && u.phase !== 'checking' && u.phase !== 'downloading', click: checkNow };
 }
 
 function openSetup() {
@@ -246,6 +252,7 @@ function appState() {
     status: { ...status, line: statusLine(), vr: vrStatus(), overlay: overlayRunning(), editing: editing(), editHotkey: editHotkey() },
     autostartAvailable: app.isPackaged,
     cameraHotkeys: cameraInfo().hotkeys,
+    update: { ...updateInfo(), label: updateLabel() },
   };
 }
 
@@ -318,22 +325,22 @@ ipcMain.handle('app:leave', async () => {
   return appState();
 });
 
-// ---------------------------------------------------------------------------
-// Updates (GitHub Releases)
-// ---------------------------------------------------------------------------
+// Updates: button in tray and window instead of "restart twice".
+ipcMain.handle('app:update-check', () => { checkNow(); return appState(); });
+ipcMain.handle('app:update-install', () => installNow());
 
-function setupUpdates() {
-  if (!app.isPackaged) return;
-  const { autoUpdater } = require('electron-updater');
-  autoUpdater.autoDownload = true;
-  autoUpdater.on('update-downloaded', (info) => {
-    status.update = `Update ${info.version} wird beim Beenden installiert`;
-    refresh();
-  });
-  autoUpdater.on('error', (e) => console.error('[update]', e?.message ?? e));
-  const check = () => autoUpdater.checkForUpdates().catch(() => {});
-  check();
-  setInterval(check, 6 * 60 * 60 * 1000);
+let announced = '';
+function onUpdateChange(u) {
+  // Tell the user once per version, even if the window is closed.
+  if (u.phase === 'ready' && announced !== u.version && tray) {
+    announced = u.version;
+    tray.displayBalloon({
+      title: `StintView ${u.version} ist bereit`,
+      content: 'Rechtsklick auf das StintView-Symbol → „Update installieren und neu starten“.',
+      iconType: 'info',
+    });
+  }
+  refresh();
 }
 
 // ---------------------------------------------------------------------------
@@ -347,7 +354,7 @@ app.whenReady().then(() => {
   startRecorder();
   startCamera((msg) => recorder?.post(msg) ?? false);
   applySettings();
-  setupUpdates();
+  setupUpdates(onUpdateChange);
   // First run (or started manually): show the window. Autostart passes --hidden.
   if (!loadConfig() || !process.argv.includes('--hidden')) openSetup();
 });

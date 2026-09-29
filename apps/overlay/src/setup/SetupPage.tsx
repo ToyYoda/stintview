@@ -131,6 +131,13 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
 
   return (
     <>
+      {state.update.phase === 'ready' && (
+        <section className="card update-ready">
+          <h2>Update bereit</h2>
+          <p>StintView {state.update.version} ist geladen. Die Installation dauert einige Sekunden, danach startet StintView von selbst neu.</p>
+          <button className="btn" onClick={() => api().installUpdate()}>Jetzt aktualisieren</button>
+        </section>
+      )}
       <section className="card">
         <h2>Status</h2>
         <ul className="status">
@@ -140,7 +147,7 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
           {settings.vr && <li><Dot kind={status.vr === 'connected' ? 'ok' : 'warn'} />SteamVR{status.vr === 'connected' ? ' verbunden' : ' – wartet auf SteamVR'}</li>}
           {settings.server && <li><Dot kind={status.relay === 'running' ? 'ok' : 'bad'} />Team-Server auf diesem PC{status.relay === 'running' ? ' läuft' : ' gestoppt'}</li>}
         </ul>
-        {status.update && <p className="hint">{status.update}</p>}
+
       </section>
 
       <section className="card">
@@ -175,7 +182,20 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
         <button className="btn ghost" onClick={async () => onState(await api().leave())}>Team verlassen …</button>
       </section>
 
-      <p className="foot">Du kannst dieses Fenster schließen – StintView läuft im Infobereich der Taskleiste weiter.</p>
+      <p className="foot">
+        Version {state.version}
+        {state.update.phase !== 'unavailable' && state.update.phase !== 'ready' && (
+          <>
+            {' · '}
+            <button className="linkish" disabled={state.update.phase === 'checking' || state.update.phase === 'downloading'}
+              onClick={async () => onState(await api().checkUpdate())}>
+              {state.update.label}
+            </button>
+          </>
+        )}
+        <br />
+        Du kannst dieses Fenster schließen – StintView läuft im Infobereich der Taskleiste weiter.
+      </p>
     </>
   );
 }

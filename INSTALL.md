@@ -99,7 +99,9 @@ Which displays appear on the monitor and which in VR is set in the StintView win
 
 ## Updates
 
-StintView updates itself. When an update is ready, the menu shows **"Update … wird beim Beenden installiert"** (will be installed on exit) – it's in after the next restart (or after quitting StintView).
+StintView checks for updates at start and hourly, and downloads them in the background. Once one is ready, StintView pops up a notification, and both the StintView window and the menu (right-click the icon) show **"Update … installieren und neu starten"** (install and restart) – one click, a few seconds, done. If you don't click, the update is installed on the next exit.
+
+Check right away: **"Nach Updates suchen"** (check for updates) in the menu or at the bottom of the StintView window.
 
 ---
 
