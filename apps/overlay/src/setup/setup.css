@@ -109,3 +109,11 @@ body.setup-body #root { height: auto; }
 .keys kbd { font-family: ui-monospace, Consolas, monospace; font-size: 12px; background: #222; border: 1px solid #444; border-bottom-width: 2px; border-radius: 4px; padding: 1px 6px; }
 .keys tr.inactive td { opacity: 0.55; }
 .keys .bad { color: #ff4d4d; }
+
+/* Panel background opacity */
+.setup .opacity { margin: 12px 0 4px; }
+.setup .opacity-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.setup .opacity-title small { display: block; font-weight: 400; font-size: 12px; color: var(--o-muted); }
+.setup .opacity-row { display: grid; grid-template-columns: 70px 1fr 48px; align-items: center; gap: 10px; padding: 3px 0; font-size: 13px; }
+.setup .opacity-row input { accent-color: var(--o-red); width: 100%; cursor: pointer; }
+.setup .opacity-row b { text-align: right; font-variant-numeric: tabular-nums; }

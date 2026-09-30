@@ -96,7 +96,7 @@ Meta Quest via Link/Air Link without SteamVR is not supported yet.
 
 - **Position:** the running order **on track** (continuous, not iRacing's position that only updates once per lap), within your class in multi-class races: P1–3 plus three cars ahead of and behind you, with a country flag before the name (as in iRacing). Column **Δ** = your last lap minus theirs – **red (+)**: you were slower, **green (−)**: you were faster. **Gap** = time on track to you in seconds (**+** ahead, **−** behind; whole laps as "+1 R"). Colours: under 1 s **amber** (car ahead within reach) or **red** (car behind right on you), 1–3 s white, further away grey, different lap **blue**. **Tyres** = tyre age in laps – exact for your car, for others **laps since their last pit stop** (iRacing doesn't tell whether tyres were changed); "–" = no stop seen yet, "Box" = on pit road right now. StintView counts stops on every team member's PC, also while spectating – so keep iRacing open from the race start if possible.
 
-Which displays appear on the monitor and which in VR is set in the StintView window under **Anzeigen** (one checkbox each for monitor and VR).
+Which displays appear on the monitor and which in VR is set in the StintView window under **Anzeigen** (one checkbox each for monitor and VR). Below, **Hintergrund der Anzeigen** (display background) sets how transparent the displays are, separately for monitor and VR (0 % = transparent, 100 % = opaque) – the text always stays fully visible, changes apply immediately.
 
 ---
 

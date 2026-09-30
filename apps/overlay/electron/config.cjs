@@ -24,6 +24,8 @@ const DEFAULT_SETTINGS = {
     weather: { monitor: true, vr: false },
     standings: { monitor: true, vr: false },
   },
+  // Panel background opacity in percent (text stays fully visible).
+  opacity: { monitor: 78, vr: 100 },
 };
 const PANEL_IDS = Object.keys(DEFAULT_SETTINGS.panels);
 
@@ -47,7 +49,7 @@ const clearConfig = () => writeJson(configPath(), null);
 
 function loadSettings() {
   const saved = readJson(settingsPath) ?? {};
-  return { ...DEFAULT_SETTINGS, ...saved, panels: cleanPanels(saved.panels) };
+  return { ...DEFAULT_SETTINGS, ...saved, panels: cleanPanels(saved.panels), opacity: cleanOpacity(saved.opacity) };
 }
 
 /** Known panel ids only, each with boolean monitor/vr flags (defaults for missing ones). */
@@ -58,6 +60,12 @@ function cleanPanels(p) {
     out[id] = { monitor: typeof p?.[id]?.monitor === 'boolean' ? p[id].monitor : d.monitor, vr: typeof p?.[id]?.vr === 'boolean' ? p[id].vr : d.vr };
   }
   return out;
+}
+
+/** Background opacity per place, whole percent 0–100 (defaults for missing/invalid values). */
+function cleanOpacity(o) {
+  const pick = (v, d) => (Number.isFinite(v) ? Math.min(100, Math.max(0, Math.round(v))) : d);
+  return { monitor: pick(o?.monitor, DEFAULT_SETTINGS.opacity.monitor), vr: pick(o?.vr, DEFAULT_SETTINGS.opacity.vr) };
 }
 
 const panelsFor = (settings, where) => PANEL_IDS.filter((id) => settings.panels[id]?.[where]);
@@ -100,5 +108,5 @@ function normalizeUrl(input) {
 
 module.exports = {
   dataDir, logDir, configPath, loadConfig, saveConfig, clearConfig, loadSettings, saveSettings, register, normalizeUrl,
-  cleanPanels, panelsFor,
+  cleanPanels, cleanOpacity, panelsFor,
 };

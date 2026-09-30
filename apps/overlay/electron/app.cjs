@@ -4,14 +4,14 @@ const { app, BrowserWindow, Menu, Tray, dialog, ipcMain, nativeImage, shell, uti
 const { createWriteStream, mkdirSync } = require('node:fs');
 const path = require('node:path');
 const {
-  cleanPanels, clearConfig, configPath, dataDir, loadConfig, loadSettings, logDir, normalizeUrl, panelsFor, register, saveSettings,
+  cleanOpacity, cleanPanels, clearConfig, configPath, dataDir, loadConfig, loadSettings, logDir, normalizeUrl, panelsFor, register, saveSettings,
 } = require('./config.cjs');
 const {
-  editHotkey, editing, onOverlayChange, overlayRunning, editHotkeyInfo, setEditMode, setOverlayPanels, startOverlay, stopOverlay, toggleEdit,
+  editHotkey, editing, onOverlayChange, overlayRunning, editHotkeyInfo, setEditMode, setOverlayOpacity, setOverlayPanels, startOverlay, stopOverlay, toggleEdit,
 } = require('./overlay-window.cjs');
 const { PRELOAD, loadRoute } = require('./renderer.cjs');
 const { cameraCommand, cameraHotkeyInfo, cameraInfo, onRecorderMessage, setHazardCar, setTeamCar, startCamera, stopCamera } = require('./camera.cjs');
-const { startVr, stopVr, vrHotkeyInfo, vrStatus } = require('./vr.cjs');
+const { setVrOpacity, startVr, stopVr, vrHotkeyInfo, vrStatus } = require('./vr.cjs');
 const { hotkeyGroups } = require('./hotkeys.cjs');
 const { checkNow, installNow, setupUpdates, updateInfo, updateLabel } = require('./updates.cjs');
 
@@ -148,6 +148,8 @@ function applySettings() {
   const configured = Boolean(loadConfig());
   if (settings.server) startRelay(); else stopRelay();
   setOverlayPanels(panelsFor(settings, 'monitor'));
+  setOverlayOpacity(settings.opacity.monitor / 100);
+  setVrOpacity(settings.opacity.vr / 100);
   if (configured && settings.overlay) startOverlay(); else stopOverlay();
   // VR panels are separate windows: restart the VR host when the selection changes.
   const vrPanels = panelsFor(settings, 'vr');
@@ -295,9 +297,10 @@ ipcMain.handle('app:create', async (_e, { serverUrl, teamName, memberName, hostH
 });
 
 ipcMain.handle('app:settings', (_e, patch) => {
-  const allowed = ['overlay', 'vr', 'autostart', 'server', 'panels'];
+  const allowed = ['overlay', 'vr', 'autostart', 'server', 'panels', 'opacity'];
   const clean = Object.fromEntries(Object.entries(patch ?? {}).filter(([k]) => allowed.includes(k)));
   if (clean.panels) clean.panels = cleanPanels(clean.panels);
+  if (clean.opacity) clean.opacity = cleanOpacity({ ...settings.opacity, ...clean.opacity });
   updateSettings(clean);
   return appState();
 });

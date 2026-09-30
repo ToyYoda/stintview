@@ -24,6 +24,8 @@ export interface AppState {
   settings: {
     overlay: boolean; vr: boolean; autostart: boolean; server: boolean; serverPort: number;
     panels: Record<string, { monitor: boolean; vr: boolean }>;
+    /** Panel background opacity in percent. */
+    opacity: { monitor: number; vr: number };
   };
   status: {
     line: string;
@@ -57,6 +59,7 @@ declare global {
       setEditMode(on?: boolean): Promise<AppState>;
       setInteractive(on: boolean): void;
       onPanels?(cb: (ids: string[]) => void): void;
+      onOpacity?(cb: (value: number) => void): void;
       setTeamCar(team: { carIdx: number; carNumber: number; sessionId: string }): void;
       setHazard?(carIdx: number | null): void;
       camera(action: 'incident' | 'back', targetCarIdx?: number): Promise<void>;

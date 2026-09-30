@@ -61,6 +61,14 @@ function saveLayout() {
 // Offscreen widget rendering
 // ---------------------------------------------------------------------------
 
+/** Panel background opacity 0–1; sent to every panel page (they are transparent textures). */
+let vrOpacity = 1;
+
+function setVrOpacity(value) {
+  vrOpacity = value;
+  for (const panel of panels.values()) if (!panel.win.isDestroyed()) panel.win.webContents.send('opacity', value);
+}
+
 async function createPanelWindow(id) {
   const win = new BrowserWindow({
     show: false,
@@ -83,6 +91,7 @@ async function createPanelWindow(id) {
   panels.set(id, panel);
 
   win.webContents.on('paint', (_e, _dirty, image) => pushFrame(id, image));
+  win.webContents.on('did-finish-load', () => win.webContents.send('opacity', vrOpacity));
   await loadRoute(win, `/widget/${id}`);
   await new Promise((r) => setTimeout(r, 300));
   if (win.isDestroyed()) return;
@@ -334,4 +343,4 @@ const vrHotkeyInfo = () => ({
   keys: Object.keys(HOTKEYS).map((key) => ({ key, label: HOTKEY_LABELS[key] ?? key, ok: !failedHotkeys.has(key) })),
 });
 
-module.exports = { startVr, stopVr, vrStatus, vrHotkeyInfo };
+module.exports = { startVr, stopVr, vrStatus, vrHotkeyInfo, setVrOpacity };

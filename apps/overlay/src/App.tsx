@@ -50,6 +50,7 @@ export function App() {
       setHotkey(key);
     });
     window.stintview?.onPanels?.(setShown);
+    window.stintview?.onOpacity?.((v) => document.documentElement.style.setProperty('--panel-alpha', String(v)));
     return () => removeEventListener('hashchange', onHash);
   }, []);
 

@@ -95,7 +95,7 @@ Meta Quest per Link/Air Link ohne SteamVR wird noch nicht unterstützt.
 
 - **Position:** die Reihenfolge **auf der Strecke** (laufend, nicht iRacings Position, die nur einmal pro Runde springt), bei mehreren Klassen innerhalb eurer Klasse: Platz 1–3 sowie drei Autos vor und hinter euch, mit Länderflagge vor dem Namen (wie in iRacing). Spalte **Δ** = eure letzte Runde minus seine – **rot (+)**: ihr wart langsamer, **grün (−)**: ihr wart schneller. **Abstand** = Zeit auf der Strecke zu euch in Sekunden (**+** vor euch, **−** hinter euch; ganze Runden als „+1 R“). Farben: unter 1 s **gelb** (Vordermann in Reichweite) bzw. **rot** (Hintermann dicht dran), 1–3 s weiß, darüber grau, andere Runde **blau**. **Reifen** = Alter der Reifen in Runden – bei euch exakt, bei den anderen **Runden seit dem letzten Boxenstopp** (iRacing verrät nicht, ob dort Reifen gewechselt wurden); „–“ = noch kein Stopp beobachtet, „Box“ = steht gerade in der Boxengasse. StintView zählt die Stopps bei jedem Teammitglied mit, auch beim Zuschauen – also iRacing möglichst ab Rennbeginn offen haben.
 
-Welche Anzeigen am Monitor und welche in VR erscheinen, stellst du im StintView-Fenster unter **Anzeigen** ein (je ein Häkchen für Monitor und VR).
+Welche Anzeigen am Monitor und welche in VR erscheinen, stellst du im StintView-Fenster unter **Anzeigen** ein (je ein Häkchen für Monitor und VR). Darunter regelst du unter **Hintergrund der Anzeigen** getrennt für Monitor und VR, wie durchsichtig die Anzeigen sind (0 % = durchsichtig, 100 % = deckend) – die Schrift bleibt immer voll sichtbar, die Änderung wirkt sofort.
 
 ---
 

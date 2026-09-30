@@ -167,6 +167,7 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
         )}
         <Toggle checked={settings.vr} onChange={(v) => set({ vr: v })} label="VR-Overlay (SteamVR)" hint="Panels in der Brille. Strg+Umschalt+V wählt, Pfeiltasten verschieben." />
         <PanelTable panels={settings.panels} onChange={(panels) => set({ panels })} />
+        <OpacitySliders opacity={settings.opacity} onChange={(opacity) => set({ opacity })} />
         <p className="hint cam-keys">
           Als Zuschauer bei Gelb für deinen Fahrer: <b>{state.cameraHotkeys.incident ?? '–'}</b> springt mit der Kamera zum Unfall vor ihm,{' '}
           <b>{state.cameraHotkeys.back ?? '–'}</b> zurück zu ihm. Am Monitor gibt es dafür auch Knöpfe in der Kopfzeile.{' '}
@@ -234,6 +235,36 @@ function HotkeyCard({ groups }: { groups: HotkeyGroup[] }) {
         </div>
       ))}
     </section>
+  );
+}
+
+/** Background opacity of the panels, separately for monitor and VR; applied live while dragging. */
+function OpacitySliders({ opacity, onChange }: {
+  opacity: AppState['settings']['opacity'];
+  onChange(o: AppState['settings']['opacity']): void;
+}) {
+  const [value, setValue] = useState(opacity);
+  useEffect(() => setValue(opacity), [opacity.monitor, opacity.vr]);
+  // Save at most every 150 ms while the slider moves.
+  useEffect(() => {
+    if (value.monitor === opacity.monitor && value.vr === opacity.vr) return;
+    const t = setTimeout(() => onChange(value), 150);
+    return () => clearTimeout(t);
+  }, [value.monitor, value.vr]);
+  const row = (where: 'monitor' | 'vr', label: string) => (
+    <label className="opacity-row">
+      <span>{label}</span>
+      <input type="range" min={0} max={100} step={5} value={value[where]}
+        onChange={(e) => setValue({ ...value, [where]: Number(e.target.value) })} />
+      <b>{value[where]} %</b>
+    </label>
+  );
+  return (
+    <div className="opacity">
+      <div className="opacity-title">Hintergrund der Anzeigen <small>0 % = durchsichtig, 100 % = deckend; die Schrift bleibt immer voll sichtbar</small></div>
+      {row('monitor', 'Monitor')}
+      {row('vr', 'VR')}
+    </div>
   );
 }
 

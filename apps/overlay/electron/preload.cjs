@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld('stintview', {
   // Clickable buttons in the otherwise click-through overlay
   setInteractive: (on) => ipcRenderer.send('overlay:interactive', on),
   onPanels: (cb) => ipcRenderer.on('panels', (_e, ids) => cb(ids)),
+  // Panel background opacity 0–1 (monitor overlay and VR panels have their own value)
+  onOpacity: (cb) => ipcRenderer.on('opacity', (_e, v) => cb(v)),
   // Spectator camera
   setTeamCar: (team) => ipcRenderer.send('app:team-car', team),
   setHazard: (carIdx) => ipcRenderer.send('app:hazard', carIdx),

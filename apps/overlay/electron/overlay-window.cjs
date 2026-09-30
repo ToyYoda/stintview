@@ -11,6 +11,7 @@ let edit = false;
 let hotkey = null;
 let notify = () => {};
 let panels = null; // widget ids to show, null = all
+let opacity = 0.78; // panel background opacity 0–1
 
 /** Called whenever edit mode or the overlay changes (tray menu, setup window). */
 const onOverlayChange = (fn) => { notify = fn; };
@@ -66,6 +67,7 @@ function startOverlay() {
   win.webContents.on('did-finish-load', () => {
     setEdit(edit);
     if (panels) win.webContents.send('panels', panels);
+    win.webContents.send('opacity', opacity);
   });
   setEdit(false);
   loadRoute(win, '/');
@@ -87,6 +89,11 @@ function setOverlayPanels(ids) {
   if (win) win.webContents.send('panels', ids);
 }
 
+function setOverlayOpacity(value) {
+  opacity = value;
+  if (win) win.webContents.send('opacity', value);
+}
+
 const toggleEdit = () => setEdit(!edit);
 const setEditMode = (on) => setEdit(Boolean(on));
 const overlayRunning = () => win !== null;
@@ -96,5 +103,5 @@ const editing = () => edit;
 const editHotkeyInfo = () => ({ key: hotkey, candidates: EDIT_HOTKEYS });
 
 module.exports = {
-  startOverlay, stopOverlay, toggleEdit, setEditMode, overlayRunning, editHotkey, editHotkeyInfo, editing, onOverlayChange, setOverlayPanels,
+  startOverlay, stopOverlay, toggleEdit, setEditMode, overlayRunning, editHotkey, editHotkeyInfo, editing, onOverlayChange, setOverlayPanels, setOverlayOpacity,
 };
