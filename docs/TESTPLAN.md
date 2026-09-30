@@ -76,7 +76,7 @@ Jeder Testfall hat eine ID. In die Spalte **Ergebnis** eintragen: ✅ ok, ⚠️
 | 1.1 | alle | StintView-Fenster öffnen (Klick auf das rote „O“ in der Taskleiste) | Version **0.3.0**, Status *Team-Server: verbunden* | |
 | 1.2 | alle | iRacing-Session betreten | Status *iRacing läuft* (bzw. *nicht im Auto*) | |
 | 1.3 | Neuinstallation (mind. 1 Person auf einem PC ohne Node.js) | Setup laden, SmartScreen „Trotzdem ausführen“, beitreten | StintView startet, verbindet sich; kein weiteres Programm nötig | |
-| 1.4 | alle | Menü → *Overlay am Monitor* an | Kopfzeile oben links: „Niemand im Auto“, grauer Punkt | |
+| 1.4 | alle | Menü → *Anzeigen einblenden* an, *am Monitor* gewählt | Kopfzeile oben links: „Niemand im Auto“, grauer Punkt | |
 
 ### Block 2 – Ein Fahrer, alle schauen zu (20 min)
 
@@ -140,6 +140,13 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 | 4b.6 | Z | Flaggen vor den Namen mit iRacings Fahrerliste vergleichen | gleiche Länder; Fahrer ohne Land („Global“) ohne Flagge | |
 | 4b.3 | alle | Mehrklassen-Rennen (falls vorhanden) | nur Autos der eigenen Klasse | |
 
+### Block 4d – Überrundungen (Mehrklassen-Rennen)
+
+| # | Wer | Schritt | Erwartet | Ergebnis |
+|---|---|---|---|---|
+| 4d.1 | Z | A fährt auf ein langsameres, überrundetes Auto auf | blaue Zeile „Nachzügler“ direkt über A's Zeile, Abstand wird kleiner, verschwindet nach dem Überholen | |
+| 4d.2 | Z | ein schnelleres Auto (andere Klasse oder Führende) nähert sich A von hinten, eine Runde voraus | rote Zeile „Überrunder“ direkt unter A's Zeile | |
+
 ### Block 4c – Boxenstopp-Planer (während des Rennens)
 
 | # | Wer | Schritt | Erwartet | Ergebnis |
@@ -158,7 +165,9 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 | 5.1 | alle | StintView-Fenster → **Anzeigen verschieben** | gelbes Banner im Overlay, Anzeigen lassen sich ziehen, **Fertig** beendet | |
 | 5.2 | alle | Tastenkürzel zum Verschieben (steht im Fenster, z. B. Strg+Umschalt+O oder Strg+Alt+O bei AMD) | wie 5.1 | |
 | 5.2b | alle | Tray-Symbol → **Tastaturkürzel …** | Fenster öffnet mit der Übersicht oben; die Kürzel dort funktionieren (z. B. Verschieben); VR-Gruppe grau, solange VR aus | |
-| 5.2c | alle | StintView-Fenster → **Hintergrund der Anzeigen**: Monitor-Regler auf 0 %, dann 100 %; VR-Regler auf ca. 40 % (Brille auf) | Monitor: Hintergrund verschwindet/wird deckend, sofort; VR: Panels halbdurchsichtig, Schrift gut lesbar | |
+| 5.2c | alle | StintView-Fenster → Anzeigen → **Hintergrund** auf 0 %, dann 100 %; in VR ca. 40 % (Brille auf) | Hintergrund verschwindet/wird deckend, sofort; VR: Panels halbdurchsichtig, Schrift gut lesbar | |
+| 5.2d | alle | Panel „Position“ aufklappen: Größe 150 %, Spalten Reifen/Flagge abwählen | Panel größer, Spalten verschwinden sofort; auch in VR | |
+| 5.2e | alle | Ausgabe von Monitor auf VR umschalten und zurück | Panels wandern vom Monitor in die Brille und zurück, nie an beiden Orten | |
 | 5.3 | alle | außerhalb des Verschiebe-Modus in iRacing klicken, wo das Overlay liegt | Klicks gehen durch zu iRacing | |
 | 5.4 | alle | StintView beenden und neu starten | Anzeigen an der gespeicherten Position | |
 
@@ -166,7 +175,7 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 
 | # | Wer | Schritt | Erwartet | Ergebnis |
 |---|---|---|---|---|
-| 6.1 | Z (VR) | *VR-Overlay (SteamVR)* an, iRacing in VR, zuschauen | 4 Panels ca. 80 cm vor dir, kein Flackern | |
+| 6.1 | Z (VR) | Ausgabe *VR (SteamVR)*, iRacing in VR, zuschauen | 4 Panels ca. 80 cm vor dir, kein Flackern | |
 | 6.2 | Z (VR) | Strg+Umschalt+V und Pfeiltasten / Bild↑↓ / Plus/Minus | ausgewähltes Panel gelb umrandet und verschiebbar; Position bleibt nach Neustart | |
 | 6.3 | Z (VR) | bei Gelb (Block 4 wiederholen) | Kopfzeilen-Panel zeigt **GELB VORAUS** und die Kürzel statt Knöpfen; Strg+Umschalt+J/K springen | |
 | 6.3b | Z (VR) | Kopf zur Seite drehen, **Strg+Umschalt+R** | aktuelle Blickrichtung wird die Mitte; iRacing-Sicht und StintView-Panels rücken nach vorn | |

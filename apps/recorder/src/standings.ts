@@ -82,6 +82,45 @@ export function computeStandings(
   });
 }
 
+/**
+ * The car physically right in front of us and right behind us on track, any class, not in
+ * the pits. Returned only if it is at least a lap down (the one in front: a backmarker we are
+ * about to lap) or a lap up (the one behind: about to lap us).
+ */
+export function lappingRows(
+  cars: CarProgress[], teamIdx: number, info: Map<number, CarInfo>, lapRef: number | null,
+  tyreLaps: (carIdx: number) => number | null = () => null,
+): StandingRow[] {
+  const team = cars.find((c) => c.carIdx === teamIdx);
+  if (!team) return [];
+  type Near = { c: CarProgress; o: number; laps: number };
+  let ahead: Near | null = null;
+  let behind: Near | null = null;
+  for (const c of cars) {
+    if (c.carIdx === teamIdx || c.onPitRoad) continue;
+    const diff = c.progress - team.progress;
+    const laps = Math.round(diff);
+    const o = diff - laps; // physical offset on track in laps, -0.5..0.5
+    if (o > 0 && (!ahead || o < ahead.o)) ahead = { c, o, laps };
+    if (o < 0 && (!behind || o > behind.o)) behind = { c, o, laps };
+  }
+  const row = (x: Near, lap: 'backmarker' | 'lapper'): StandingRow => {
+    const d = info.get(x.c.carIdx);
+    const g = trackGap(x.c, team, lapRef);
+    // Physical gap on track: race gap without the whole laps.
+    const gap = g !== null && lapRef ? g - x.laps * lapRef : lapRef ? x.o * lapRef : null;
+    return {
+      pos: 0, carIdx: x.c.carIdx, number: d?.number ?? '?', name: d?.name ?? '', country: d?.country ?? null,
+      lastLap: x.c.lastLap, isTeam: false, gap, lapsGap: x.laps, tyreLaps: tyreLaps(x.c.carIdx), inPit: false,
+      lap, otherClass: x.c.classId !== team.classId,
+    };
+  };
+  const out: StandingRow[] = [];
+  if (ahead && ahead.laps <= -1) out.push(row(ahead, 'backmarker'));
+  if (behind && behind.laps >= 1) out.push(row(behind, 'lapper'));
+  return out;
+}
+
 /** Reads all cars from a telemetry frame; cars not on the track (pct < 0) are skipped. */
 export function readProgress(f: Frame): CarProgress[] {
   const n = Math.min(f.count('CarIdxLapCompleted'), f.count('CarIdxLapDistPct'));
@@ -172,10 +211,11 @@ export class StandingsTracker {
     const teamIdx = f.num('PlayerCarIdx');
     const laps = new Map(cars.map((c) => [c.carIdx, Math.floor(c.progress)]));
     const ownTyres = this.ownTyreLaps(f);
-    const rows = computeStandings(cars, teamIdx, this.info, 3, 3, {
-      tyreLaps: (idx) => (idx === teamIdx && ownTyres !== null ? ownTyres : this.pits.laps(idx, laps.get(idx) ?? 0)),
-    });
-    return rows.length ? { t: 'standings', sessionTime: t, rows } : null;
+    const tyreLaps = (idx: number) => (idx === teamIdx && ownTyres !== null ? ownTyres : this.pits.laps(idx, laps.get(idx) ?? 0));
+    const rows = computeStandings(cars, teamIdx, this.info, 3, 3, { tyreLaps });
+    const lapRef = cars.find((c) => c.carIdx === teamIdx)?.lastLap ?? null;
+    const lapping = lappingRows(cars, teamIdx, this.info, lapRef, tyreLaps);
+    return rows.length ? { t: 'standings', sessionTime: t, rows, lapping } : null;
   }
 
   /** Own car: exact, from the distance the tyres have run since they were fitted (newest tyre). */

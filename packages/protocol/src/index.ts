@@ -198,6 +198,10 @@ export interface StandingRow {
   inPit?: boolean;
   /** Driver's country (iRacing flair) as lower-case ISO code for the flag, e.g. "de", "gb-eng". */
   country?: string | null;
+  /** Only in `lapping`: we are about to lap them (backmarker) or they are about to lap us (lapper). */
+  lap?: 'backmarker' | 'lapper';
+  /** Only in `lapping`: other car class than ours. */
+  otherClass?: boolean;
 }
 
 /** P1–P3 and the cars around the team car, about once per second. Additive, no version bump. */
@@ -205,6 +209,11 @@ export interface Standings {
   t: 'standings';
   sessionTime: number;
   rows: StandingRow[];
+  /**
+   * The car right in front of / behind us on track (all classes) if it is a lap down on us
+   * (backmarker, shown above our row) or a lap up (lapper, shown below).
+   */
+  lapping?: StandingRow[];
 }
 
 /** A car around us after the stop (all classes: traffic matters regardless of class). */

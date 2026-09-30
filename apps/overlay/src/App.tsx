@@ -6,6 +6,7 @@ import { InputsWidget } from './widgets/InputsWidget.tsx';
 import { TyresWidget } from './widgets/TyresWidget.tsx';
 import { WeatherWidget } from './widgets/WeatherWidget.tsx';
 import { StandingsWidget } from './widgets/StandingsWidget.tsx';
+import type { PanelConfig } from './feed.ts';
 import { PitWidget } from './widgets/PitWidget.tsx';
 
 type WidgetId = 'header' | 'inputs' | 'fuel' | 'tyres' | 'weather' | 'standings' | 'pitstop';
@@ -43,6 +44,8 @@ export function App() {
   const [hotkey, setHotkey] = useState<string | null>(null);
   // Widgets chosen for the monitor overlay in the StintView window (null = all, e.g. in a browser).
   const [shown, setShown] = useState<string[] | null>(null);
+  // Size factor and options per panel from the StintView window.
+  const [config, setConfig] = useState<PanelConfig | null>(null);
 
   useEffect(() => {
     const onHash = () => setRoute(location.hash);
@@ -52,6 +55,7 @@ export function App() {
       setHotkey(key);
     });
     window.stintview?.onPanels?.(setShown);
+    window.stintview?.onPanelConfig?.(setConfig);
     window.stintview?.onOpacity?.((v) => document.documentElement.style.setProperty('--panel-alpha', String(v)));
     return () => removeEventListener('hashchange', onHash);
   }, []);
@@ -63,7 +67,7 @@ export function App() {
     fuel: <FuelWidget fuel={state.fuel} status={state.status} />,
     tyres: <TyresWidget tyres={state.tyres} status={state.status} />,
     weather: <WeatherWidget weather={state.weather} />,
-    standings: <StandingsWidget standings={state.standings} />,
+    standings: <StandingsWidget standings={state.standings} options={config?.standings?.options} />,
     pitstop: <PitWidget plan={state.pitplan} />,
   };
 
@@ -87,7 +91,8 @@ export function App() {
       )}
       {(Object.keys(widgets) as WidgetId[]).filter((id) => !shown || shown.includes(id)).map((id) => (
         <Draggable key={id} pos={positions[id]} enabled={edit} onMove={(x, y) => move(id, x, y)}>
-          {widgets[id]}
+          {/* Size from the StintView window; VR panels are sized in the headset instead. */}
+          <div style={{ zoom: config?.[id]?.scale ?? 1 }}>{widgets[id]}</div>
         </Draggable>
       ))}
     </div>

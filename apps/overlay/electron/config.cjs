@@ -9,30 +9,38 @@ const configPath = () => process.env.STINTVIEW_CONFIG ?? path.join(dataDir, 'con
 const settingsPath = path.join(dataDir, 'app.json');
 const logDir = path.join(dataDir, 'logs');
 
+/** Columns of the Position panel that can be switched off. */
+const STANDINGS_COLUMNS = ['pos', 'num', 'flag', 'name', 'gap', 'tyre', 'delta'];
+
+/** Per panel: shown or not, size in percent of the normal size, panel-specific options. */
+const PANEL_DEFAULTS = {
+  header: { shown: true, size: 100 },
+  inputs: { shown: true, size: 100 },
+  fuel: { shown: true, size: 100 },
+  tyres: { shown: true, size: 100 },
+  weather: { shown: true, size: 100 },
+  standings: {
+    shown: true, size: 100,
+    options: { columns: Object.fromEntries(STANDINGS_COLUMNS.map((c) => [c, true])), lapping: true },
+  },
+  pitstop: { shown: true, size: 100 },
+};
+
 const DEFAULT_SETTINGS = {
-  overlay: true, // desktop overlay window
-  vr: false, // SteamVR panels
+  overlay: true, // show the panels at all
+  output: 'monitor', // where: 'monitor' (transparent window over iRacing) or 'vr' (SteamVR panels)
   autostart: true, // start with Windows
   server: false, // run the team relay on this PC
   serverPort: 8787,
-  // Which displays show on the monitor overlay and as VR panels.
-  panels: {
-    header: { monitor: true, vr: true },
-    inputs: { monitor: true, vr: true },
-    fuel: { monitor: true, vr: true },
-    tyres: { monitor: true, vr: true },
-    weather: { monitor: true, vr: false },
-    standings: { monitor: true, vr: false },
-    pitstop: { monitor: true, vr: false },
-  },
-  // Panel background opacity in percent (text stays fully visible).
-  opacity: { monitor: 78, vr: 100 },
+  panels: PANEL_DEFAULTS,
+  // Panel background opacity in percent, for all panels (text stays fully visible).
+  opacity: 78,
   // Pit stop: rates null = measured at our own stops; regulation 'auto' = from the series.
   pitStop: { fillRate: null, tyreTime: null, regulation: 'auto' },
   // iRacing telemetry folder chosen for the pit lane import; null = Documents\\iRacing\\telemetry.
   telemetryDir: null,
 };
-const PANEL_IDS = Object.keys(DEFAULT_SETTINGS.panels);
+const PANEL_IDS = Object.keys(PANEL_DEFAULTS);
 
 function readJson(file) {
   try {
@@ -54,23 +62,51 @@ const clearConfig = () => writeJson(configPath(), null);
 
 function loadSettings() {
   const saved = readJson(settingsPath) ?? {};
-  return { ...DEFAULT_SETTINGS, ...saved, panels: cleanPanels(saved.panels), opacity: cleanOpacity(saved.opacity), pitStop: cleanPitStop(saved.pitStop) };
+  // Up to 0.7: separate switches and panel ticks for monitor and VR. Now one output at a time.
+  const legacy = saved.output === undefined;
+  const output = legacy ? (saved.vr && saved.overlay === false ? 'vr' : 'monitor') : cleanOutput(saved.output);
+  const { vr: _legacyVr, ...rest } = saved;
+  return {
+    ...DEFAULT_SETTINGS, ...rest,
+    overlay: legacy ? (saved.overlay ?? true) || Boolean(saved.vr) : saved.overlay !== false,
+    output,
+    panels: cleanPanels(saved.panels, output),
+    opacity: cleanOpacity(typeof saved.opacity === 'object' && saved.opacity ? saved.opacity[output] : saved.opacity),
+    pitStop: cleanPitStop(saved.pitStop),
+  };
 }
 
-/** Known panel ids only, each with boolean monitor/vr flags (defaults for missing ones). */
-function cleanPanels(p) {
+const cleanOutput = (o) => (o === 'vr' ? 'vr' : 'monitor');
+
+/**
+ * Known panel ids only, with shown/size/options (defaults for missing or invalid values).
+ * `legacyOutput`: old settings had { monitor, vr } ticks – take the one for that output.
+ */
+function cleanPanels(p, legacyOutput = 'monitor') {
   const out = {};
   for (const id of PANEL_IDS) {
-    const d = DEFAULT_SETTINGS.panels[id];
-    out[id] = { monitor: typeof p?.[id]?.monitor === 'boolean' ? p[id].monitor : d.monitor, vr: typeof p?.[id]?.vr === 'boolean' ? p[id].vr : d.vr };
+    const d = PANEL_DEFAULTS[id], v = p?.[id] ?? {};
+    const shown = typeof v.shown === 'boolean' ? v.shown : typeof v[legacyOutput] === 'boolean' ? v[legacyOutput] : d.shown;
+    const size = Number.isFinite(v.size) ? Math.min(250, Math.max(40, Math.round(v.size))) : d.size;
+    out[id] = { shown, size };
+    if (d.options) out[id].options = cleanOptions(id, v.options);
   }
   return out;
 }
 
-/** Background opacity per place, whole percent 0–100 (defaults for missing/invalid values). */
+function cleanOptions(id, o) {
+  const d = PANEL_DEFAULTS[id].options;
+  if (id === 'standings') {
+    const columns = {};
+    for (const c of STANDINGS_COLUMNS) columns[c] = typeof o?.columns?.[c] === 'boolean' ? o.columns[c] : d.columns[c];
+    return { columns, lapping: typeof o?.lapping === 'boolean' ? o.lapping : d.lapping };
+  }
+  return d;
+}
+
+/** Background opacity, whole percent 0–100. */
 function cleanOpacity(o) {
-  const pick = (v, d) => (Number.isFinite(v) ? Math.min(100, Math.max(0, Math.round(v))) : d);
-  return { monitor: pick(o?.monitor, DEFAULT_SETTINGS.opacity.monitor), vr: pick(o?.vr, DEFAULT_SETTINGS.opacity.vr) };
+  return Number.isFinite(o) ? Math.min(100, Math.max(0, Math.round(o))) : DEFAULT_SETTINGS.opacity;
 }
 
 /** Manual pit stop values: positive numbers or null; iRacing sporting regulation or auto. */
@@ -83,7 +119,12 @@ function cleanPitStop(p) {
   };
 }
 
-const panelsFor = (settings, where) => PANEL_IDS.filter((id) => settings.panels[id]?.[where]);
+/** Panels switched on. */
+const panelsFor = (settings) => PANEL_IDS.filter((id) => settings.panels[id]?.shown);
+/** What the panel pages need: size factor and options per panel. */
+const panelConfig = (settings) => Object.fromEntries(PANEL_IDS.map((id) => [id, {
+  scale: settings.panels[id].size / 100, options: settings.panels[id].options ?? null,
+}]));
 const saveSettings = (s) => writeJson(settingsPath, s);
 
 /** Joins or creates a team on the relay and stores the credentials. */
@@ -123,5 +164,5 @@ function normalizeUrl(input) {
 
 module.exports = {
   dataDir, logDir, configPath, loadConfig, saveConfig, clearConfig, loadSettings, saveSettings, register, normalizeUrl,
-  cleanPanels, cleanOpacity, cleanPitStop, panelsFor,
+  cleanPanels, cleanOpacity, cleanOutput, cleanPitStop, panelsFor, panelConfig,
 };

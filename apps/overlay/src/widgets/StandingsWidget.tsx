@@ -1,45 +1,78 @@
-import type { Standings } from '@stintview/protocol';
+import type { StandingRow, Standings } from '@stintview/protocol';
 import 'flag-icons/css/flag-icons.min.css';
+import type { StandingsColumn, StandingsOptions } from '../feed.ts';
+
+
+const HEAD: [StandingsColumn, string][] = [
+  ['pos', 'P'], ['num', '#'], ['flag', ''], ['name', 'Fahrer'], ['gap', 'Abstand'], ['tyre', 'Reifen'], ['delta', 'Δ Runde'],
+];
 
 /**
  * Running order on track: P1–P3 and three cars ahead of / behind the team car.
  * Abstand = gap on track in seconds (+ ahead of us, − behind; whole laps as "R").
  * Reifen = tyre age in laps (ours exact, others: laps since their last pit stop).
  * Δ = our last lap minus theirs: red (+) = we were slower, green (−) = we were faster.
+ * Lapping: the car right in front of us if we are about to lap it (blue row above ours),
+ * the car right behind if it is about to lap us (red row below ours) – any class.
+ * Columns can be switched off in the StintView window.
  */
-export function StandingsWidget({ standings }: { standings: Standings | null }) {
+export function StandingsWidget({ standings, options }: { standings: Standings | null; options?: StandingsOptions | null }) {
   const rows = standings?.rows ?? [];
   const ours = rows.find((r) => r.isTeam)?.lastLap ?? null;
+  const col = (c: StandingsColumn) => options?.columns[c] ?? true;
+  const lapping = options?.lapping === false ? [] : standings?.lapping ?? [];
+  const backmarker = lapping.find((r) => r.lap === 'backmarker');
+  const lapper = lapping.find((r) => r.lap === 'lapper');
+  // Our row with the lapping cars around it; `gap` marks a jump in positions.
+  const list: { r: StandingRow; gap: boolean }[] = [];
+  rows.forEach((r, i) => {
+    if (r.isTeam && backmarker) list.push({ r: backmarker, gap: false });
+    list.push({ r, gap: i > 0 && r.pos !== rows[i - 1]!.pos + 1 });
+    if (r.isTeam && lapper) list.push({ r: lapper, gap: false });
+  });
 
   return (
     <div className="panel standings">
       <div className="title">
         Position
-        <span className="hint">Reifen = Runden seit Boxenstopp</span>
+        {col('tyre') && <span className="hint">Reifen = Runden seit Boxenstopp</span>}
       </div>
       {rows.length === 0 ? (
         <div className="label">Noch keine Daten</div>
       ) : (
         <table>
           <thead>
-            <tr><th>P</th><th>#</th><th>Fahrer</th><th>Abstand</th><th>Reifen</th><th>Δ Runde</th></tr>
+            <tr>{HEAD.filter(([c]) => col(c)).map(([c, label]) => <th key={c} className={`th-${c}`}>{label}</th>)}</tr>
           </thead>
           <tbody>
-            {rows.map((r, i) => {
-              const gap = i > 0 && r.pos !== rows[i - 1]!.pos + 1;
-              const raw = !r.isTeam && ours !== null && r.lastLap !== null ? ours - r.lastLap : null;
+            {list.map(({ r, gap }) => {
+              // Lap times of another class don't compare.
+              const raw = !r.isTeam && !r.otherClass && ours !== null && r.lastLap !== null ? ours - r.lastLap : null;
               // Same lap time (to the hundredth) is neither slower nor faster.
               const delta = raw !== null && Math.abs(raw) < 0.005 ? 0 : raw;
+              const cls = [r.isTeam ? 'team' : '', gap ? 'gap' : '', r.lap ? `lap-${r.lap}` : ''].join(' ');
               return (
-                <tr key={r.carIdx} className={[r.isTeam ? 'team' : '', gap ? 'gap' : ''].join(' ')}>
-                  <td className="st-pos">{r.pos}</td>
-                  <td className="st-num">#{r.number}</td>
-                  <td className="st-name">{r.country && /^[a-z]{2}(-[a-z]{3})?$/.test(r.country) && <span className={`fi fi-${r.country} st-flag`} />}{r.name}</td>
-                  <td className={r.isTeam ? 'st-gap' : `st-gap ${gapClass(r.gap, r.lapsGap)}`}>{r.isTeam ? '' : gapText(r.gap, r.lapsGap)}</td>
-                  <td className="st-tyre">{r.inPit ? 'Box' : r.tyreLaps ?? '–'}</td>
-                  <td className={delta === null || delta === 0 ? 'st-delta' : delta > 0 ? 'st-delta slower' : 'st-delta faster'}>
-                    {delta === null ? (r.isTeam && ours !== null ? lapTime(ours) : '') : delta === 0 ? '0.00' : `${delta > 0 ? '+' : '−'}${Math.abs(delta).toFixed(2)}`}
-                  </td>
+                <tr key={`${r.lap ?? 'row'}-${r.carIdx}`} className={cls}>
+                  {col('pos') && <td className="st-pos">{r.lap ? '' : r.pos}</td>}
+                  {col('num') && <td className="st-num">#{r.number}</td>}
+                  {col('flag') && <td className="st-flag-cell">{r.country && /^[a-z]{2}(-[a-z]{3})?$/.test(r.country) && <span className={`fi fi-${r.country} st-flag`} />}</td>}
+                  {col('name') && (
+                    <td className="st-name">
+                      {r.name}
+                      {r.lap && <span className="st-lap-tag">{r.lap === 'backmarker' ? 'Nachzügler' : 'Überrunder'}</span>}
+                    </td>
+                  )}
+                  {col('gap') && (
+                    <td className={r.isTeam || r.lap ? 'st-gap' : `st-gap ${gapClass(r.gap, r.lapsGap)}`}>
+                      {r.isTeam ? '' : r.lap ? gapText(r.gap, 0) : gapText(r.gap, r.lapsGap)}
+                    </td>
+                  )}
+                  {col('tyre') && <td className="st-tyre">{r.inPit ? 'Box' : r.tyreLaps ?? '–'}</td>}
+                  {col('delta') && (
+                    <td className={delta === null || delta === 0 || r.lap ? 'st-delta' : delta > 0 ? 'st-delta slower' : 'st-delta faster'}>
+                      {delta === null ? (r.isTeam && ours !== null ? lapTime(ours) : '') : delta === 0 ? '0.00' : `${delta > 0 ? '+' : '−'}${Math.abs(delta).toFixed(2)}`}
+                    </td>
+                  )}
                 </tr>
               );
             })}

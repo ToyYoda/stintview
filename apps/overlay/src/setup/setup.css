@@ -126,3 +126,36 @@ body.setup-body #root { height: auto; }
 .setup .pit-import { margin-top: 14px; border-top: 1px solid var(--o-line); padding-top: 10px; }
 .setup .pit-import small { display: block; margin-top: 6px; color: var(--o-muted); word-break: break-all; }
 .setup .pit-import small.bad { color: #ff4d4d; }
+
+/* Output choice (monitor or VR) */
+.setup .output-choice { display: flex; align-items: center; gap: 0; margin: 10px 0 4px; font-size: 13px; }
+.setup .output-choice > span { width: 90px; font-weight: 600; }
+.setup .seg { font: inherit; padding: 6px 14px; background: #151515; color: var(--o-muted); border: 1px solid var(--o-line); cursor: pointer; }
+.setup .seg:first-of-type { border-radius: 4px 0 0 4px; }
+.setup .seg:last-of-type { border-radius: 0 4px 4px 0; border-left: 0; }
+.setup .seg.active { background: var(--o-red); color: #fff; border-color: var(--o-red); }
+
+/* Sliders */
+.setup .slider-row { display: grid; grid-template-columns: 90px 1fr 48px; align-items: center; gap: 4px 10px; padding: 6px 0; font-size: 13px; }
+.setup .slider-row input { accent-color: var(--o-red); width: 100%; cursor: pointer; }
+.setup .slider-row b { text-align: right; font-variant-numeric: tabular-nums; }
+.setup .slider-row small { grid-column: 2 / 4; color: var(--o-muted); font-size: 12px; }
+
+/* Expandable panel list */
+.setup .panel-list { margin: 8px 0 4px; border-top: 1px solid var(--o-line); }
+.setup .panel-item { border-bottom: 1px solid var(--o-line); }
+.setup .panel-item summary { display: flex; align-items: center; gap: 10px; padding: 8px 4px; cursor: pointer; list-style: none; font-size: 13.5px; }
+.setup .panel-item summary::-webkit-details-marker { display: none; }
+.setup .panel-item summary::after { content: '▸'; margin-left: 4px; color: var(--o-muted); }
+.setup .panel-item[open] summary::after { content: '▾'; }
+.setup .panel-item summary input { accent-color: var(--o-red); width: 16px; height: 16px; cursor: pointer; }
+.setup .panel-item.off .panel-name { color: var(--o-muted); }
+.setup .panel-name { flex: 1; }
+.setup .panel-meta { color: var(--o-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.setup .panel-body { padding: 0 4px 10px 30px; }
+.setup .panel-options { font-size: 13px; }
+.setup .options-title { font-weight: 600; margin: 4px 0; }
+.setup .options-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 12px; }
+.setup .options-grid label, .setup .option-line { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.setup .option-line { margin-top: 8px; align-items: flex-start; line-height: 1.35; }
+.setup .panel-options input { accent-color: var(--o-red); }

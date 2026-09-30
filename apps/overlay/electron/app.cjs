@@ -4,14 +4,14 @@ const { app, BrowserWindow, Menu, Tray, dialog, ipcMain, nativeImage, shell, uti
 const { createWriteStream, mkdirSync, readdirSync } = require('node:fs');
 const path = require('node:path');
 const {
-  cleanOpacity, cleanPanels, cleanPitStop, clearConfig, configPath, dataDir, loadConfig, loadSettings, logDir, normalizeUrl, panelsFor, register, saveSettings,
+  cleanOpacity, cleanOutput, cleanPanels, cleanPitStop, clearConfig, configPath, dataDir, loadConfig, loadSettings, logDir, normalizeUrl, panelConfig, panelsFor, register, saveSettings,
 } = require('./config.cjs');
 const {
-  editHotkey, editing, onOverlayChange, overlayRunning, editHotkeyInfo, setEditMode, setOverlayOpacity, setOverlayPanels, startOverlay, stopOverlay, toggleEdit,
+  editHotkey, editing, onOverlayChange, overlayRunning, editHotkeyInfo, setEditMode, setOverlayOpacity, setOverlayPanelConfig, setOverlayPanels, startOverlay, stopOverlay, toggleEdit,
 } = require('./overlay-window.cjs');
 const { PRELOAD, loadRoute } = require('./renderer.cjs');
 const { cameraCommand, cameraHotkeyInfo, cameraInfo, onRecorderMessage, setHazardCar, setTeamCar, startCamera, stopCamera } = require('./camera.cjs');
-const { recenterVr, setVrOpacity, startVr, stopVr, vrHotkeyInfo, vrStatus } = require('./vr.cjs');
+const { recenterVr, setVrOpacity, setVrPanelConfig, startVr, stopVr, vrHotkeyInfo, vrStatus } = require('./vr.cjs');
 const { hotkeyGroups } = require('./hotkeys.cjs');
 const { checkNow, installNow, setupUpdates, updateInfo, updateLabel } = require('./updates.cjs');
 
@@ -203,14 +203,18 @@ async function waitForRelay() {
 function applySettings() {
   const configured = Boolean(loadConfig());
   if (settings.server) startRelay(); else stopRelay();
-  setOverlayPanels(panelsFor(settings, 'monitor'));
-  setOverlayOpacity(settings.opacity.monitor / 100);
-  setVrOpacity(settings.opacity.vr / 100);
+  const shown = panelsFor(settings);
+  setOverlayPanels(shown);
+  setOverlayPanelConfig(panelConfig(settings));
+  setOverlayOpacity(settings.opacity / 100);
+  setVrPanelConfig(panelConfig(settings));
+  setVrOpacity(settings.opacity / 100);
   recorder?.post({ t: 'pit-settings', pit: settings.pitStop });
-  if (configured && settings.overlay) startOverlay(); else stopOverlay();
+  // One output at a time: the monitor overlay or the VR panels.
+  if (configured && settings.overlay && settings.output === 'monitor') startOverlay(); else stopOverlay();
   // VR panels are separate windows: restart the VR host when the selection changes.
-  const vrPanels = panelsFor(settings, 'vr');
-  if (configured && settings.vr) {
+  const vrPanels = shown;
+  if (configured && settings.overlay && settings.output === 'vr') {
     if (vrStatus() !== 'off' && vrPanels.join() !== runningVrPanels) stopVr();
     runningVrPanels = vrPanels.join();
     startVr(refresh, vrPanels).catch((e) => console.error('[vr]', e));
@@ -256,14 +260,15 @@ function buildMenu() {
     { label: statusLine(), enabled: false },
     updateMenuItem(),
     { type: 'separator' },
-    { label: 'Overlay am Monitor', type: 'checkbox', checked: settings.overlay, enabled: configured, click: (i) => updateSettings({ overlay: i.checked }) },
+    { label: 'Anzeigen einblenden', type: 'checkbox', checked: settings.overlay, enabled: configured, click: (i) => updateSettings({ overlay: i.checked }) },
+    { label: 'am Monitor', type: 'radio', checked: settings.output === 'monitor', enabled: configured, click: () => updateSettings({ output: 'monitor' }) },
+    {
+      label: `in VR (SteamVR)${settings.output === 'vr' && vr === 'waiting' ? ' – wartet auf SteamVR' : ''}`,
+      type: 'radio', checked: settings.output === 'vr', enabled: configured, click: () => updateSettings({ output: 'vr' }),
+    },
     {
       label: `Anzeigen verschieben${editHotkey() ? ` (${editHotkey()})` : ''}`,
       type: 'checkbox', checked: editing(), enabled: overlayRunning(), click: toggleEdit,
-    },
-    {
-      label: `VR-Overlay (SteamVR)${vr === 'waiting' ? ' – wartet auf SteamVR' : ''}`,
-      type: 'checkbox', checked: settings.vr, enabled: configured, click: (i) => updateSettings({ vr: i.checked }),
     },
     { label: 'VR-Ausrichtung zurücksetzen (Strg+Umschalt+R)', enabled: vr === 'connected', click: recenterVr },
     { type: 'separator' },
@@ -356,10 +361,12 @@ ipcMain.handle('app:create', async (_e, { serverUrl, teamName, memberName, hostH
 });
 
 ipcMain.handle('app:settings', (_e, patch) => {
-  const allowed = ['overlay', 'vr', 'autostart', 'server', 'panels', 'opacity', 'pitStop'];
+  const allowed = ['overlay', 'output', 'autostart', 'server', 'panels', 'opacity', 'pitStop'];
   const clean = Object.fromEntries(Object.entries(patch ?? {}).filter(([k]) => allowed.includes(k)));
-  if (clean.panels) clean.panels = cleanPanels(clean.panels);
-  if (clean.opacity) clean.opacity = cleanOpacity({ ...settings.opacity, ...clean.opacity });
+  if (clean.panels) clean.panels = cleanPanels({ ...settings.panels, ...clean.panels });
+  if ('opacity' in clean) clean.opacity = cleanOpacity(clean.opacity);
+  if ('output' in clean) clean.output = cleanOutput(clean.output);
+  if ('overlay' in clean) clean.overlay = Boolean(clean.overlay);
   if (clean.pitStop) clean.pitStop = cleanPitStop({ ...settings.pitStop, ...clean.pitStop });
   updateSettings(clean);
   return appState();

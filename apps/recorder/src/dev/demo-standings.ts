@@ -35,7 +35,11 @@ ws.on('open', async () => {
     pos, carIdx: i, number, country, name, gap, lapsGap, tyreLaps, lastLap, inPit, isTeam: pos === 9,
   }));
   for (let i = 0; i < 120; i++) {
-    send({ t: 'standings', sessionTime: 5000 + i / 2, rows });
+    const lapping: StandingRow[] = [
+      { pos: 0, carIdx: 30, number: '211', name: 'Jonas Weber', country: 'de', lastLap: 512.4, isTeam: false, gap: 1.8, lapsGap: -1, tyreLaps: 9, inPit: false, lap: 'backmarker', otherClass: true },
+      { pos: 0, carIdx: 31, number: '5', name: 'Henri Dubois', country: 'fr', lastLap: 452.2, isTeam: false, gap: -2.6, lapsGap: 1, tyreLaps: 4, inPit: false, lap: 'lapper', otherClass: true },
+    ];
+    send({ t: 'standings', sessionTime: 5000 + i / 2, rows, lapping });
     send({
       t: 'pitplan', sessionTime: 5000 + i / 2, fuel: 86, fuelTime: 34.4, tyres: 4, tyreTime: 16, repair: 0, optRepair: 0,
       simultaneous: true, regulation: 'NEC', regulationFrom: 'series', fillRate: 2.5, stationary: 34.4, laneLoss: 19, laneSamples: 7, laneFrom: 'measured', total: 53.4, source: 'measured', stops: 3,

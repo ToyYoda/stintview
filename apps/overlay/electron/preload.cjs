@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld('stintview', {
   onPanels: (cb) => ipcRenderer.on('panels', (_e, ids) => cb(ids)),
   // Panel background opacity 0–1 (monitor overlay and VR panels have their own value)
   onOpacity: (cb) => ipcRenderer.on('opacity', (_e, v) => cb(v)),
+  // Size factor and options per panel
+  onPanelConfig: (cb) => ipcRenderer.on('panel-config', (_e, cfg) => cb(cfg)),
   // Spectator camera
   setTeamCar: (team) => ipcRenderer.send('app:team-car', team),
   setHazard: (carIdx) => ipcRenderer.send('app:hazard', carIdx),

@@ -12,6 +12,7 @@ let hotkey = null;
 let notify = () => {};
 let panels = null; // widget ids to show, null = all
 let opacity = 0.78; // panel background opacity 0–1
+let panelConfig = null; // { [id]: { scale, options } }
 
 /** Called whenever edit mode or the overlay changes (tray menu, setup window). */
 const onOverlayChange = (fn) => { notify = fn; };
@@ -68,6 +69,7 @@ function startOverlay() {
     setEdit(edit);
     if (panels) win.webContents.send('panels', panels);
     win.webContents.send('opacity', opacity);
+    if (panelConfig) win.webContents.send('panel-config', panelConfig);
   });
   setEdit(false);
   loadRoute(win, '/');
@@ -89,6 +91,12 @@ function setOverlayPanels(ids) {
   if (win) win.webContents.send('panels', ids);
 }
 
+/** Size and options per panel from the StintView window. */
+function setOverlayPanelConfig(cfg) {
+  panelConfig = cfg;
+  if (win) win.webContents.send('panel-config', cfg);
+}
+
 function setOverlayOpacity(value) {
   opacity = value;
   if (win) win.webContents.send('opacity', value);
@@ -103,5 +111,5 @@ const editing = () => edit;
 const editHotkeyInfo = () => ({ key: hotkey, candidates: EDIT_HOTKEYS });
 
 module.exports = {
-  startOverlay, stopOverlay, toggleEdit, setEditMode, overlayRunning, editHotkey, editHotkeyInfo, editing, onOverlayChange, setOverlayPanels, setOverlayOpacity,
+  startOverlay, stopOverlay, toggleEdit, setEditMode, overlayRunning, editHotkey, editHotkeyInfo, editing, onOverlayChange, setOverlayPanels, setOverlayOpacity, setOverlayPanelConfig,
 };

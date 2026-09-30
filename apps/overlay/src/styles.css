@@ -101,7 +101,7 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .wx-event { display: flex; gap: 8px; font-size: 12px; }
 .wx-time { font-family: var(--mono); color: var(--muted); }
 
-.standings { width: 420px; }
+.standings { min-width: 260px; }
 .standings table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .standings td { padding: 3px 4px; white-space: nowrap; }
 .standings tr.gap td { border-top: 1px dashed var(--border); }
@@ -109,9 +109,8 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .st-pos { font-family: var(--mono); color: var(--muted); width: 22px; text-align: right; }
 .st-num { font-family: var(--mono); color: var(--muted); width: 36px; }
 .standings th { font-size: 10px; font-weight: 400; color: var(--muted); text-align: right; padding: 0 4px 2px; }
-.standings th:nth-child(3) { text-align: left; }
 .st-flag { width: 1.1em; line-height: 0.8em; margin-right: 5px; border-radius: 1px; vertical-align: -1px; }
-.st-name { max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+.st-name { max-width: 210px; overflow: hidden; text-overflow: ellipsis; }
 .st-gap, .st-tyre { font-family: var(--mono); text-align: right; width: 54px; }
 .st-tyre { width: 42px; }
 .st-gap.attack { color: var(--warn); font-weight: 700; }
@@ -143,3 +142,11 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .pc-gap { font-family: var(--mono); text-align: right; width: 50px; }
 .pc-gap.traffic { color: var(--bad); font-weight: 700; }
 .pc-gap.tight { color: var(--warn); }
+
+/* Position: flag in its own column, lapping rows */
+.st-flag-cell { width: 20px; padding-right: 0 !important; }
+.st-flag-cell .st-flag { margin-right: 0; }
+.standings th.th-name { text-align: left; }
+.standings tr.lap-backmarker td { background: rgba(77, 163, 255, 0.28); color: #d6e9ff; }
+.standings tr.lap-lapper td { background: rgba(255, 77, 77, 0.30); color: #ffd9d9; }
+.st-lap-tag { margin-left: 6px; font-size: 10px; padding: 0 4px; border-radius: 3px; background: rgba(0, 0, 0, 0.35); }

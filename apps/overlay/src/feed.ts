@@ -17,15 +17,31 @@ export interface HotkeyGroup {
   items: { label: string; key: string | null; taken: string[]; alternatives: string[]; active: boolean }[];
 }
 
+export type StandingsColumn = 'pos' | 'num' | 'flag' | 'name' | 'gap' | 'tyre' | 'delta';
+/** Position panel: which columns, and whether lapping cars are shown. */
+export interface StandingsOptions { columns: Record<StandingsColumn, boolean>; lapping: boolean }
+
+export interface PanelSetting {
+  shown: boolean;
+  size: number;
+  /** Panel-specific (only the Position panel has some so far). */
+  options?: StandingsOptions;
+}
+
+/** Sent to the overlay pages: size factor and options per panel. */
+export type PanelConfig = Record<string, { scale: number; options: StandingsOptions | null }>;
+
 export interface AppState {
   version: string;
   configured: boolean;
   team: { teamName: string; memberName: string; serverUrl: string; inviteCode: string } | null;
   settings: {
-    overlay: boolean; vr: boolean; autostart: boolean; server: boolean; serverPort: number;
-    panels: Record<string, { monitor: boolean; vr: boolean }>;
-    /** Panel background opacity in percent. */
-    opacity: { monitor: number; vr: number };
+    /** Panels shown at all, and where: monitor overlay or VR (one at a time). */
+    overlay: boolean; output: 'monitor' | 'vr'; autostart: boolean; server: boolean; serverPort: number;
+    /** Per panel: shown, size in percent, panel-specific options. */
+    panels: Record<string, PanelSetting>;
+    /** Panel background opacity in percent, all panels. */
+    opacity: number;
     pitStop: { fillRate: number | null; tyreTime: number | null; regulation: 'auto' | 'standard' | 'imsa' | 'nec' | 'dtm' };
   };
   status: {
@@ -66,6 +82,7 @@ declare global {
       setInteractive(on: boolean): void;
       onPanels?(cb: (ids: string[]) => void): void;
       onOpacity?(cb: (value: number) => void): void;
+      onPanelConfig?(cb: (cfg: PanelConfig) => void): void;
       setTeamCar(team: { carIdx: number; carNumber: number; sessionId: string }): void;
       setHazard?(carIdx: number | null): void;
       camera(action: 'incident' | 'back', targetCarIdx?: number): Promise<void>;

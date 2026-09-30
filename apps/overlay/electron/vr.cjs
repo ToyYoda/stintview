@@ -64,6 +64,17 @@ function saveLayout() {
 
 /** Panel background opacity 0–1; sent to every panel page (they are transparent textures). */
 let vrOpacity = 1;
+/** { [id]: { scale, options } } from the StintView window: size factor on top of the layout width. */
+let vrPanelConfig = {};
+
+/** Size and options per panel; applied live (no VR restart). */
+function setVrPanelConfig(cfg) {
+  vrPanelConfig = cfg ?? {};
+  for (const [id, panel] of panels) {
+    if (!panel.win.isDestroyed()) panel.win.webContents.send('panel-config', vrPanelConfig);
+    if (vr && panel.handle) placePanel(id);
+  }
+}
 
 function setVrOpacity(value) {
   vrOpacity = value;
@@ -92,7 +103,10 @@ async function createPanelWindow(id) {
   panels.set(id, panel);
 
   win.webContents.on('paint', (_e, _dirty, image) => pushFrame(id, image));
-  win.webContents.on('did-finish-load', () => win.webContents.send('opacity', vrOpacity));
+  win.webContents.on('did-finish-load', () => {
+    win.webContents.send('opacity', vrOpacity);
+    win.webContents.send('panel-config', vrPanelConfig);
+  });
   await loadRoute(win, `/widget/${id}`);
   await new Promise((r) => setTimeout(r, 300));
   if (win.isDestroyed()) return;
@@ -188,7 +202,7 @@ function placePanel(id) {
   const p = layout.panels[id];
   const panel = panels.get(id);
   if (!vr || !panel?.handle) return;
-  vr.setWidth(panel.handle, p.width);
+  vr.setWidth(panel.handle, p.width * (vrPanelConfig[id]?.scale ?? 1));
   vr.setSeatedTransform(panel.handle, panelTransform(p));
 }
 
@@ -357,4 +371,4 @@ const vrHotkeyInfo = () => ({
   keys: Object.keys(HOTKEYS).map((key) => ({ key, label: HOTKEY_LABELS[key] ?? key, ok: !failedHotkeys.has(key) })),
 });
 
-module.exports = { startVr, stopVr, vrStatus, vrHotkeyInfo, setVrOpacity, recenterVr };
+module.exports = { startVr, stopVr, vrStatus, vrHotkeyInfo, setVrOpacity, setVrPanelConfig, recenterVr };

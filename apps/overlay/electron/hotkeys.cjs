@@ -34,7 +34,7 @@ function hotkeyGroups(edit, camera, cameraCandidates, vr, active) {
   return [
     {
       title: 'Overlay am Monitor',
-      note: active.overlay ? null : 'Nur aktiv, wenn „Overlay am Monitor“ eingeschaltet ist.',
+      note: active.overlay ? null : 'Nur aktiv, wenn die Anzeigen am Monitor eingeblendet sind.',
       items: [item('Anzeigen verschieben an/aus', edit.key ?? (active.overlay ? null : edit.candidates[0]), edit.candidates, active.overlay)],
     },
     {
@@ -47,7 +47,7 @@ function hotkeyGroups(edit, camera, cameraCandidates, vr, active) {
     },
     {
       title: 'VR-Overlay (SteamVR)',
-      note: vr.running ? null : 'Nur aktiv, wenn „VR-Overlay“ eingeschaltet ist.',
+      note: vr.running ? null : 'Nur aktiv, wenn die Anzeigen in VR eingeblendet sind.',
       items: vr.keys.map((k) => ({ label: k.label, key: k.ok ? displayKey(k.key) : null, taken: k.ok ? [] : [displayKey(k.key)], alternatives: [], active: vr.running && k.ok })),
     },
   ];

@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import type { AppState, HotkeyGroup } from '../feed.ts';
+import type { AppState, HotkeyGroup, PanelSetting, StandingsColumn, StandingsOptions } from '../feed.ts';
 import './setup.css';
 
 const api = () => window.stintview!;
@@ -148,7 +148,7 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
           <li><Dot kind={serverDot} />Team-Server{status.server === 'error' ? `: ${status.serverText.replace(/^server error: /, '')}` : status.server === 'offline' ? ': keine Verbindung' : ': verbunden'}</li>
           <li><Dot kind={status.iracing ? 'ok' : 'idle'} />iRacing{status.iracing ? ' läuft' : ' nicht aktiv'}</li>
           <li><Dot kind={status.inCar ? (status.server === 'standby' ? 'warn' : 'ok') : 'idle'} />{status.inCar ? (status.server === 'standby' ? 'Im Auto – Standby (anderer Fahrer sendet noch)' : 'Du fährst – dein Team sieht deine Daten') : 'Nicht im Auto'}</li>
-          {settings.vr && <li><Dot kind={status.vr === 'connected' ? 'ok' : 'warn'} />SteamVR{status.vr === 'connected' ? ' verbunden' : ' – wartet auf SteamVR'}</li>}
+          {settings.overlay && settings.output === 'vr' && <li><Dot kind={status.vr === 'connected' ? 'ok' : 'warn'} />SteamVR{status.vr === 'connected' ? ' verbunden' : ' – wartet auf SteamVR'}</li>}
           {settings.server && <li><Dot kind={status.relay === 'running' ? 'ok' : 'bad'} />Team-Server auf diesem PC{status.relay === 'running' ? ' läuft' : ' gestoppt'}</li>}
         </ul>
 
@@ -156,7 +156,21 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
 
       <section className="card">
         <h2>Anzeigen</h2>
-        <Toggle checked={settings.overlay} onChange={(v) => set({ overlay: v })} label="Overlay am Monitor" hint="iRacing im randlosen Fenstermodus." />
+        <Toggle checked={settings.overlay} onChange={(v) => set({ overlay: v })} label="Anzeigen einblenden" hint="Aus = keine Panels, weder am Monitor noch in VR." />
+        <div className="output-choice" role="radiogroup" aria-label="Ausgabe">
+          <span>Ausgabe</span>
+          {(['monitor', 'vr'] as const).map((o) => (
+            <button key={o} type="button" role="radio" aria-checked={settings.output === o}
+              className={settings.output === o ? 'seg active' : 'seg'} onClick={() => set({ output: o })}>
+              {o === 'monitor' ? 'Monitor' : 'VR (SteamVR)'}
+            </button>
+          ))}
+        </div>
+        <p className="hint">
+          {settings.output === 'monitor'
+            ? 'Transparentes Fenster über iRacing – iRacing im randlosen Fenstermodus.'
+            : 'Panels in der Brille. Strg+Umschalt+V wählt ein Panel, Pfeiltasten/Bild↑↓ verschieben, Strg+Umschalt+R richtet die Ansicht neu aus.'}
+        </p>
         {status.overlay && (
           <div className="edit-row">
             <button className="btn ghost" onClick={async () => onState(await api().setEditMode(!status.editing))}>
@@ -165,9 +179,9 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
             <small>{status.editHotkey ? `oder ${status.editHotkey}` : 'Kein Tastenkürzel frei – bitte diesen Knopf nutzen.'}</small>
           </div>
         )}
-        <Toggle checked={settings.vr} onChange={(v) => set({ vr: v })} label="VR-Overlay (SteamVR)" hint="Panels in der Brille. Strg+Umschalt+V wählt, Pfeiltasten verschieben." />
-        <PanelTable panels={settings.panels} onChange={(panels) => set({ panels })} />
-        <OpacitySliders opacity={settings.opacity} onChange={(opacity) => set({ opacity })} />
+        <Slider label="Hintergrund" hint="für alle Panels: 0 % = durchsichtig, 100 % = deckend; die Schrift bleibt voll sichtbar"
+          value={settings.opacity} min={0} max={100} step={5} onCommit={(opacity) => set({ opacity })} />
+        <PanelList panels={settings.panels} onChange={(panels) => set({ panels })} />
         <p className="hint cam-keys">
           Als Zuschauer bei Gelb für deinen Fahrer: <b>{state.cameraHotkeys.incident ?? '–'}</b> springt mit der Kamera zum Unfall vor ihm,{' '}
           <b>{state.cameraHotkeys.back ?? '–'}</b> zurück zu ihm. Am Monitor gibt es dafür auch Knöpfe in der Kopfzeile.{' '}
@@ -241,33 +255,24 @@ function HotkeyCard({ groups }: { groups: HotkeyGroup[] }) {
   );
 }
 
-/** Background opacity of the panels, separately for monitor and VR; applied live while dragging. */
-function OpacitySliders({ opacity, onChange }: {
-  opacity: AppState['settings']['opacity'];
-  onChange(o: AppState['settings']['opacity']): void;
+/** Slider that applies live while dragging (saved at most every 150 ms). */
+function Slider({ label, hint, value, min, max, step, onCommit }: {
+  label: string; hint?: string; value: number; min: number; max: number; step: number; onCommit(v: number): void;
 }) {
-  const [value, setValue] = useState(opacity);
-  useEffect(() => setValue(opacity), [opacity.monitor, opacity.vr]);
-  // Save at most every 150 ms while the slider moves.
+  const [v, setV] = useState(value);
+  useEffect(() => setV(value), [value]);
   useEffect(() => {
-    if (value.monitor === opacity.monitor && value.vr === opacity.vr) return;
-    const t = setTimeout(() => onChange(value), 150);
+    if (v === value) return;
+    const t = setTimeout(() => onCommit(v), 150);
     return () => clearTimeout(t);
-  }, [value.monitor, value.vr]);
-  const row = (where: 'monitor' | 'vr', label: string) => (
-    <label className="opacity-row">
-      <span>{label}</span>
-      <input type="range" min={0} max={100} step={5} value={value[where]}
-        onChange={(e) => setValue({ ...value, [where]: Number(e.target.value) })} />
-      <b>{value[where]} %</b>
-    </label>
-  );
+  }, [v]);
   return (
-    <div className="opacity">
-      <div className="opacity-title">Hintergrund der Anzeigen <small>0 % = durchsichtig, 100 % = deckend; die Schrift bleibt immer voll sichtbar</small></div>
-      {row('monitor', 'Monitor')}
-      {row('vr', 'VR')}
-    </div>
+    <label className="slider-row">
+      <span>{label}</span>
+      <input type="range" min={min} max={max} step={step} value={v} onChange={(e) => setV(Number(e.target.value))} />
+      <b>{v} %</b>
+      {hint && <small>{hint}</small>}
+    </label>
   );
 }
 
@@ -345,30 +350,62 @@ const PANEL_NAMES: [string, string][] = [
   ['pitstop', 'Boxenstopp (Dauer und Rückkehr)'],
 ];
 
-/** Which displays appear on the monitor overlay and as VR panels. */
-function PanelTable({ panels, onChange }: {
+const STANDINGS_COLUMNS: [StandingsColumn, string][] = [
+  ['pos', 'Position'], ['num', 'Startnummer'], ['flag', 'Flagge'], ['name', 'Fahrer'],
+  ['gap', 'Abstand'], ['tyre', 'Reifenalter'], ['delta', 'Δ Runde'],
+];
+
+/**
+ * Every panel: on/off in the header, and when opened its size and panel-specific options.
+ * Applies to the chosen output (monitor or VR).
+ */
+function PanelList({ panels, onChange }: {
   panels: AppState['settings']['panels'];
   onChange(p: AppState['settings']['panels']): void;
 }) {
-  const toggle = (id: string, where: 'monitor' | 'vr') =>
-    onChange({ ...panels, [id]: { ...panels[id]!, [where]: !panels[id]?.[where] } });
+  const update = (id: string, patch: Partial<PanelSetting>) => onChange({ ...panels, [id]: { ...panels[id]!, ...patch } });
   return (
-    <table className="panels">
-      <thead><tr><th>Anzeige</th><th>Monitor</th><th>VR</th></tr></thead>
-      <tbody>
-        {PANEL_NAMES.map(([id, name]) => (
-          <tr key={id}>
-            <td>{name}</td>
-            {(['monitor', 'vr'] as const).map((where) => (
-              <td key={where}>
-                <input type="checkbox" aria-label={`${name} – ${where === 'vr' ? 'VR' : 'Monitor'}`}
-                  checked={Boolean(panels[id]?.[where])} onChange={() => toggle(id, where)} />
-              </td>
-            ))}
-          </tr>
+    <div className="panel-list">
+      {PANEL_NAMES.map(([id, name]) => {
+        const p = panels[id];
+        if (!p) return null;
+        return (
+          <details key={id} className={p.shown ? 'panel-item' : 'panel-item off'}>
+            <summary>
+              <input type="checkbox" aria-label={`${name} anzeigen`} checked={p.shown}
+                onClick={(e) => e.stopPropagation()} onChange={() => update(id, { shown: !p.shown })} />
+              <span className="panel-name">{name}</span>
+              <span className="panel-meta">{p.size !== 100 ? `${p.size} %` : ''}</span>
+            </summary>
+            <div className="panel-body">
+              <Slider label="Größe" value={p.size} min={50} max={200} step={5} onCommit={(size) => update(id, { size })} />
+              {id === 'standings' && p.options && <StandingsOptionsForm options={p.options} onChange={(options) => update(id, { options })} />}
+            </div>
+          </details>
+        );
+      })}
+    </div>
+  );
+}
+
+function StandingsOptionsForm({ options, onChange }: { options: StandingsOptions; onChange(o: StandingsOptions): void }) {
+  return (
+    <div className="panel-options">
+      <div className="options-title">Spalten</div>
+      <div className="options-grid">
+        {STANDINGS_COLUMNS.map(([c, label]) => (
+          <label key={c}>
+            <input type="checkbox" checked={options.columns[c] ?? true}
+              onChange={() => onChange({ ...options, columns: { ...options.columns, [c]: !(options.columns[c] ?? true) } })} />
+            {label}
+          </label>
         ))}
-      </tbody>
-    </table>
+      </div>
+      <label className="option-line">
+        <input type="checkbox" checked={options.lapping} onChange={() => onChange({ ...options, lapping: !options.lapping })} />
+        Überrundungen zeigen – Auto direkt vor euch, das ihr gleich überrundet (blau), oder direkt hinter euch, das euch gleich überrundet (rot)
+      </label>
+    </div>
   );
 }
 

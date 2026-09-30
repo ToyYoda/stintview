@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { countryCode } from './country.ts';
-import { computeStandings, PitStopTracker, trackGap, type CarInfo, type CarProgress } from './standings.ts';
+import { computeStandings, lappingRows, PitStopTracker, trackGap, type CarInfo, type CarProgress } from './standings.ts';
 
 const info = new Map<number, CarInfo>(
   Array.from({ length: 20 }, (_, i) => [i, { number: String(i + 1).padStart(2, '0'), name: `Driver ${i}` }]),
@@ -105,5 +105,28 @@ describe('countryCode', () => {
     expect(countryCode('Global')).toBeNull();
     expect(countryCode('-none-')).toBeNull();
     expect(countryCode(undefined)).toBeNull();
+  });
+});
+
+describe('lappingRows', () => {
+  const at = (carIdx: number, progress: number, classId = 0, onPitRoad = false): CarProgress =>
+    ({ carIdx, progress, lastLap: 100, classId, onPitRoad });
+
+  it('backmarker right in front, lapper right behind', () => {
+    const rows = lappingRows([
+      at(0, 10.50),
+      at(1, 9.55, 1), // physically 5 % ahead, a lap down (other class) -> backmarker
+      at(2, 10.60), // further ahead, same lap
+      at(3, 11.47), // physically 3 % behind, a lap up -> lapper
+      at(4, 10.40), // further behind, same lap
+    ], 0, info, 100);
+    expect(rows.map((r) => [r.carIdx, r.lap, r.otherClass])).toEqual([[1, 'backmarker', true], [3, 'lapper', false]]);
+    expect(rows[0]!.gap).toBeCloseTo(5);
+    expect(rows[1]!.gap).toBeCloseTo(-3);
+  });
+
+  it('nothing when the neighbours are on our lap, and cars in the pits are ignored', () => {
+    expect(lappingRows([at(0, 10.5), at(1, 10.55), at(2, 10.45)], 0, info, 100)).toEqual([]);
+    expect(lappingRows([at(0, 10.5), at(1, 9.52, 0, true), at(2, 10.6)], 0, info, 100)).toEqual([]);
   });
 });
