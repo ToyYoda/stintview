@@ -17,8 +17,8 @@ MEM_NAME = 'Local\\IRSDKMemMapFileName'
 WATCH = ['LFtempL', 'LFtempM', 'LFtempR', 'LFpressure', 'RRtempM', 'RRpressure']
 
 
-def live_session_time():
-    """SessionTime from the live shared memory, None if iRacing is not running."""
+def live_values(names):
+    """Values from the live shared memory, None if iRacing is not running."""
     k32 = ctypes.WinDLL('kernel32', use_last_error=True)
     k32.OpenFileMappingW.restype = ctypes.c_void_p
     h = k32.OpenFileMappingW(0x0004, False, MEM_NAME)
@@ -32,12 +32,19 @@ def live_session_time():
     size = max(struct.unpack_from('<i', head, 52 + i * 16)[0] for i in range(num_buf)) + buf_len
     m = mmap.mmap(-1, size, tagname=MEM_NAME, access=mmap.ACCESS_READ)
     base = max(struct.unpack_from('<2i', m, 48 + i * 16) for i in range(num_buf))[1]
+    out = {}
     for i in range(num_vars):
         o = var_off + i * 144
-        if m[o + 16:o + 48].split(b'\0')[0] == b'SessionTime':
+        name = m[o + 16:o + 48].split(b'\0')[0].decode()
+        if name in names:
             typ, off = struct.unpack_from('<2i', m, o)
-            return struct.unpack_from('<d', m, base + off)[0]
-    return None
+            out[name] = struct.unpack_from('<' + TYPES[typ][0], m, base + off)[0]
+    return out
+
+
+def live_session_time():
+    v = live_values({'SessionTime'})
+    return v.get('SessionTime') if v else None
 
 
 def start_disk_telemetry():
@@ -85,11 +92,25 @@ def main():
     if '--start' in sys.argv:
         start_disk_telemetry()
 
-    print(f'Waiting for a new .ibt in {tel_dir} (created after this probe started) ... Ctrl+C to abort')
-    path = None
+    print(f'Waiting for a growing .ibt in {tel_dir} ... Ctrl+C to abort')
+    path, sizes, last_status = None, {}, 0
     while not path:
-        files = [p for p in glob.glob(os.path.join(tel_dir, '*.ibt')) if os.path.getctime(p) >= started - 5]
-        path = max(files, key=os.path.getctime) if files else None
+        # The file iRacing writes is the one that grows (it may be older than this probe
+        # if recording was already on).
+        recent = [p for p in glob.glob(os.path.join(tel_dir, '*.ibt')) if os.path.getmtime(p) >= started - 3600 or os.path.getctime(p) >= started - 3600]
+        for p in recent:
+            size = os.path.getsize(p)
+            if p in sizes and size > sizes[p]:
+                path = p
+            sizes[p] = size
+        if not path and time.time() - last_status >= 5:
+            last_status = time.time()
+            v = live_values({'IsOnTrack', 'IsDiskLoggingEnabled', 'IsDiskLoggingActive', 'SessionTime'})
+            if v is None:
+                print('  iRacing: not running (no shared memory)')
+            else:
+                print(f"  iRacing: on track={v.get('IsOnTrack')}  disk logging enabled={v.get('IsDiskLoggingEnabled')}"
+                      f"  active={v.get('IsDiskLoggingActive')}  | recent .ibt files: {len(recent)}")
         if not path:
             time.sleep(1)
     print(f'--- file: {os.path.basename(path)}')
