@@ -40,6 +40,10 @@ export const STRINGS = {
     f3Title: 'Reifen',
     f3Text: 'Karkasstemperatur innen, Mitte, außen und Verschleiß jedes Rads, dazu die Kilometer auf dem Satz und eine Schätzung, wie viel Profil jetzt noch übrig ist.',
     f3Note: 'iRacing misst Temperatur und Verschleiß nur beim Stopp in der Box. Die Live-Werte vom Dashboard gibt iRacing nicht an andere Programme heraus.',
+    f4Title: 'Position',
+    f4Text: 'Die Reihenfolge auf der Strecke – laufend, nicht erst an der Ziellinie: Platz 1–3 und je drei Autos vor und hinter euch, mit Flagge, Abstand in Sekunden (gelb/rot, wenn es unter einer Sekunde eng wird), Reifenalter und Rundenzeit-Vergleich.',
+    f4Note: 'Reifenalter der Gegner = Runden seit ihrem letzten Boxenstopp; ob dort Reifen gewechselt wurden, verrät iRacing nicht.',
+    altStandings: 'Anzeige Position: Reihenfolge auf der Strecke mit Flagge, Abstand, Reifenalter und Rundenzeit-Vergleich',
 
     howKicker: 'Ablauf',
     howTitle: "So funktioniert's",
@@ -118,6 +122,10 @@ export const STRINGS = {
     f3Title: 'Tyres',
     f3Text: 'Carcass temperature inner, middle, outer and wear for every wheel, plus the kilometres on the set and an estimate of how much tread is left now.',
     f3Note: "iRacing only measures temperature and wear during a pit stop. iRacing doesn't share the live values from the dashboard with other programs.",
+    f4Title: 'Position',
+    f4Text: 'The running order on track – continuously, not just at the finish line: P1–3 and three cars ahead of and behind you, with flag, gap in seconds (amber/red when it gets closer than a second), tyre age and lap time comparison.',
+    f4Note: "Opponents' tyre age = laps since their last pit stop; iRacing doesn't reveal whether tyres were changed there.",
+    altStandings: 'Position display: running order on track with flag, gap, tyre age and lap time comparison',
 
     howKicker: 'The flow',
     howTitle: 'How it works',

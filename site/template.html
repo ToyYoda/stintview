@@ -135,7 +135,7 @@
     .slash { display: inline-block; width: 18px; height: 5px; background: var(--red); transform: skewX(-30deg); margin-right: 12px; vertical-align: middle; }
 
     .features { display: grid; gap: 18px; }
-    @media (min-width: 900px) { .features { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 760px) { .features { grid-template-columns: repeat(2, 1fr); } }
     .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; border-top: 3px solid var(--red); }
     .card .shot { background: #000; border-radius: 4px; padding: 12px; margin-bottom: 18px; display: grid; place-items: center; aspect-ratio: 16 / 10; overflow: hidden; }
     .card .shot img { width: 100%; height: 100%; object-fit: contain; }
@@ -315,6 +315,12 @@
             <h3>{{f3Title}}</h3>
             <p>{{f3Text}}</p>
             <p class="note">{{f3Note}}</p>
+          </article>
+          <article class="card">
+            <div class="shot"><img src="{{BASE}}assets/standings.png" alt="{{altStandings}}" width="900" height="569" loading="lazy"></div>
+            <h3>{{f4Title}}</h3>
+            <p>{{f4Text}}</p>
+            <p class="note">{{f4Note}}</p>
           </article>
         </div>
       </div>
