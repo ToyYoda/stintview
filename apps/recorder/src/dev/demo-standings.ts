@@ -1,5 +1,5 @@
 /**
- * Dev tool: sends a realistic-looking Position panel (fictitious names) for ~60 s,
+ * Dev tool: sends a realistic-looking Position and Boxenstopp panel (fictitious names) for ~60 s,
  * e.g. for website screenshots. Pretends to be the driving recorder.
  * Usage: tsx src/dev/demo-standings.ts   (uses the normal config / STINTVIEW_CONFIG)
  */
@@ -36,6 +36,22 @@ ws.on('open', async () => {
   }));
   for (let i = 0; i < 120; i++) {
     send({ t: 'standings', sessionTime: 5000 + i / 2, rows });
+    send({
+      t: 'pitplan', sessionTime: 5000 + i / 2, fuel: 86, fuelTime: 34.4, tyres: 4, tyreTime: 16, repair: 0, optRepair: 0,
+      simultaneous: true, fillRate: 2.5, stationary: 34.4, laneLoss: 19, laneSamples: 7, total: 53.4, source: 'measured', stops: 3,
+      inPit: false,
+      rejoin: {
+        classPos: 11,
+        ahead: [
+          { carIdx: 21, number: '3', name: 'Tom Becker', country: 'de', sameClass: true, gap: 2.4, inPit: false },
+          { carIdx: 22, number: '910', name: 'Paul Laurent', country: 'fr', sameClass: false, gap: 5.9, inPit: false },
+        ],
+        behind: [
+          { carIdx: 23, number: '14', name: 'Erik Lindqvist', country: 'se', sameClass: true, gap: -1.1, inPit: false },
+          { carIdx: 24, number: '27', name: 'Luca Moretti', country: 'it', sameClass: true, gap: -4.8, inPit: true },
+        ],
+      },
+    });
     await new Promise((r) => setTimeout(r, 500));
   }
   send({ t: 'driving', driving: false, driverName: 'Outcast Endurance', session });

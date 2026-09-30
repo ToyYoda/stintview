@@ -23,9 +23,12 @@ const DEFAULT_SETTINGS = {
     tyres: { monitor: true, vr: true },
     weather: { monitor: true, vr: false },
     standings: { monitor: true, vr: false },
+    pitstop: { monitor: true, vr: false },
   },
   // Panel background opacity in percent (text stays fully visible).
   opacity: { monitor: 78, vr: 100 },
+  // Pit stop crew values; null / 'auto' = measured at our own stops.
+  pitStop: { fillRate: null, tyreTime: null, mode: 'auto' },
 };
 const PANEL_IDS = Object.keys(DEFAULT_SETTINGS.panels);
 
@@ -49,7 +52,7 @@ const clearConfig = () => writeJson(configPath(), null);
 
 function loadSettings() {
   const saved = readJson(settingsPath) ?? {};
-  return { ...DEFAULT_SETTINGS, ...saved, panels: cleanPanels(saved.panels), opacity: cleanOpacity(saved.opacity) };
+  return { ...DEFAULT_SETTINGS, ...saved, panels: cleanPanels(saved.panels), opacity: cleanOpacity(saved.opacity), pitStop: cleanPitStop(saved.pitStop) };
 }
 
 /** Known panel ids only, each with boolean monitor/vr flags (defaults for missing ones). */
@@ -66,6 +69,16 @@ function cleanPanels(p) {
 function cleanOpacity(o) {
   const pick = (v, d) => (Number.isFinite(v) ? Math.min(100, Math.max(0, Math.round(v))) : d);
   return { monitor: pick(o?.monitor, DEFAULT_SETTINGS.opacity.monitor), vr: pick(o?.vr, DEFAULT_SETTINGS.opacity.vr) };
+}
+
+/** Manual pit stop values: positive numbers or null, mode auto/simultaneous/sequential. */
+function cleanPitStop(p) {
+  const num = (v, max) => (Number.isFinite(v) && v > 0 && v <= max ? Math.round(v * 100) / 100 : null);
+  return {
+    fillRate: num(p?.fillRate, 50),
+    tyreTime: num(p?.tyreTime, 300),
+    mode: ['auto', 'simultaneous', 'sequential'].includes(p?.mode) ? p.mode : 'auto',
+  };
 }
 
 const panelsFor = (settings, where) => PANEL_IDS.filter((id) => settings.panels[id]?.[where]);
@@ -108,5 +121,5 @@ function normalizeUrl(input) {
 
 module.exports = {
   dataDir, logDir, configPath, loadConfig, saveConfig, clearConfig, loadSettings, saveSettings, register, normalizeUrl,
-  cleanPanels, cleanOpacity, panelsFor,
+  cleanPanels, cleanOpacity, cleanPitStop, panelsFor,
 };

@@ -117,3 +117,8 @@ body.setup-body #root { height: auto; }
 .setup .opacity-row { display: grid; grid-template-columns: 70px 1fr 48px; align-items: center; gap: 10px; padding: 3px 0; font-size: 13px; }
 .setup .opacity-row input { accent-color: var(--o-red); width: 100%; cursor: pointer; }
 .setup .opacity-row b { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Pit stop crew values */
+.setup .pit-form { display: grid; gap: 8px; margin-top: 8px; }
+.setup .pit-form label { display: grid; grid-template-columns: 170px 110px auto; align-items: center; gap: 8px; font-size: 13px; }
+.setup .pit-form input, .setup .pit-form select { width: 110px; padding: 5px 8px; background: #111; color: inherit; border: 1px solid var(--o-line); border-radius: 4px; font: inherit; }

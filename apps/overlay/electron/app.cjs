@@ -4,7 +4,7 @@ const { app, BrowserWindow, Menu, Tray, dialog, ipcMain, nativeImage, shell, uti
 const { createWriteStream, mkdirSync } = require('node:fs');
 const path = require('node:path');
 const {
-  cleanOpacity, cleanPanels, clearConfig, configPath, dataDir, loadConfig, loadSettings, logDir, normalizeUrl, panelsFor, register, saveSettings,
+  cleanOpacity, cleanPanels, cleanPitStop, clearConfig, configPath, dataDir, loadConfig, loadSettings, logDir, normalizeUrl, panelsFor, register, saveSettings,
 } = require('./config.cjs');
 const {
   editHotkey, editing, onOverlayChange, overlayRunning, editHotkeyInfo, setEditMode, setOverlayOpacity, setOverlayPanels, startOverlay, stopOverlay, toggleEdit,
@@ -98,7 +98,11 @@ let runningVrPanels = '';
 function startRecorder() {
   recorder?.stop();
   if (!loadConfig()) return;
+  let needsPitSettings = true;
   recorder = supervise('recorder', 'recorder.cjs', ['run'], { STINTVIEW_CONFIG: configPath() }, (m) => {
+    // (Re)started process: hand it the manual pit stop values with its first message.
+    if (m.t === 'exit') needsPitSettings = true;
+    else if (needsPitSettings && recorder?.post({ t: 'pit-settings', pit: settings.pitStop })) needsPitSettings = false;
     if (m.t === 'iracing') status.iracing = m.connected;
     if (m.t === 'car') status.inCar = m.inCar;
     if (m.t === 'server') {
@@ -150,6 +154,7 @@ function applySettings() {
   setOverlayPanels(panelsFor(settings, 'monitor'));
   setOverlayOpacity(settings.opacity.monitor / 100);
   setVrOpacity(settings.opacity.vr / 100);
+  recorder?.post({ t: 'pit-settings', pit: settings.pitStop });
   if (configured && settings.overlay) startOverlay(); else stopOverlay();
   // VR panels are separate windows: restart the VR host when the selection changes.
   const vrPanels = panelsFor(settings, 'vr');
@@ -298,10 +303,11 @@ ipcMain.handle('app:create', async (_e, { serverUrl, teamName, memberName, hostH
 });
 
 ipcMain.handle('app:settings', (_e, patch) => {
-  const allowed = ['overlay', 'vr', 'autostart', 'server', 'panels', 'opacity'];
+  const allowed = ['overlay', 'vr', 'autostart', 'server', 'panels', 'opacity', 'pitStop'];
   const clean = Object.fromEntries(Object.entries(patch ?? {}).filter(([k]) => allowed.includes(k)));
   if (clean.panels) clean.panels = cleanPanels(clean.panels);
   if (clean.opacity) clean.opacity = cleanOpacity({ ...settings.opacity, ...clean.opacity });
+  if (clean.pitStop) clean.pitStop = cleanPitStop({ ...settings.pitStop, ...clean.pitStop });
   updateSettings(clean);
   return appState();
 });

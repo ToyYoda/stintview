@@ -10,6 +10,7 @@ import { HazardDetector } from './hazard.ts';
 import { StandingsTracker } from './standings.ts';
 import { countryCode } from './country.ts';
 import { parseSessionCars } from './spectator.ts';
+import { PitPlanner, type PitOverride } from './pitstop.ts';
 
 const USAGE = `StintView recorder
 
@@ -39,7 +40,7 @@ export type RecorderEvent =
   | CameraResult;
 interface ParentPort {
   postMessage(m: RecorderEvent): void;
-  on(event: 'message', fn: (e: { data: CameraCommand }) => void): void;
+  on(event: 'message', fn: (e: { data: CameraCommand | { t: 'pit-settings'; pit: PitOverride } }) => void): void;
 }
 const parentPort = (process as { parentPort?: ParentPort }).parentPort;
 const report = (e: RecorderEvent) => parentPort?.postMessage(e);
@@ -83,11 +84,14 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
   console.log(`[source] ${label}`);
   conn.connect();
   const standings = new StandingsTracker();
+  const pit = new PitPlanner(undefined, (line) => console.log(line));
   source.start(
     (f) => {
       recorder.onFrame(f);
       const table = standings.onFrame(f, recorder.isDriving); // also tracks pit stops while not driving
       if (table) conn.send(table);
+      const plan = pit.onFrame(f, recorder.isDriving); // learns from stops also while not driving
+      if (plan) conn.send(plan);
       spectator?.onFrame(f, recorder.isDriving);
       const warning = hazard?.onFrame(f, recorder.isDriving);
       if (warning) conn.send(warning);
@@ -96,13 +100,19 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
       recorder.onSessionInfo(yaml);
       spectator?.onSessionInfo(yaml);
       const cars = parseSessionCars(yaml);
-      standings.setDrivers(new Map([...cars.drivers].map(([idx, d]) => [idx, { number: d.label, name: d.name, country: countryCode(d.flair) }])), cars.trackLength);
+      const info = new Map([...cars.drivers].map(([idx, d]) => [idx, { number: d.label, name: d.name, country: countryCode(d.flair) }]));
+      standings.setDrivers(info, cars.trackLength);
+      pit.setSession(yaml, info);
       hazard?.onSessionInfo(yaml);
     },
   );
   recorderRef = recorder;
   // Camera commands from the desktop app (teammate watching the team car in iRacing).
   parentPort?.on('message', (e) => {
+    if (e.data?.t === 'pit-settings') {
+      console.log(`[pit] crew values from the app: ${JSON.stringify(e.data.pit)}`);
+      return pit.setOverride(e.data.pit);
+    }
     if (e.data?.t !== 'camera' || !spectator) return;
     console.log(`[camera] ${e.data.action}${e.data.targetCarIdx !== undefined ? ` car ${e.data.targetCarIdx}` : ''} requested`);
     spectator.command(e.data); // result is reported (and logged) once iRacing's camera moved – or didn't

@@ -207,7 +207,49 @@ export interface Standings {
   rows: StandingRow[];
 }
 
-export type Telemetry = Inputs | Status | Fuel | Tyres | SessionInfo | Weather | Hazard | Standings;
+/** A car around us after the stop (all classes: traffic matters regardless of class). */
+export interface RejoinCar {
+  carIdx: number;
+  number: string;
+  name: string;
+  country?: string | null;
+  sameClass: boolean;
+  /** Seconds on track after our stop, + = ahead of us, within one lap. */
+  gap: number;
+  /** On pit road right now (will probably not be where predicted). */
+  inPit: boolean;
+}
+
+/** "If we pit now": stop duration from the pit settings in the car, and where we rejoin. */
+export interface Pitplan {
+  t: 'pitplan';
+  sessionTime: number;
+  /** Litres that go in, and how long that takes. */
+  fuel: number;
+  fuelTime: number;
+  /** Tyres to change and their time. */
+  tyres: number;
+  tyreTime: number;
+  /** Mandatory repair seconds; optional repair is only done if the driver waits. */
+  repair: number;
+  optRepair: number;
+  simultaneous: boolean;
+  fillRate: number;
+  stationary: number;
+  /** Time lost driving through the pit lane (measured on stopping cars), null until measured at this track. */
+  laneLoss: number | null;
+  laneSamples: number;
+  /** laneLoss + stationary. */
+  total: number | null;
+  /** Where the crew values come from. */
+  source: 'measured' | 'default' | 'manual';
+  /** Own stops measured for this series/car. */
+  stops: number;
+  inPit: boolean;
+  rejoin: { classPos: number | null; ahead: RejoinCar[]; behind: RejoinCar[] } | null;
+}
+
+export type Telemetry = Inputs | Status | Fuel | Tyres | SessionInfo | Weather | Hazard | Standings | Pitplan;
 export type TelemetryType = Telemetry['t'];
 
 // ---------------------------------------------------------------------------
@@ -250,7 +292,7 @@ export interface Snapshot {
 export type ClientMessage = Hello | DrivingState | Telemetry;
 export type ServerMessage = Welcome | ErrorMsg | Standby | ActiveDriver | Snapshot | Telemetry;
 
-const TELEMETRY_TYPES = new Set<string>(['inputs', 'status', 'fuel', 'tyres', 'session', 'weather', 'hazard', 'standings']);
+const TELEMETRY_TYPES = new Set<string>(['inputs', 'status', 'fuel', 'tyres', 'session', 'weather', 'hazard', 'standings', 'pitplan']);
 
 export function isTelemetry(msg: { t: string }): msg is Telemetry {
   return TELEMETRY_TYPES.has(msg.t);

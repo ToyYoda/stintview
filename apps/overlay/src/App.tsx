@@ -6,8 +6,9 @@ import { InputsWidget } from './widgets/InputsWidget.tsx';
 import { TyresWidget } from './widgets/TyresWidget.tsx';
 import { WeatherWidget } from './widgets/WeatherWidget.tsx';
 import { StandingsWidget } from './widgets/StandingsWidget.tsx';
+import { PitWidget } from './widgets/PitWidget.tsx';
 
-type WidgetId = 'header' | 'inputs' | 'fuel' | 'tyres' | 'weather' | 'standings';
+type WidgetId = 'header' | 'inputs' | 'fuel' | 'tyres' | 'weather' | 'standings' | 'pitstop';
 type Positions = Record<WidgetId, { x: number; y: number }>;
 
 const DEFAULT_POSITIONS: Positions = {
@@ -17,6 +18,7 @@ const DEFAULT_POSITIONS: Positions = {
   tyres: { x: 780, y: 100 },
   weather: { x: 1100, y: 100 },
   standings: { x: 1420, y: 100 },
+  pitstop: { x: 1420, y: 480 },
 };
 const STORAGE_KEY = 'stintview.positions';
 
@@ -62,6 +64,7 @@ export function App() {
     tyres: <TyresWidget tyres={state.tyres} status={state.status} />,
     weather: <WeatherWidget weather={state.weather} />,
     standings: <StandingsWidget standings={state.standings} />,
+    pitstop: <PitWidget plan={state.pitplan} />,
   };
 
   const single = /^#\/widget\/(\w+)/.exec(route)?.[1] as WidgetId | undefined;

@@ -175,6 +175,8 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
         </p>
       </section>
 
+      <PitStopCard pit={settings.pitStop} onChange={(pitStop) => set({ pitStop })} />
+
       <section className="card">
         <h2>Team</h2>
         <dl className="team">
@@ -268,6 +270,42 @@ function OpacitySliders({ opacity, onChange }: {
   );
 }
 
+/** Manual crew values for the pit stop planner; empty = measured at our own stops. */
+function PitStopCard({ pit, onChange }: {
+  pit: AppState['settings']['pitStop'];
+  onChange(p: AppState['settings']['pitStop']): void;
+}) {
+  const [fill, setFill] = useState(pit.fillRate?.toString() ?? '');
+  const [tyre, setTyre] = useState(pit.tyreTime?.toString() ?? '');
+  const num = (v: string) => {
+    const n = Number(v.replace(',', '.'));
+    return v.trim() && Number.isFinite(n) && n > 0 ? n : null;
+  };
+  const save = (patch: Partial<AppState['settings']['pitStop']>) => onChange({ ...pit, ...patch });
+  return (
+    <section className="card">
+      <h2>Boxenstopp</h2>
+      <p className="hint">
+        StintView misst Tankrate und Reifenwechsel bei jedem eigenen Stopp (auch im Training) und merkt sie sich je Serie und Auto;
+        die Durchfahrt der Boxengasse misst es an allen Autos, die an die Box fahren. Nur ausfüllen, wenn ihr die Werte schon vorher kennt.
+      </p>
+      <div className="pit-form">
+        <label>Tankrate <input inputMode="decimal" placeholder="automatisch" value={fill}
+          onChange={(e) => setFill(e.target.value)} onBlur={() => save({ fillRate: num(fill) })} /> l/s</label>
+        <label>Reifenwechsel (alle 4) <input inputMode="decimal" placeholder="automatisch" value={tyre}
+          onChange={(e) => setTyre(e.target.value)} onBlur={() => save({ tyreTime: num(tyre) })} /> s</label>
+        <label>Tanken und Reifen
+          <select value={pit.mode} onChange={(e) => save({ mode: e.target.value as AppState['settings']['pitStop']['mode'] })}>
+            <option value="auto">automatisch</option>
+            <option value="simultaneous">gleichzeitig</option>
+            <option value="sequential">nacheinander</option>
+          </select>
+        </label>
+      </div>
+    </section>
+  );
+}
+
 const PANEL_NAMES: [string, string][] = [
   ['header', 'Kopfzeile (Fahrer, Gelb-Knopf)'],
   ['inputs', 'Eingaben (Lenkung, Gas, Bremse)'],
@@ -275,6 +313,7 @@ const PANEL_NAMES: [string, string][] = [
   ['tyres', 'Reifen'],
   ['weather', 'Wetter'],
   ['standings', 'Position (Reihenfolge auf der Strecke)'],
+  ['pitstop', 'Boxenstopp (Dauer und Rückkehr)'],
 ];
 
 /** Which displays appear on the monitor overlay and as VR panels. */

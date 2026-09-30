@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   PROTOCOL_VERSION, pack, unpack,
   type ActiveDriver, type Fuel, type InputSample, type Inputs, type ServerMessage,
-  type Hazard, type SessionInfo, type Standings, type Status, type Telemetry, type Tyres, type Weather,
+  type Hazard, type Pitplan, type SessionInfo, type Standings, type Status, type Telemetry, type Tyres, type Weather,
 } from '@stintview/protocol';
 
 export interface LocalConfig { serverUrl: string; token: string; teamName: string; memberName: string }
@@ -26,6 +26,7 @@ export interface AppState {
     panels: Record<string, { monitor: boolean; vr: boolean }>;
     /** Panel background opacity in percent. */
     opacity: { monitor: number; vr: number };
+    pitStop: { fillRate: number | null; tyreTime: number | null; mode: 'auto' | 'simultaneous' | 'sequential' };
   };
   status: {
     line: string;
@@ -159,13 +160,14 @@ export interface FeedState {
   weather: Weather | null;
   hazard: Hazard | null;
   standings: Standings | null;
+  pitplan: Pitplan | null;
   /** Local time (ms) of the last telemetry message, for the data-age indicator. */
   lastData: number;
 }
 
 const initial: FeedState = {
   conn: 'connecting', error: null, teamName: '', active: null,
-  session: null, status: null, fuel: null, tyres: null, weather: null, hazard: null, standings: null, lastData: 0,
+  session: null, status: null, fuel: null, tyres: null, weather: null, hazard: null, standings: null, pitplan: null, lastData: 0,
 };
 
 /** Connects to the team relay and exposes the latest telemetry. */
@@ -189,6 +191,7 @@ export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
         case 'weather': return { ...s, weather: m, lastData: now };
         case 'hazard': return { ...s, hazard: m, lastData: now };
         case 'standings': return { ...s, standings: m, lastData: now };
+        case 'pitplan': return { ...s, pitplan: m, lastData: now };
         case 'session':
           // Lets the desktop app (hotkeys) know which car to jump back to.
           window.stintview?.setTeamCar?.({ carIdx: m.carIdx, carNumber: m.carNumber, sessionId: m.sessionId });

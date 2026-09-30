@@ -161,6 +161,7 @@ export class Room {
     this.latest.delete('inputs');
     this.latest.delete('hazard'); // belongs to the previous driver's view of the track
     this.latest.delete('standings'); // rows are relative to the previous driver's car
+    this.latest.delete('pitplan');
     this.broadcast(this.active);
   }
 
