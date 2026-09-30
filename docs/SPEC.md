@@ -122,6 +122,8 @@ Gemessen an `D:\iRacing\telemetry\porsche992rgt3_nurburgring combinedshortb 2026
 | `xxtempL/M/R` (Oberfläche), `xxpressure` (aktueller Druck) | ❌ **nicht live**, nur in `.ibt` | Dashboard-Werte (TPMS) zeigt iRacing nur intern an |
 | `.ibt` während der Fahrt | ❌ | wird in Echtzeit geschrieben (~64 KB/s), aber **exklusiv gesperrt** (WinError 32) |
 
+**Live aus der `.ibt` – untersucht 30.09.2026, vom Nutzer abgelehnt:** Die `.ibt` enthält Oberflächentemperatur und heißen Druck mit 60 Hz (echte Live-Werte). Mitlesen geht nicht: iRacing öffnet die laufende Datei **exklusiv** (Windows-Fehler 32, jede Freigabe-Option). Der SDK-Befehl `irsdk_BroadcastTelemCommand` + `Restart` schließt sie in 0,5 s, danach lesbar (~0,5 s Rückstand) – das erzeugt aber pro Intervall eine eigene Datei; Garage 61 lädt jede sofort hoch, VRS nutzt die Dateien ebenfalls, der Ordner liegt bei Philipp in OneDrive. **Entscheidung: nicht umsetzen.** Testwerkzeug: `tools/ibt_tail_probe.py`.
+
 Folge für das Reifen-Widget: letzte Messung (Karkasse, Verschleiß) + km auf dem Satz + Verschleiß-Prognose (`(1 − Verschleiß) / km` der letzten Messung × aktuelle km). Keine Umgehungen (Hooks o. ä.) wegen Anti-Cheat.
 Fahrer-Name im Overlay kommt aus der iRacing-Session (`UserName`), nicht aus dem StintView-Mitgliedsnamen; Namen spielen für die Erkennung keine Rolle.
 
