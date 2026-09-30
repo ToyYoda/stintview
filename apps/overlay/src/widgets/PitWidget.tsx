@@ -2,6 +2,7 @@ import type { Pitplan, RejoinCar } from '@stintview/protocol';
 import 'flag-icons/css/flag-icons.min.css';
 
 const SOURCE: Record<Pitplan['source'], string> = {
+  rules: 'iRacing-Regeln',
   measured: 'gemessen',
   default: 'Schätzwerte',
   manual: 'manuell',

@@ -286,10 +286,11 @@ function PitStopCard({ pit, onChange }: {
     <section className="card">
       <h2>Boxenstopp</h2>
       <p className="hint">
-        Ob Tanken und Reifen gleichzeitig laufen, legt iRacings Regelwerk der Serie fest (Standard: erst Tanken, dann Reifen;
-        IMSA, NEC, DTM: gleichzeitig). StintView erkennt bekannte Serien selbst. Tankrate und Reifenwechsel misst es bei jedem eigenen
-        Stopp (auch im Training) je Serie und Auto, die Durchfahrt der Boxengasse an allen Autos, die an die Box fahren.
-        Werte nur eintragen, wenn ihr sie schon vorher kennt.
+        Ablauf und Tankrate legt iRacings Regelwerk fest (Standard: erst Tanken, dann Reifen; IMSA und NEC gleichzeitig, NEC mit
+        langsamen Zapfsäulen; DTM: GT3 gleichzeitig mit schnellem Reifenwechsel). StintView erkennt das Regelwerk meist am
+        Klassennamen („NECGT3 2026“) und rechnet die Tankrate aus Regeltabelle und Tankgröße. Den Reifenwechsel misst es bei jedem
+        eigenen Stopp (auch im Training), die Durchfahrt der Boxengasse an allen Autos, die an die Box fahren.
+        Werte nur eintragen, wenn die Anzeige danebenliegt.
       </p>
       <div className="pit-form">
         <label>Tankrate <input inputMode="decimal" placeholder="automatisch" value={fill}

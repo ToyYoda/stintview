@@ -237,8 +237,8 @@ export interface Pitplan {
   simultaneous: boolean;
   /** iRacing sporting regulation: "Standard", "IMSA", "NEC", "DTM". */
   regulation: string;
-  /** series = known from the SeriesID, manual = chosen in the app, default = unknown series. */
-  regulationFrom: 'series' | 'manual' | 'default';
+  /** class = from the class name ("NECGT3 2026"), series = SeriesID table, manual = chosen in the app, default = unknown. */
+  regulationFrom: 'class' | 'series' | 'manual' | 'default';
   fillRate: number;
   stationary: number;
   /** Time lost driving through the pit lane (measured on stopping cars), null until measured at this track. */
@@ -246,8 +246,8 @@ export interface Pitplan {
   laneSamples: number;
   /** laneLoss + stationary. */
   total: number | null;
-  /** Where the crew values come from. */
-  source: 'measured' | 'default' | 'manual';
+  /** Where the fuel rate comes from: iRacing's rule table, measured at own stops, estimate, manual. */
+  source: 'rules' | 'measured' | 'default' | 'manual';
   /** Own stops measured for this series/car. */
   stops: number;
   inPit: boolean;

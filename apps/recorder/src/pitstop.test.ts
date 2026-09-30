@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  computeRejoin, DEFAULT_RATES, LaneLossLearner, OwnStopLearner, PitModelStore, PitPlanner, stationaryTime, stopRequest, wrapGap,
+  carCategory, computeRejoin, DEFAULT_RATES, LaneLossLearner, regulationFromClass, OwnStopLearner, PitModelStore, PitPlanner, stationaryTime, stopRequest, wrapGap,
 } from './pitstop.ts';
 import type { CarInfo, CarProgress } from './standings.ts';
 
@@ -61,7 +61,7 @@ describe('learning from our own stops', () => {
 
   it('store: median of measured stops, estimates before', () => {
     const store = new PitModelStore(null);
-    expect(store.car('x')).toEqual({ ...DEFAULT_RATES, stops: 0 });
+    expect(store.car('x')).toEqual({ fillRate: null, tyreTime: null, stops: 0 });
     store.addStop('x', { fillRate: 3, tyreTime: 20, simultaneous: false });
     store.addStop('x', { fillRate: 3.2 });
     expect(store.car('x')).toEqual({ fillRate: 3.1, tyreTime: 20, stops: 2 });
@@ -69,36 +69,80 @@ describe('learning from our own stops', () => {
 });
 
 describe('sporting regulation', () => {
-  const yaml = (series: number) => `WeekendInfo:
+  it('car category from the names iRacing uses', () => {
+    const cases: [string, string, string, string | null][] = [
+      ['porsche992rgt3', 'Porsche 911 GT3 R (992)', 'NECGT3 2026', 'gt3'],
+      ['bmwlmdh', 'BMW M Hybrid V8', 'GTP', 'gtp'],
+      ['ferrari499p', 'Ferrari 499P', 'GTP', 'gtp'],
+      ['dallarap217', 'Dallara P217 LMP2', 'Dallara P217', 'lmp2'],
+      ['porsche718gt4', 'Porsche 718 Cayman GT4', 'GT4 Class', 'gt4'],
+      ['audirs3lmsgen2', 'Audi RS3 LMS Gen2 TCR', 'NECTCR 2026', 'tcr'],
+      ['bmwm2g87', 'BMW M2 Racing (G87)', 'BMW M2 G87', 'm2'],
+      ['porsche9922cup', 'Porsche 911 Cup (992.2)', 'NECPCup 2026', 'cup'],
+      ['bmwm8gte', 'BMW M8 GTE', 'GTE Class', null],
+      ['dallaraf3', 'Dallara F312 F3', 'Dallara F3', null],
+    ];
+    for (const [path, screen, cls, want] of cases) expect([path, carCategory(path, screen, cls)]).toEqual([path, want]);
+  });
+
+  it('regulation from the class name', () => {
+    expect(regulationFromClass('NECGT3 2026')).toBe('nec');
+    expect(regulationFromClass('NEC M2 Cup')).toBe('nec');
+    expect(regulationFromClass('IMSA23')).toBe('imsa');
+    expect(regulationFromClass('GT3 Class')).toBeNull();
+  });
+
+  const yaml = (series: number, path = 'porsche992rgt3', cls = 'GT3 Class', tank = 100) =>
+    `WeekendInfo:
  TrackID: 262
  SeriesID: ${series}
 DriverInfo:
  DriverCarIdx: 0
+ DriverCarFuelMaxLtr: ${tank}
  Drivers:
  - CarIdx: 0
-   CarPath: porsche992rgt3
+   CarPath: ${path}
+   CarClassShortName: ${cls}
 `;
-  const planner = (series: number) => {
+  const planner = (...args: Parameters<typeof yaml>) => {
     const p = new PitPlanner(new PitModelStore(null));
-    p.setSession(yaml(series), new Map());
+    p.setSession(yaml(...args), new Map());
     return p;
   };
 
-  it('known series: from the table (NEC = fuel and tyres at once)', () => {
-    expect(planner(275).regulation()).toEqual({ regulation: 'nec', from: 'series' });
-    expect(planner(275).model().model.simultaneous).toBe(true);
-  });
-
-  it('unknown series: standard rules, fuel first then tyres', () => {
-    expect(planner(228).regulation()).toEqual({ regulation: 'standard', from: 'default' });
-    expect(planner(228).model().model.simultaneous).toBe(false);
-  });
-
-  it('chosen in the app wins', () => {
+  it('standard: fuel then tyres, GT3 2.5 % of the tank per second', () => {
     const p = planner(228);
-    p.setOverride({ fillRate: 4, tyreTime: null, regulation: 'dtm' });
-    expect(p.regulation()).toEqual({ regulation: 'dtm', from: 'manual' });
-    expect(p.model()).toMatchObject({ model: { fillRate: 4, simultaneous: true }, source: 'manual' });
+    expect(p.regulation()).toEqual({ regulation: 'standard', from: 'default' });
+    expect(p.model()).toMatchObject({ model: { fillRate: 2.5, simultaneous: false }, source: 'rules' });
+  });
+
+  it('NEC from the class name: at once, slow pumps (GT3 0.83 %/s)', () => {
+    const p = planner(999, 'porsche992rgt3', 'NECGT3 2026');
+    expect(p.regulation()).toEqual({ regulation: 'nec', from: 'class' });
+    expect(p.model().model.simultaneous).toBe(true);
+    expect(p.model().model.fillRate).toBeCloseTo(0.83);
+  });
+
+  it('NEC from the SeriesID table when the class name says nothing', () => {
+    expect(planner(275).regulation()).toEqual({ regulation: 'nec', from: 'series' });
+  });
+
+  it('DTM: GT3 at once with faster tyres, GT4 fuel first', () => {
+    const gt3 = planner(1, 'porsche992rgt3', 'GT3 Class');
+    gt3.setOverride({ fillRate: null, tyreTime: null, regulation: 'dtm' });
+    expect(gt3.model().model).toMatchObject({ simultaneous: true, fillRate: 2.5 });
+    expect(gt3.model().model.tyreTime).toBeCloseTo(DEFAULT_RATES.tyreTime / 3);
+    const gt4 = planner(1, 'porsche718gt4', 'GT4 Class', 95);
+    gt4.setOverride({ fillRate: null, tyreTime: null, regulation: 'dtm' });
+    expect(gt4.model().model.simultaneous).toBe(false);
+    expect(gt4.model().model.fillRate).toBeCloseTo(0.0208 * 95);
+  });
+
+  it('cars outside the table: measured rate, else estimate; manual wins', () => {
+    const p = planner(228, 'bmwm8gte', 'GTE Class');
+    expect(p.model()).toMatchObject({ model: { fillRate: DEFAULT_RATES.fillRate }, source: 'default' });
+    p.setOverride({ fillRate: 4, tyreTime: null, regulation: 'auto' });
+    expect(p.model()).toMatchObject({ model: { fillRate: 4 }, source: 'manual' });
   });
 });
 
