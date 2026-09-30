@@ -27,7 +27,7 @@ export function InputsWidget({ inputs }: { inputs: InputBuffer }) {
   }, [inputs]);
 
   return (
-    <div className="panel">
+    <div className="panel inputs">
       <canvas ref={canvas} style={{ width: WIDTH, height: HEIGHT, display: 'block' }} />
     </div>
   );

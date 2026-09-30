@@ -24,7 +24,7 @@ ws.on('open', async () => {
   for (let i = 0; i < 30; i++) {
     const t = 1000 + i / 2;
     send({ t: 'status', sessionTime: t, lap: 3, lapDistPct: 0.4, fuelLevel: 50, onPitRoad: false, odometer: { LF: 0, RF: 0, LR: 0, RR: 0 }, flags: 0 });
-    send({ t: 'hazard', active: i < 20, sessionTime: t, carIdx: 12, carNumber: 44, driverName: 'Crash Test', distance: 850 - i * 20, reason: 'slow', speed: 0 });
+    send({ t: 'hazard', active: i < 20, sessionTime: t, carIdx: 12, carNumber: 19, driverName: 'Marco Rossi', distance: 850 - i * 20, reason: 'slow', speed: 0 });
     // Standings sample: P1–P3, then three ahead of / behind the team car at P9.
     const row = (pos: number, lastLap: number, isTeam = false) => ({
       pos, carIdx: pos === 9 ? 0 : 100 + pos, number: String(pos * 3).padStart(2, '0'),
