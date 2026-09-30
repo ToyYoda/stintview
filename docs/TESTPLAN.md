@@ -158,6 +158,7 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 | 6.1 | Z (VR) | *VR-Overlay (SteamVR)* an, iRacing in VR, zuschauen | 4 Panels ca. 80 cm vor dir, kein Flackern | |
 | 6.2 | Z (VR) | Strg+Umschalt+V und Pfeiltasten / Bild↑↓ / Plus/Minus | ausgewähltes Panel gelb umrandet und verschiebbar; Position bleibt nach Neustart | |
 | 6.3 | Z (VR) | bei Gelb (Block 4 wiederholen) | Kopfzeilen-Panel zeigt **GELB VORAUS** und die Kürzel statt Knöpfen; Strg+Umschalt+J/K springen | |
+| 6.3b | Z (VR) | Kopf zur Seite drehen, **Strg+Umschalt+R** | aktuelle Blickrichtung wird die Mitte; iRacing-Sicht und StintView-Panels rücken nach vorn | |
 | 6.4 | A (VR, falls möglich) | selbst in VR fahren | iRacing-Bildrate spürbar unverändert | |
 
 ### Block 7 – Robustheit (10 min)

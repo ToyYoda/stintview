@@ -80,6 +80,7 @@ Anzeigen verschieben – geht mit Brille auf der Tastatur:
 | Strg+Umschalt+Bild↑ / Bild↓ | näher / weiter weg |
 | Strg+Umschalt+Plus / Minus | größer / kleiner |
 | Strg+Umschalt+H | alle Anzeigen aus-/einblenden |
+| Strg+Umschalt+R | SteamVR-Ausrichtung zurücksetzen: geradeaus schauen, drücken – die Blickrichtung wird die neue Mitte (auch im Menü des StintView-Symbols) |
 
 Meta Quest per Link/Air Link ohne SteamVR wird noch nicht unterstützt.
 

@@ -63,7 +63,7 @@ Eine einzige Electron-App auf jedem PC. Recorder läuft immer; Monitor-Overlay, 
 | `config.cjs` | `%APPDATA%\StintView`: `config.json` (Team-Zugang), `app.json` (Einstellungen), `logs/`; Beitreten/Anlegen per HTTP |
 | `overlay-window.cjs` | Monitor-Overlay: transparentes Vollbildfenster, `alwaysOnTop('screen-saver')`, click-through; Bearbeiten-Modus |
 | `hotkeys.cjs` | Übersicht der globalen Tastaturkürzel (`hotkeyGroups`) aus `editHotkeyInfo` (overlay-window), `cameraHotkeyInfo` (camera), `vrHotkeyInfo` (vr); Anzeige „Strg/Umschalt/Bild↑“ |
-| `vr.cjs` | VR-Host: Widgets offscreen rendern → D3D11-Texturen → SteamVR-Overlays; Platzierungs-Tastenkürzel |
+| `vr.cjs` | VR-Host: Widgets offscreen rendern → D3D11-Texturen → SteamVR-Overlays; Platzierungs-Tastenkürzel; **Strg+Umschalt+R** = SteamVR-Ausrichtung zurücksetzen (`IVRChaperone_004::ResetZeroPose(Seated)`, auch Tray-Menü, nur wenn mit SteamVR verbunden) |
 | `openvr.cjs`, `d3d11.cjs` | FFI-Bindings per **koffi** (kein nativer Build) |
 | `renderer.cjs`, `preload.cjs` | UI-Routen laden; `window.stintview`-API |
 

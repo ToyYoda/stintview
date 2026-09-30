@@ -264,6 +264,7 @@ const HOTKEY_LABELS = {
   'Control+Shift+Plus': 'Panel größer',
   'Control+Shift+-': 'Panel kleiner',
   'Control+Shift+H': 'Alle Panels aus-/einblenden',
+  'Control+Shift+R': 'SteamVR-Ausrichtung zurücksetzen (Blick nach vorn = neue Mitte)',
 };
 /** Keys another program already holds (registration failed). */
 const failedHotkeys = new Set();
@@ -286,7 +287,19 @@ const HOTKEYS = {
       if (layout.visible) vr.show(panel.handle); else vr.hide(panel.handle);
     }
   },
+  'Control+Shift+R': () => recenterVr(),
 };
+
+/** SteamVR "reset seated position": where you look now becomes straight ahead. */
+function recenterVr() {
+  if (!vr) return log('recenter: SteamVR not connected');
+  try {
+    vr.resetSeatedZeroPose();
+    log('recenter: seated zero pose reset');
+  } catch (e) {
+    log(`recenter failed: ${e.message}`);
+  }
+}
 
 // ---------------------------------------------------------------------------
 
@@ -343,4 +356,4 @@ const vrHotkeyInfo = () => ({
   keys: Object.keys(HOTKEYS).map((key) => ({ key, label: HOTKEY_LABELS[key] ?? key, ok: !failedHotkeys.has(key) })),
 });
 
-module.exports = { startVr, stopVr, vrStatus, vrHotkeyInfo, setVrOpacity };
+module.exports = { startVr, stopVr, vrStatus, vrHotkeyInfo, setVrOpacity, recenterVr };

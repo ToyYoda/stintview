@@ -5,6 +5,10 @@ const { readFileSync } = require('node:fs');
 const path = require('node:path');
 
 const IVROVERLAY = 'FnTable:IVROverlay_028';
+const IVRCHAPERONE = 'FnTable:IVRChaperone_004';
+/** Index of ResetZeroPose in VR_IVRChaperone_FnTable. */
+const CHAPERONE_RESET_ZERO_POSE = 8;
+const RESET_ZERO_POSE = koffi.proto('void ResetZeroPose(int32_t origin)');
 
 const APP_OVERLAY = 2;
 const APP_BACKGROUND = 3;
@@ -96,11 +100,15 @@ class OpenVR {
       throw new Error(`${IVROVERLAY} not supported by this SteamVR: ${this.api.ErrorDescription(err[0])}`);
     }
     this.table = table;
+    // Optional: only needed to recenter; an older runtime without it just lacks that function.
+    const chaperone = this.api.GetGenericInterface(IVRCHAPERONE, err);
+    this.chaperone = chaperone && err[0] === 0 ? chaperone : null;
   }
 
   shutdown() {
     if (!this.table) return;
     this.table = null;
+    this.chaperone = null;
     this.api.ShutdownInternal();
   }
 
@@ -134,6 +142,16 @@ class OpenVR {
   /** Row-major 3x4 transform relative to the seated zero pose (what iRacing's recenter sets). */
   setSeatedTransform(h, m12) {
     this.check('SetOverlayTransformAbsolute', h, UNIVERSE_SEATED, { m: m12 });
+  }
+
+  /**
+   * Makes the current head position and direction the new seated zero pose (SteamVR
+   * "reset seated position"). The panels are placed relative to it and move along.
+   */
+  resetSeatedZeroPose() {
+    if (!this.chaperone) throw new Error(`${IVRCHAPERONE} not available`);
+    const fn = koffi.decode(this.chaperone, CHAPERONE_RESET_ZERO_POSE * 8, 'void *');
+    koffi.call(fn, RESET_ZERO_POSE, UNIVERSE_SEATED);
   }
 
   /** What the compositor holds for this overlay – for diagnostics. */

@@ -11,7 +11,7 @@ const {
 } = require('./overlay-window.cjs');
 const { PRELOAD, loadRoute } = require('./renderer.cjs');
 const { cameraCommand, cameraHotkeyInfo, cameraInfo, onRecorderMessage, setHazardCar, setTeamCar, startCamera, stopCamera } = require('./camera.cjs');
-const { setVrOpacity, startVr, stopVr, vrHotkeyInfo, vrStatus } = require('./vr.cjs');
+const { recenterVr, setVrOpacity, startVr, stopVr, vrHotkeyInfo, vrStatus } = require('./vr.cjs');
 const { hotkeyGroups } = require('./hotkeys.cjs');
 const { checkNow, installNow, setupUpdates, updateInfo, updateLabel } = require('./updates.cjs');
 
@@ -208,6 +208,7 @@ function buildMenu() {
       label: `VR-Overlay (SteamVR)${vr === 'waiting' ? ' – wartet auf SteamVR' : ''}`,
       type: 'checkbox', checked: settings.vr, enabled: configured, click: (i) => updateSettings({ vr: i.checked }),
     },
+    { label: 'VR-Ausrichtung zurücksetzen (Strg+Umschalt+R)', enabled: vr === 'connected', click: recenterVr },
     { type: 'separator' },
     { label: 'Einstellungen …', click: () => openSetup() },
     { label: 'Tastaturkürzel …', click: () => openSetup('/setup/keys') },

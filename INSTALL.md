@@ -81,6 +81,7 @@ Moving the displays – works with the headset on, using the keyboard:
 | Ctrl+Shift+PgUp / PgDn | closer / further away |
 | Ctrl+Shift+Plus / Minus | larger / smaller |
 | Ctrl+Shift+H | hide / show all displays |
+| Ctrl+Shift+R | reset SteamVR orientation: look straight ahead and press – your view direction becomes the new centre (also in the StintView icon menu) |
 
 Meta Quest via Link/Air Link without SteamVR is not supported yet.
 
