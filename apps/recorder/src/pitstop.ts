@@ -271,6 +271,24 @@ interface ModelFile {
   cars: Record<string, { fillRates: number[]; tyreTimes: number[] }>;
 }
 
+/**
+ * Pit lane loss by TrackID from the team's own .ibt archive (30.09.2026, tool
+ * src/dev/pitloss-from-ibt.ts; mostly GT3 – faster cars lose a little more).
+ * Used until the lane has been measured live at that track.
+ */
+export const KNOWN_LANE_LOSS: Record<string, number> = {
+  145: 11.1, // Brands Hatch – Grand Prix (6 passes)
+  168: 14.1, // Suzuka – Grand Prix (15)
+  262: 18.8, // Nürburgring Gesamtstrecke VLN (5)
+  264: 18.8, // Nürburgring Gesamtstrecke Long (7)
+  266: 17.4, // Imola (1, GTP)
+  403: 12.6, // Red Bull Ring – Grand Prix (1)
+  444: 24.1, // Fuji – Grand Prix (1)
+  449: 10.0, // Oschersleben – Grand Prix (1, BMW M2)
+  525: 29.3, // Spa – Endurance (1)
+  584: 17.6, // St. Petersburg (1)
+};
+
 const KEEP = 12;
 const median = (xs: number[]) => {
   const s = [...xs].sort((a, b) => a - b);
@@ -288,9 +306,12 @@ export class PitModelStore {
     } catch { /* first run */ }
   }
 
-  laneLoss(track: string) {
+  /** Measured at this track on this PC, else the team's archive value, else null. */
+  laneLoss(track: string): { loss: number | null; samples: number; from: Pitplan['laneFrom'] } {
     const xs = this.data.tracks[track] ?? [];
-    return { loss: median(xs), samples: xs.length };
+    if (xs.length) return { loss: median(xs), samples: xs.length, from: 'measured' };
+    const known = KNOWN_LANE_LOSS[track];
+    return known !== undefined ? { loss: known, samples: 0, from: 'archive' } : { loss: null, samples: 0, from: null };
   }
 
   addLaneLoss(track: string, loss: number) {
@@ -477,7 +498,7 @@ export class PitPlanner {
       repair: round1(req.repair), optRepair: round1(Number.isFinite(opt) ? opt : 0),
       simultaneous: model.simultaneous, regulation: REGULATION_LABEL[reg.regulation], regulationFrom: reg.from,
       fillRate: Math.round(model.fillRate * 100) / 100,
-      stationary: round1(stationary), laneLoss: lane.loss !== null ? round1(lane.loss) : null, laneSamples: lane.samples,
+      stationary: round1(stationary), laneLoss: lane.loss !== null ? round1(lane.loss) : null, laneSamples: lane.samples, laneFrom: lane.from,
       total: total !== null ? round1(total) : null, source, stops,
       inPit: f.num('OnPitRoad') === 1,
       rejoin: rejoin && { ...rejoin, ahead: rejoin.ahead.map(roundGap), behind: rejoin.behind.map(roundGap) },

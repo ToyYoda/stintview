@@ -38,7 +38,7 @@ ws.on('open', async () => {
     send({ t: 'standings', sessionTime: 5000 + i / 2, rows });
     send({
       t: 'pitplan', sessionTime: 5000 + i / 2, fuel: 86, fuelTime: 34.4, tyres: 4, tyreTime: 16, repair: 0, optRepair: 0,
-      simultaneous: true, regulation: 'NEC', regulationFrom: 'series', fillRate: 2.5, stationary: 34.4, laneLoss: 19, laneSamples: 7, total: 53.4, source: 'measured', stops: 3,
+      simultaneous: true, regulation: 'NEC', regulationFrom: 'series', fillRate: 2.5, stationary: 34.4, laneLoss: 19, laneSamples: 7, laneFrom: 'measured', total: 53.4, source: 'measured', stops: 3,
       inPit: false,
       rejoin: {
         classPos: 11,

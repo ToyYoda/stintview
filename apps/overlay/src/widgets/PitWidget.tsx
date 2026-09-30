@@ -41,7 +41,7 @@ export function PitWidget({ plan }: { plan: Pitplan | null }) {
       <div className="pit-total">
         <span className="big">{plan.total !== null ? `${plan.total.toFixed(0)} s` : '–'}</span>
         <span className="pit-parts">
-          Boxengasse {plan.laneLoss !== null ? `${plan.laneLoss.toFixed(0)} s` : '?'} + Stand {plan.stationary.toFixed(0)} s
+          Boxengasse {plan.laneLoss !== null ? `${plan.laneLoss.toFixed(0)} s${plan.laneFrom === 'archive' ? ' (Archiv)' : ''}` : '?'} + Stand {plan.stationary.toFixed(0)} s
         </span>
       </div>
 

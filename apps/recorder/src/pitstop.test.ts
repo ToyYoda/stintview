@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  carCategory, computeRejoin, DEFAULT_RATES, LaneLossLearner, regulationFromClass, OwnStopLearner, PitModelStore, PitPlanner, stationaryTime, stopRequest, wrapGap,
+  carCategory, computeRejoin, KNOWN_LANE_LOSS, DEFAULT_RATES, LaneLossLearner, regulationFromClass, OwnStopLearner, PitModelStore, PitPlanner, stationaryTime, stopRequest, wrapGap,
 } from './pitstop.ts';
 import type { CarInfo, CarProgress } from './standings.ts';
 
@@ -201,5 +201,15 @@ describe('rejoin', () => {
     expect(r.behind[0]!.gap).toBeCloseTo(-2, 5);
     // class position: cars 1 and 2 ahead in the race after the stop -> P3
     expect(r.classPos).toBe(3);
+  });
+});
+
+describe('pit lane loss lookup', () => {
+  it('archive value until measured live, then the measurement', () => {
+    const store = new PitModelStore(null);
+    expect(store.laneLoss('168')).toEqual({ loss: KNOWN_LANE_LOSS['168'], samples: 0, from: 'archive' });
+    expect(store.laneLoss('99999')).toEqual({ loss: null, samples: 0, from: null });
+    store.addLaneLoss('168', 15);
+    expect(store.laneLoss('168')).toEqual({ loss: 15, samples: 1, from: 'measured' });
   });
 });

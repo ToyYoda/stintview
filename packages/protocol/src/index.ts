@@ -244,6 +244,8 @@ export interface Pitplan {
   /** Time lost driving through the pit lane (measured on stopping cars), null until measured at this track. */
   laneLoss: number | null;
   laneSamples: number;
+  /** measured = live at this track on this PC, archive = team's .ibt archive table. */
+  laneFrom: 'measured' | 'archive' | null;
   /** laneLoss + stationary. */
   total: number | null;
   /** Where the fuel rate comes from: iRacing's rule table, measured at own stops, estimate, manual. */
