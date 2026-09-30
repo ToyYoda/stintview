@@ -402,6 +402,10 @@ function StandingsOptionsForm({ options, onChange }: { options: StandingsOptions
         ))}
       </div>
       <label className="option-line">
+        <input type="checkbox" checked={options.duel} onChange={() => onChange({ ...options, duel: !options.duel })} />
+        Duell-Zeile oben – Vorder- und Hintermann in der Klasse mit Abstand, groß
+      </label>
+      <label className="option-line">
         <input type="checkbox" checked={options.lapping} onChange={() => onChange({ ...options, lapping: !options.lapping })} />
         Überrundungen zeigen – Auto direkt vor euch, das ihr gleich überrundet (blau), oder direkt hinter euch, das euch gleich überrundet (rot)
       </label>

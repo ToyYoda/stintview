@@ -21,7 +21,7 @@ const PANEL_DEFAULTS = {
   weather: { shown: true, size: 100 },
   standings: {
     shown: true, size: 100,
-    options: { columns: Object.fromEntries(STANDINGS_COLUMNS.map((c) => [c, true])), lapping: true },
+    options: { columns: Object.fromEntries(STANDINGS_COLUMNS.map((c) => [c, true])), lapping: true, duel: true },
   },
   pitstop: { shown: true, size: 100 },
 };
@@ -99,7 +99,8 @@ function cleanOptions(id, o) {
   if (id === 'standings') {
     const columns = {};
     for (const c of STANDINGS_COLUMNS) columns[c] = typeof o?.columns?.[c] === 'boolean' ? o.columns[c] : d.columns[c];
-    return { columns, lapping: typeof o?.lapping === 'boolean' ? o.lapping : d.lapping };
+    const flag = (k) => (typeof o?.[k] === 'boolean' ? o[k] : d[k]);
+    return { columns, lapping: flag('lapping'), duel: flag('duel') };
   }
   return d;
 }

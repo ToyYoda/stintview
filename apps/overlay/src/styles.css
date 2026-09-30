@@ -70,13 +70,20 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .dot.warn { background: var(--warn); }
 .dot.bad { background: var(--bad); }
 
-.fuel { width: 250px; }
+.fuel { width: 300px; }
 .big-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
 .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
-.lapbars { display: flex; gap: 4px; height: 44px; align-items: flex-end; }
-.lapbar { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; font-size: 9px; color: var(--muted); }
-.lapbar .fill { width: 100%; background: var(--accent); border-radius: 2px 2px 0 0; min-height: 2px; }
+/* Per lap: change to the lap before (green less, red more), the bar with the litres, the lap number */
+.lapbars { display: flex; gap: 3px; align-items: stretch; }
+.lapbar { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; font-size: 9.5px; color: var(--muted); }
+.lap-diff { font-family: var(--mono); font-weight: 700; height: 13px; color: var(--muted); }
+.lap-diff.less { color: var(--ok); }
+.lap-diff.more { color: var(--bad); }
+.bar-area { width: 100%; height: 52px; display: flex; align-items: flex-end; }
+.lapbar .fill { width: 100%; background: var(--accent); border-radius: 2px 2px 0 0; min-height: 2px; display: flex; justify-content: center; }
 .lapbar .fill.pit { background: var(--muted); }
+.lap-used { font-family: var(--mono); font-size: 10px; font-weight: 700; color: #1a1200; padding-top: 2px; }
+.lap-no { margin-top: 1px; }
 
 .tyres { width: 300px; }
 .wheels { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
@@ -113,10 +120,6 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .st-name { max-width: 210px; overflow: hidden; text-overflow: ellipsis; }
 .st-gap, .st-tyre { font-family: var(--mono); text-align: right; width: 54px; }
 .st-tyre { width: 42px; }
-.st-gap.attack { color: var(--warn); font-weight: 700; }
-.st-gap.defend { color: var(--bad); font-weight: 700; }
-.st-gap.far { color: var(--muted); }
-.st-gap.lap { color: var(--cold); }
 .st-delta { font-family: var(--mono); text-align: right; width: 62px; }
 .st-delta.slower { color: var(--bad); }
 .st-delta.faster { color: var(--ok); }
@@ -150,3 +153,22 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .standings tr.lap-backmarker td { background: rgba(77, 163, 255, 0.28); color: #d6e9ff; }
 .standings tr.lap-lapper td { background: rgba(255, 77, 77, 0.30); color: #ffd9d9; }
 .st-lap-tag { margin-left: 6px; font-size: 10px; padding: 0 4px; border-radius: 3px; background: rgba(0, 0, 0, 0.35); }
+
+/* Position: gap as a coloured tile, bigger rows around us, duel line */
+.st-gap { width: 64px; }
+.gap-tile { display: inline-block; min-width: 48px; padding: 1px 6px; border-radius: 4px; font-weight: 700; font-size: 13.5px;
+  text-align: right; background: rgba(255, 255, 255, 0.08); color: var(--text); }
+.gap-tile.attack { background: var(--warn); color: #1a1200; }
+.gap-tile.defend { background: var(--bad); color: #fff; }
+.gap-tile.near { background: rgba(255, 255, 255, 0.16); }
+.gap-tile.far { background: transparent; color: var(--muted); font-weight: 400; }
+.gap-tile.lap { background: rgba(77, 163, 255, 0.25); color: #cfe4ff; }
+.lap-backmarker .gap-tile, .lap-lapper .gap-tile { background: rgba(0, 0, 0, 0.3); color: #fff; }
+.standings tr.near td { font-size: 14.5px; padding-top: 5px; padding-bottom: 5px; }
+.standings tr.near .gap-tile { font-size: 16px; }
+.st-duel { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 2px 0 8px; }
+.duel { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.05); min-width: 0; }
+.duel.empty { background: transparent; }
+.duel-arrow { color: var(--muted); font-size: 12px; }
+.duel-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.gap-tile.big { font-size: 20px; padding: 2px 8px; min-width: 64px; }

@@ -19,7 +19,7 @@ export interface HotkeyGroup {
 
 export type StandingsColumn = 'pos' | 'num' | 'flag' | 'name' | 'gap' | 'tyre' | 'delta';
 /** Position panel: which columns, and whether lapping cars are shown. */
-export interface StandingsOptions { columns: Record<StandingsColumn, boolean>; lapping: boolean }
+export interface StandingsOptions { columns: Record<StandingsColumn, boolean>; lapping: boolean; duel: boolean }
 
 export interface PanelSetting {
   shown: boolean;

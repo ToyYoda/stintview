@@ -34,7 +34,14 @@ ws.on('open', async () => {
   const rows: StandingRow[] = DEMO.map(([pos, number, country, name, gap, lapsGap, tyreLaps, lastLap, inPit], i) => ({
     pos, carIdx: i, number, country, name, gap, lapsGap, tyreLaps, lastLap, inPit, isTeam: pos === 9,
   }));
+  // Fuel: laps 8-15 of a GT3 stint (lap 11 with a pit stop), 51 l in the tank.
+  const used = [3.48, 3.51, 3.45, 3.02, 3.52, 3.47, 3.47, 3.44];
+  send({
+    t: 'fuel', tankCapacity: 100,
+    laps: used.map((u, k) => ({ lap: 8 + k, used: u, lapTime: 104 + k / 3, pit: k === 3 })),
+  });
   for (let i = 0; i < 120; i++) {
+    send({ t: 'status', sessionTime: 5000 + i / 2, lap: 16, lapDistPct: 0.3, fuelLevel: 51.2, onPitRoad: false, odometer: { LF: 30000, RF: 30000, LR: 30000, RR: 30000 }, flags: 0 });
     const lapping: StandingRow[] = [
       { pos: 0, carIdx: 30, number: '211', name: 'Jonas Weber', country: 'de', lastLap: 512.4, isTeam: false, gap: 1.8, lapsGap: -1, tyreLaps: 9, inPit: false, lap: 'backmarker', otherClass: true },
       { pos: 0, carIdx: 31, number: '5', name: 'Henri Dubois', country: 'fr', lastLap: 452.2, isTeam: false, gap: -2.6, lapsGap: 1, tyreLaps: 4, inPit: false, lap: 'lapper', otherClass: true },

@@ -138,6 +138,8 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 | 4b.4 | Z | Spalte **Abstand** mit iRacings Relative (F3) vergleichen | ± ca. 0,5 s gleich; überrundete Autos als „−1 R“ (blau); unter 1 s gelb (vor A) / rot (hinter A), über 3 s grau | |
 | 4b.5 | Z | Spalte **Reifen** nach einem Boxenstopp eines Gegners bzw. von A | Gegner: zählt ab Boxenausfahrt ab 0; „Box“ während er in der Boxengasse ist; A's Zeile springt nach Reifenwechsel auf 0 | |
 | 4b.6 | Z | Flaggen vor den Namen mit iRacings Fahrerliste vergleichen | gleiche Länder; Fahrer ohne Land („Global“) ohne Flagge | |
+| 4b.7 | Z | im Zweikampf von A (< 1 s) auf Duell-Zeile und Kacheln achten | Duell-Zeile oben zeigt Vorder-/Hintermann mit großem Abstand, Kachel gelb/rot; A's Zeile und Nachbarn größer | |
+| 4b.8 | Z | Sprit-Panel nach einigen Runden | Liter im Balken, darüber ± zur Vorrunde (grün/rot); nach Boxenstopp-Runde keine Veränderung | |
 | 4b.3 | alle | Mehrklassen-Rennen (falls vorhanden) | nur Autos der eigenen Klasse | |
 
 ### Block 4d – Überrundungen (Mehrklassen-Rennen)
