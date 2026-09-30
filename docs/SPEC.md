@@ -200,7 +200,7 @@ Sonstiges: Der Shared-Memory-Bereich existiert auch, wenn nur die iRacing-UI lä
 3. Erster Start auf einem PC ohne Node.js (Teamkollege); Firewall-Abfrage des Relays.
 4. Installationsordner `@stintviewoverlay` → `StintView` (electron-builder `extraMetadata.name`; Update-Verhalten vorher prüfen).
 4a. Wettervorhersage (Issue #1): prüfen, ob iRacings Data API eine Vorhersage für gehostete/offizielle Sessions liefert und wie ein Login dafür aussähe.
-5. Stint-Zusammenfassung nach dem Aussteigen aus der dann freigegebenen `.ibt` (Oberflächentemperaturen, Drücke je Runde) – im Konzept vorgesehen, nicht gebaut.
+5. ~~Stint-Zusammenfassung aus der `.ibt`~~ – verworfen (30.09.2026): Telemetrie-Auswertung nach dem Stint macht das Team in Garage 61.
 6. App-Oberfläche/Overlay zweisprachig (derzeit nur Deutsch).
 7. TLS für das Relay; Code-Signing-Zertifikat (z. B. Azure Trusted Signing) gegen SmartScreen.
 8. Mehrere Team-Autos in einem Team; Strategie-Features (Pit-Fenster, Stint-Planung, Gaps) – ursprüngliche „Später“-Liste im Konzept.
