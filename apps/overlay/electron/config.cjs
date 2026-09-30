@@ -27,8 +27,8 @@ const DEFAULT_SETTINGS = {
   },
   // Panel background opacity in percent (text stays fully visible).
   opacity: { monitor: 78, vr: 100 },
-  // Pit stop crew values; null / 'auto' = measured at our own stops.
-  pitStop: { fillRate: null, tyreTime: null, mode: 'auto' },
+  // Pit stop: rates null = measured at our own stops; regulation 'auto' = from the series.
+  pitStop: { fillRate: null, tyreTime: null, regulation: 'auto' },
 };
 const PANEL_IDS = Object.keys(DEFAULT_SETTINGS.panels);
 
@@ -71,13 +71,13 @@ function cleanOpacity(o) {
   return { monitor: pick(o?.monitor, DEFAULT_SETTINGS.opacity.monitor), vr: pick(o?.vr, DEFAULT_SETTINGS.opacity.vr) };
 }
 
-/** Manual pit stop values: positive numbers or null, mode auto/simultaneous/sequential. */
+/** Manual pit stop values: positive numbers or null; iRacing sporting regulation or auto. */
 function cleanPitStop(p) {
   const num = (v, max) => (Number.isFinite(v) && v > 0 && v <= max ? Math.round(v * 100) / 100 : null);
   return {
     fillRate: num(p?.fillRate, 50),
     tyreTime: num(p?.tyreTime, 300),
-    mode: ['auto', 'simultaneous', 'sequential'].includes(p?.mode) ? p.mode : 'auto',
+    regulation: ['auto', 'standard', 'imsa', 'nec', 'dtm'].includes(p?.regulation) ? p.regulation : 'auto',
   };
 }
 

@@ -122,3 +122,4 @@ body.setup-body #root { height: auto; }
 .setup .pit-form { display: grid; gap: 8px; margin-top: 8px; }
 .setup .pit-form label { display: grid; grid-template-columns: 170px 110px auto; align-items: center; gap: 8px; font-size: 13px; }
 .setup .pit-form input, .setup .pit-form select { width: 110px; padding: 5px 8px; background: #111; color: inherit; border: 1px solid var(--o-line); border-radius: 4px; font: inherit; }
+.setup .pit-form select { width: auto; }

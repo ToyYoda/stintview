@@ -47,7 +47,11 @@ export function PitWidget({ plan }: { plan: Pitplan | null }) {
       <div className="pit-service">
         <span>{plan.fuel > 0 ? `Tanken ${plan.fuel.toFixed(0)} l · ${plan.fuelTime.toFixed(0)} s` : 'Kein Sprit'}</span>
         <span>{plan.tyres > 0 ? `${plan.tyres} Reifen · ${plan.tyreTime.toFixed(0)} s` : 'Keine Reifen'}</span>
-        {plan.fuel > 0 && plan.tyres > 0 && <span className="muted">{plan.simultaneous ? 'gleichzeitig' : 'nacheinander'}</span>}
+        {plan.fuel > 0 && plan.tyres > 0 && (
+          <span className="muted" title={plan.regulationFrom === 'default' ? 'Serie unbekannt – im StintView-Fenster unter Boxenstopp wählbar' : undefined}>
+            {plan.simultaneous ? 'gleichzeitig' : 'nacheinander'} ({plan.regulation}{plan.regulationFrom === 'default' ? '?' : ''})
+          </span>
+        )}
         {plan.repair > 0 && <span className="warn">Reparatur {plan.repair.toFixed(0)} s</span>}
         {plan.optRepair > 0 && <span className="muted">+{plan.optRepair.toFixed(0)} s optional</span>}
       </div>

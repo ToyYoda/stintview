@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
-  computeRejoin, DEFAULT_STOP, LaneLossLearner, OwnStopLearner, PitModelStore, stationaryTime, stopRequest, wrapGap,
+  computeRejoin, DEFAULT_RATES, LaneLossLearner, OwnStopLearner, PitModelStore, PitPlanner, stationaryTime, stopRequest, wrapGap,
 } from './pitstop.ts';
 import type { CarInfo, CarProgress } from './standings.ts';
 
 describe('stop duration', () => {
   it('fuel and tyres at the same time: the longer job counts', () => {
-    const r = stationaryTime({ fuel: 93, tyres: 4, repair: 0 }, DEFAULT_STOP);
+    const r = stationaryTime({ fuel: 93, tyres: 4, repair: 0 }, { ...DEFAULT_RATES, simultaneous: true });
     expect(r.fuelTime).toBeCloseTo(37.2);
     expect(r.stationary).toBeCloseTo(37.2);
   });
@@ -59,13 +59,46 @@ describe('learning from our own stops', () => {
     expect(s?.tyreTime).toBeCloseTo(18, 0);
   });
 
-  it('store: median of measured stops, default before', () => {
+  it('store: median of measured stops, estimates before', () => {
     const store = new PitModelStore(null);
-    expect(store.car('x').stops).toBe(0);
-    expect(store.car('x').model).toEqual(DEFAULT_STOP);
+    expect(store.car('x')).toEqual({ ...DEFAULT_RATES, stops: 0 });
     store.addStop('x', { fillRate: 3, tyreTime: 20, simultaneous: false });
     store.addStop('x', { fillRate: 3.2 });
-    expect(store.car('x')).toEqual({ model: { fillRate: 3.1, tyreTime: 20, simultaneous: false }, stops: 2 });
+    expect(store.car('x')).toEqual({ fillRate: 3.1, tyreTime: 20, stops: 2 });
+  });
+});
+
+describe('sporting regulation', () => {
+  const yaml = (series: number) => `WeekendInfo:
+ TrackID: 262
+ SeriesID: ${series}
+DriverInfo:
+ DriverCarIdx: 0
+ Drivers:
+ - CarIdx: 0
+   CarPath: porsche992rgt3
+`;
+  const planner = (series: number) => {
+    const p = new PitPlanner(new PitModelStore(null));
+    p.setSession(yaml(series), new Map());
+    return p;
+  };
+
+  it('known series: from the table (NEC = fuel and tyres at once)', () => {
+    expect(planner(275).regulation()).toEqual({ regulation: 'nec', from: 'series' });
+    expect(planner(275).model().model.simultaneous).toBe(true);
+  });
+
+  it('unknown series: standard rules, fuel first then tyres', () => {
+    expect(planner(228).regulation()).toEqual({ regulation: 'standard', from: 'default' });
+    expect(planner(228).model().model.simultaneous).toBe(false);
+  });
+
+  it('chosen in the app wins', () => {
+    const p = planner(228);
+    p.setOverride({ fillRate: 4, tyreTime: null, regulation: 'dtm' });
+    expect(p.regulation()).toEqual({ regulation: 'dtm', from: 'manual' });
+    expect(p.model()).toMatchObject({ model: { fillRate: 4, simultaneous: true }, source: 'manual' });
   });
 });
 

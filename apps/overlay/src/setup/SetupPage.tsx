@@ -286,19 +286,23 @@ function PitStopCard({ pit, onChange }: {
     <section className="card">
       <h2>Boxenstopp</h2>
       <p className="hint">
-        StintView misst Tankrate und Reifenwechsel bei jedem eigenen Stopp (auch im Training) und merkt sie sich je Serie und Auto;
-        die Durchfahrt der Boxengasse misst es an allen Autos, die an die Box fahren. Nur ausfüllen, wenn ihr die Werte schon vorher kennt.
+        Ob Tanken und Reifen gleichzeitig laufen, legt iRacings Regelwerk der Serie fest (Standard: erst Tanken, dann Reifen;
+        IMSA, NEC, DTM: gleichzeitig). StintView erkennt bekannte Serien selbst. Tankrate und Reifenwechsel misst es bei jedem eigenen
+        Stopp (auch im Training) je Serie und Auto, die Durchfahrt der Boxengasse an allen Autos, die an die Box fahren.
+        Werte nur eintragen, wenn ihr sie schon vorher kennt.
       </p>
       <div className="pit-form">
         <label>Tankrate <input inputMode="decimal" placeholder="automatisch" value={fill}
           onChange={(e) => setFill(e.target.value)} onBlur={() => save({ fillRate: num(fill) })} /> l/s</label>
         <label>Reifenwechsel (alle 4) <input inputMode="decimal" placeholder="automatisch" value={tyre}
           onChange={(e) => setTyre(e.target.value)} onBlur={() => save({ tyreTime: num(tyre) })} /> s</label>
-        <label>Tanken und Reifen
-          <select value={pit.mode} onChange={(e) => save({ mode: e.target.value as AppState['settings']['pitStop']['mode'] })}>
+        <label>Regelwerk der Serie
+          <select value={pit.regulation} onChange={(e) => save({ regulation: e.target.value as AppState['settings']['pitStop']['regulation'] })}>
             <option value="auto">automatisch</option>
-            <option value="simultaneous">gleichzeitig</option>
-            <option value="sequential">nacheinander</option>
+            <option value="standard">Standard – erst Tanken, dann Reifen</option>
+            <option value="imsa">IMSA – gleichzeitig</option>
+            <option value="nec">NEC – gleichzeitig</option>
+            <option value="dtm">DTM – gleichzeitig</option>
           </select>
         </label>
       </div>

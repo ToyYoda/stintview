@@ -233,7 +233,12 @@ export interface Pitplan {
   /** Mandatory repair seconds; optional repair is only done if the driver waits. */
   repair: number;
   optRepair: number;
+  /** Fuel and tyres at the same time (IMSA, NEC, DTM) or fuel first, then tyres (standard). */
   simultaneous: boolean;
+  /** iRacing sporting regulation: "Standard", "IMSA", "NEC", "DTM". */
+  regulation: string;
+  /** series = known from the SeriesID, manual = chosen in the app, default = unknown series. */
+  regulationFrom: 'series' | 'manual' | 'default';
   fillRate: number;
   stationary: number;
   /** Time lost driving through the pit lane (measured on stopping cars), null until measured at this track. */

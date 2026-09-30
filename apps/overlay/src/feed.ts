@@ -26,7 +26,7 @@ export interface AppState {
     panels: Record<string, { monitor: boolean; vr: boolean }>;
     /** Panel background opacity in percent. */
     opacity: { monitor: number; vr: number };
-    pitStop: { fillRate: number | null; tyreTime: number | null; mode: 'auto' | 'simultaneous' | 'sequential' };
+    pitStop: { fillRate: number | null; tyreTime: number | null; regulation: 'auto' | 'standard' | 'imsa' | 'nec' | 'dtm' };
   };
   status: {
     line: string;

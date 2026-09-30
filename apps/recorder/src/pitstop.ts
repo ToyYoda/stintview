@@ -19,8 +19,25 @@ export interface StopModel {
   simultaneous: boolean;
 }
 
-/** Porsche 911 GT3 R, Nürburgring 06.06.2026: 2.5 l/s, 4 tyres in 16 s parallel to fuelling. */
-export const DEFAULT_STOP: StopModel = { fillRate: 2.5, tyreTime: 16, simultaneous: true };
+/** Estimates until measured: NEC race 06.06.2026 (Porsche 911 GT3 R), 2.5 l/s and 4 tyres in 16 s. */
+export const DEFAULT_RATES = { fillRate: 2.5, tyreTime: 16 };
+
+/**
+ * iRacing's series-specific sporting regulations (support article 31000179080): by default
+ * fuel is completed before tyre service begins; IMSA, NEC and DTM do both at once (NEC with
+ * slower fuel pumps, DTM with faster tyre changes – rates are measured per series anyway).
+ */
+export type Regulation = 'standard' | 'imsa' | 'nec' | 'dtm';
+export const REGULATIONS: Record<Regulation, { label: string; simultaneous: boolean }> = {
+  standard: { label: 'Standard', simultaneous: false },
+  imsa: { label: 'IMSA', simultaneous: true },
+  nec: { label: 'NEC', simultaneous: true },
+  dtm: { label: 'DTM', simultaneous: true },
+};
+/** The session info names the series, not its regulation: SeriesID -> regulation, as far as known. */
+export const SERIES_REGULATION: Record<number, Regulation> = {
+  275: 'nec', // Nürburgring Endurance Championship (race 06.06.2026, setup "26S2-NEC-…")
+};
 
 export const PIT_FLAGS = { tyres: 0x0f, fuel: 0x10, fastRepair: 0x40 } as const;
 
@@ -215,7 +232,7 @@ export function computeRejoin(
 
 interface ModelFile {
   tracks: Record<string, number[]>;
-  cars: Record<string, { fillRates: number[]; tyreTimes: number[]; simultaneous: boolean | null }>;
+  cars: Record<string, { fillRates: number[]; tyreTimes: number[] }>;
 }
 
 const KEEP = 12;
@@ -245,24 +262,20 @@ export class PitModelStore {
     this.save();
   }
 
-  car(key: string): { model: StopModel; stops: number } {
+  /** Measured fuel rate and tyre time for a series/car (defaults until measured). */
+  car(key: string): { fillRate: number; tyreTime: number; stops: number } {
     const c = this.data.cars[key];
-    const fill = median(c?.fillRates ?? []), tyre = median(c?.tyreTimes ?? []);
     return {
-      model: {
-        fillRate: fill ?? DEFAULT_STOP.fillRate,
-        tyreTime: tyre ?? DEFAULT_STOP.tyreTime,
-        simultaneous: c?.simultaneous ?? DEFAULT_STOP.simultaneous,
-      },
+      fillRate: median(c?.fillRates ?? []) ?? DEFAULT_RATES.fillRate,
+      tyreTime: median(c?.tyreTimes ?? []) ?? DEFAULT_RATES.tyreTime,
       stops: Math.max(c?.fillRates.length ?? 0, c?.tyreTimes.length ?? 0),
     };
   }
 
   addStop(key: string, s: StopSample) {
-    const c = this.data.cars[key] ?? { fillRates: [], tyreTimes: [], simultaneous: null };
+    const c = this.data.cars[key] ?? { fillRates: [], tyreTimes: [] };
     if (s.fillRate) c.fillRates = [...c.fillRates, Math.round(s.fillRate * 100) / 100].slice(-KEEP);
     if (s.tyreTime) c.tyreTimes = [...c.tyreTimes, Math.round(s.tyreTime * 10) / 10].slice(-KEEP);
-    if (s.simultaneous !== undefined) c.simultaneous = s.simultaneous;
     this.data.cars[key] = c;
     this.save();
   }
@@ -282,6 +295,7 @@ export class PitModelStore {
 
 export interface PitSession {
   track: string;
+  seriesId: number;
   /** Series and car: crews work differently per series (fuel rate, fuel and tyres at once). */
   carKey: string;
   usableTank: number;
@@ -308,6 +322,7 @@ export function parsePitSession(text: string): PitSession {
   for (const d of di.Drivers ?? []) if (d.CarIdx !== undefined && d.CarClassEstLapTime) lapEst.set(d.CarIdx, Number(d.CarClassEstLapTime));
   return {
     track: String(y.WeekendInfo?.TrackID ?? ''),
+    seriesId: y.WeekendInfo?.SeriesID ?? 0,
     carKey: `${y.WeekendInfo?.SeriesID ?? 0}/${me?.CarPath ?? ''}`,
     usableTank: (di.DriverCarFuelMaxLtr ?? 0) * (di.DriverCarMaxFuelPct ?? 1),
     lapEst,
@@ -318,7 +333,8 @@ export function parsePitSession(text: string): PitSession {
 export interface PitOverride {
   fillRate: number | null;
   tyreTime: number | null;
-  mode: 'auto' | 'simultaneous' | 'sequential';
+  /** 'auto' = from the SeriesID table, standard rules if the series is unknown. */
+  regulation: 'auto' | Regulation;
 }
 
 const SEND_EVERY_S = 1;
@@ -329,12 +345,17 @@ export class PitPlanner {
   private own = new OwnStopLearner();
   private lane = new LaneLossLearner();
   private lastSent = -Infinity;
-  private override: PitOverride = { fillRate: null, tyreTime: null, mode: 'auto' };
+  private override: PitOverride = { fillRate: null, tyreTime: null, regulation: 'auto' };
 
   constructor(private readonly store = new PitModelStore(), private readonly log: (s: string) => void = () => {}) {}
 
   setSession(yaml: string, info: Map<number, CarInfo>) {
-    this.session = parsePitSession(yaml);
+    const s = parsePitSession(yaml);
+    if (s.seriesId !== this.session?.seriesId) {
+      const known = SERIES_REGULATION[s.seriesId];
+      this.log(`[pit] SeriesID ${s.seriesId}: ${known ? `${REGULATIONS[known].label} rules` : 'not in the table, standard rules (fuel, then tyres)'}`);
+    }
+    this.session = s;
     this.info = info;
   }
 
@@ -342,19 +363,25 @@ export class PitPlanner {
     this.override = o;
   }
 
-  /** Current model: manual values win, then measured ones, then the default. */
+  /** Regulation: chosen in the app, else from the SeriesID table, else standard. */
+  regulation(): { regulation: Regulation; from: Pitplan['regulationFrom'] } {
+    if (this.override.regulation !== 'auto') return { regulation: this.override.regulation, from: 'manual' };
+    const known = SERIES_REGULATION[this.session?.seriesId ?? 0];
+    return known ? { regulation: known, from: 'series' } : { regulation: 'standard', from: 'default' };
+  }
+
+  /** Current model: manual rates win, then measured ones, then the estimates. */
   model(): { model: StopModel; source: Pitplan['source']; stops: number } {
-    const { model, stops } = this.store.car(this.session?.carKey ?? '');
+    const measured = this.store.car(this.session?.carKey ?? '');
     const o = this.override;
-    const manual = o.fillRate !== null || o.tyreTime !== null || o.mode !== 'auto';
     return {
       model: {
-        fillRate: o.fillRate ?? model.fillRate,
-        tyreTime: o.tyreTime ?? model.tyreTime,
-        simultaneous: o.mode === 'auto' ? model.simultaneous : o.mode === 'simultaneous',
+        fillRate: o.fillRate ?? measured.fillRate,
+        tyreTime: o.tyreTime ?? measured.tyreTime,
+        simultaneous: REGULATIONS[this.regulation().regulation].simultaneous,
       },
-      source: manual ? 'manual' : stops > 0 ? 'measured' : 'default',
-      stops,
+      source: o.fillRate !== null || o.tyreTime !== null ? 'manual' : measured.stops > 0 ? 'measured' : 'default',
+      stops: measured.stops,
     };
   }
 
@@ -370,7 +397,7 @@ export class PitPlanner {
     }
     if (f.has('PitstopActive')) {
       const stop = this.own.onFrame(t, f.num('PitstopActive') === 1, f.num('PitSvFlags') >>> 0, f.num('FuelLevel'));
-      if (stop && Object.keys(stop).length) {
+      if (stop && (stop.fillRate || stop.tyreTime)) {
         this.store.addStop(s.carKey, stop);
         this.log(`[pit] own stop: ${JSON.stringify(stop)}`);
       }
@@ -383,6 +410,7 @@ export class PitPlanner {
     const teamIdx = f.num('PlayerCarIdx');
     const req = stopRequest(f.num('PitSvFlags') >>> 0, f.num('PitSvFuel'), f.num('FuelLevel'), s.usableTank, f.num('PitRepairLeft'));
     const { model, source, stops } = this.model();
+    const reg = this.regulation();
     const { fuelTime, tyreTime, stationary } = stationaryTime(req, model);
     const lane = this.store.laneLoss(s.track);
     const total = lane.loss !== null ? lane.loss + stationary : null;
@@ -394,7 +422,8 @@ export class PitPlanner {
       t: 'pitplan', sessionTime: t,
       fuel: round1(req.fuel), fuelTime: round1(fuelTime), tyres: req.tyres, tyreTime: round1(tyreTime),
       repair: round1(req.repair), optRepair: round1(Number.isFinite(opt) ? opt : 0),
-      simultaneous: model.simultaneous, fillRate: Math.round(model.fillRate * 100) / 100,
+      simultaneous: model.simultaneous, regulation: REGULATIONS[reg.regulation].label, regulationFrom: reg.from,
+      fillRate: Math.round(model.fillRate * 100) / 100,
       stationary: round1(stationary), laneLoss: lane.loss !== null ? round1(lane.loss) : null, laneSamples: lane.samples,
       total: total !== null ? round1(total) : null, source, stops,
       inPit: f.num('OnPitRoad') === 1,
