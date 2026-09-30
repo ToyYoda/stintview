@@ -212,4 +212,15 @@ describe('pit lane loss lookup', () => {
     store.addLaneLoss('168', 15);
     expect(store.laneLoss('168')).toEqual({ loss: 15, samples: 1, from: 'measured' });
   });
+
+  it('archive import goes before live values and remembers the files', () => {
+    const store = new PitModelStore(null);
+    store.addLaneLoss('1', 20);
+    store.importLaneLosses(new Map([['1', Array(12).fill(10)]]), ['a.ibt']);
+    // 13 values, the oldest archive value drops out, the live one stays
+    expect(store.laneLoss('1').samples).toBe(12);
+    expect(store.isImported('a.ibt')).toBe(true);
+    store.addLaneLoss('1', 20);
+    expect(store.laneLoss('1').loss).toBe(10); // median of 10×10 and 2×20
+  });
 });

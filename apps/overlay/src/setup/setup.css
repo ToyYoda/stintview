@@ -123,3 +123,6 @@ body.setup-body #root { height: auto; }
 .setup .pit-form label { display: grid; grid-template-columns: 170px 110px auto; align-items: center; gap: 8px; font-size: 13px; }
 .setup .pit-form input, .setup .pit-form select { width: 110px; padding: 5px 8px; background: #111; color: inherit; border: 1px solid var(--o-line); border-radius: 4px; font: inherit; }
 .setup .pit-form select { width: auto; }
+.setup .pit-import { margin-top: 14px; border-top: 1px solid var(--o-line); padding-top: 10px; }
+.setup .pit-import small { display: block; margin-top: 6px; color: var(--o-muted); word-break: break-all; }
+.setup .pit-import small.bad { color: #ff4d4d; }

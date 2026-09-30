@@ -1,7 +1,7 @@
 // StintView desktop app: tray icon, setup window, and the background pieces –
 // recorder (always), desktop overlay / VR panels (per setting) and optionally the team relay.
 const { app, BrowserWindow, Menu, Tray, dialog, ipcMain, nativeImage, shell, utilityProcess } = require('electron');
-const { createWriteStream, mkdirSync } = require('node:fs');
+const { createWriteStream, mkdirSync, readdirSync } = require('node:fs');
 const path = require('node:path');
 const {
   cleanOpacity, cleanPanels, cleanPitStop, clearConfig, configPath, dataDir, loadConfig, loadSettings, logDir, normalizeUrl, panelsFor, register, saveSettings,
@@ -93,6 +93,58 @@ function supervise(name, file, args, env, onMessage) {
 
 let recorder = null;
 let relay = null;
+
+// ---------------------------------------------------------------------------
+// "Boxengassen-Zeiten einlesen": pit lane losses from the local .ibt archive
+// ---------------------------------------------------------------------------
+
+let pitImport = { running: false, finished: false, done: 0, total: 0, passes: 0, tracks: 0, folder: null, error: null };
+
+const hasIbt = (dir) => {
+  try {
+    return readdirSync(dir).some((n) => n.toLowerCase().endsWith('.ibt'));
+  } catch {
+    return false;
+  }
+};
+
+/** Runs `recorder.cjs import-pitlane <dir>` as a separate process; `choose` asks for the folder. */
+async function startPitImport(choose) {
+  if (pitImport.running) return;
+  let dir = settings.telemetryDir ?? path.join(app.getPath('documents'), 'iRacing', 'telemetry');
+  if (choose || !hasIbt(dir)) {
+    const r = await dialog.showOpenDialog(setupWin ?? undefined, {
+      title: 'iRacing-Telemetrie-Ordner wählen (enthält die .ibt-Dateien)', defaultPath: dir, properties: ['openDirectory'],
+    });
+    if (r.canceled || !r.filePaths[0]) return;
+    dir = r.filePaths[0];
+    if (!hasIbt(dir)) {
+      pitImport = { ...pitImport, finished: true, folder: dir, error: 'In diesem Ordner sind keine .ibt-Dateien.' };
+      return refresh();
+    }
+    settings = { ...settings, telemetryDir: dir };
+    saveSettings(settings);
+  }
+  pitImport = { running: true, finished: false, done: 0, total: 0, passes: 0, tracks: 0, folder: dir, error: null };
+  const proc = utilityProcess.fork(path.join(BUNDLES, 'recorder.cjs'), ['import-pitlane', dir], {
+    serviceName: 'StintView Boxengassen-Import', stdio: 'pipe', env: { ...process.env, STINTVIEW_CONFIG: configPath() },
+  });
+  proc.stdout?.on('data', (d) => console.log(`[pit-import] ${String(d).trim()}`));
+  proc.stderr?.on('data', (d) => console.error(`[pit-import] ${String(d).trim()}`));
+  proc.on('message', (m) => {
+    if (m.t !== 'pit-import') return;
+    pitImport = { ...pitImport, ...m, running: !m.finished };
+    // The live recorder keeps the learned values in memory: tell it to read the file again.
+    if (m.finished && !m.error) recorder?.post({ t: 'pit-model-reload' });
+    refresh();
+  });
+  proc.on('exit', (code) => {
+    if (!pitImport.running) return;
+    pitImport = { ...pitImport, running: false, finished: true, error: `Abgebrochen (Code ${code})` };
+    refresh();
+  });
+  refresh();
+}
 let runningVrPanels = '';
 
 function startRecorder() {
@@ -264,6 +316,7 @@ function appState() {
     status: { ...status, line: statusLine(), vr: vrStatus(), overlay: overlayRunning(), editing: editing(), editHotkey: editHotkey() },
     autostartAvailable: app.isPackaged,
     cameraHotkeys: cameraInfo().hotkeys,
+    pitImport,
     hotkeys: (() => {
       const cam = cameraHotkeyInfo();
       return hotkeyGroups(editHotkeyInfo(), cam.keys, cam.candidates, vrHotkeyInfo(), { overlay: overlayRunning() });
@@ -346,6 +399,10 @@ ipcMain.handle('app:leave', async () => {
 // Updates: button in tray and window instead of "restart twice".
 ipcMain.handle('app:update-check', () => { checkNow(); return appState(); });
 ipcMain.handle('app:update-install', () => installNow());
+ipcMain.handle('app:pit-import', async (_e, choose) => {
+  await startPitImport(Boolean(choose));
+  return appState();
+});
 
 let announced = '';
 function onUpdateChange(u) {

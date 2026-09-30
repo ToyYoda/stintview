@@ -175,7 +175,8 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
         </p>
       </section>
 
-      <PitStopCard pit={settings.pitStop} onChange={(pitStop) => set({ pitStop })} />
+      <PitStopCard pit={settings.pitStop} onChange={(pitStop) => set({ pitStop })} imp={state.pitImport}
+        onImport={async (choose) => onState(await api().pitImport(choose))} />
 
       <section className="card">
         <h2>Team</h2>
@@ -271,9 +272,11 @@ function OpacitySliders({ opacity, onChange }: {
 }
 
 /** Manual crew values for the pit stop planner; empty = measured at our own stops. */
-function PitStopCard({ pit, onChange }: {
+function PitStopCard({ pit, onChange, imp, onImport }: {
   pit: AppState['settings']['pitStop'];
   onChange(p: AppState['settings']['pitStop']): void;
+  imp: AppState['pitImport'];
+  onImport(choose: boolean): void;
 }) {
   const [fill, setFill] = useState(pit.fillRate?.toString() ?? '');
   const [tyre, setTyre] = useState(pit.tyreTime?.toString() ?? '');
@@ -306,6 +309,27 @@ function PitStopCard({ pit, onChange }: {
             <option value="dtm">DTM – gleichzeitig</option>
           </select>
         </label>
+      </div>
+      <div className="pit-import">
+        <p className="hint">
+          Boxengassen-Zeiten aus deinen alten Telemetrie-Dateien (.ibt) einlesen: StintView sucht darin jede eigene Fahrt durch die
+          Boxengasse und merkt sich den Zeitverlust je Strecke. Bereits eingelesene Dateien werden übersprungen.
+        </p>
+        <div className="edit-row">
+          <button className="btn ghost" disabled={imp.running} onClick={() => onImport(false)}>
+            {imp.running ? 'Liest …' : 'Boxengassen-Zeiten einlesen'}
+          </button>
+          <button className="linkish" disabled={imp.running} onClick={() => onImport(true)}>anderer Ordner …</button>
+        </div>
+        {(imp.running || imp.finished) && (
+          <small className={imp.error ? 'bad' : ''}>
+            {imp.error ? imp.error
+              : imp.running ? `${imp.done} von ${imp.total || '…'} Dateien · ${imp.passes} Durchfahrten auf ${imp.tracks} Strecken`
+                : imp.total === 0 ? 'Keine neuen Dateien – alles schon eingelesen.'
+                  : `Fertig: ${imp.total} Dateien, ${imp.passes} Durchfahrten auf ${imp.tracks} Strecken.`}
+            {imp.folder && <><br />{imp.folder}</>}
+          </small>
+        )}
       </div>
     </section>
   );

@@ -148,6 +148,7 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 | 4c.2 | A | im Boxen-Menü Sprit/Reifen ändern | Tankmenge, Reifenzahl und Standzeit ändern sich innerhalb 1 s | |
 | 4c.3 | Z | kurz vor dem Stopp Rückkehr-Vorhersage notieren (Autos vor/hinter uns), nach dem Stopp vergleichen | gleiche Autos, Abstände ± ca. 2 s | |
 | 4c.3b | alle | recorder-Protokoll nach Sessionstart: Zeile `[pit] SeriesID …` | bei unbekannter Serie SeriesID + Seriennamen an Philipp melden (für die Regelwerk-Tabelle) | |
+| 4c.3c | alle | vor dem Rennen: StintView-Fenster → Boxenstopp → **Boxengassen-Zeiten einlesen** | Fortschritt „x von y Dateien“, danach „Fertig: … Durchfahrten auf … Strecken“; zweiter Klick: „Keine neuen Dateien“ | |
 | 4c.4 | Z | nach dem ersten eigenen Stopp | oben „gemessen (1 Stopp)“, Tankrate/Reifenzeit plausibel; im recorder-Protokoll `[pit] own stop: …` | |
 
 ### Block 5 – Overlay bedienen (5 min)

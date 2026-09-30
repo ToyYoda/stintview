@@ -269,6 +269,8 @@ export function computeRejoin(
 interface ModelFile {
   tracks: Record<string, number[]>;
   cars: Record<string, { fillRates: number[]; tyreTimes: number[] }>;
+  /** .ibt files already read by the archive import. */
+  importedFiles: string[];
 }
 
 /**
@@ -295,14 +297,22 @@ const median = (xs: number[]) => {
   return s.length ? (s.length % 2 ? s[(s.length - 1) / 2]! : (s[s.length / 2 - 1]! + s[s.length / 2]!) / 2) : null;
 };
 
+/**
+ * Learned values on this PC. Every change re-reads the file first, so the live recorder and
+ * the archive import (a separate process) don't overwrite each other.
+ */
 export class PitModelStore {
-  private data: ModelFile = { tracks: {}, cars: {} };
+  private data: ModelFile = { tracks: {}, cars: {}, importedFiles: [] };
 
   constructor(private readonly file: string | null = join(dirname(configPath()), 'pit-model.json')) {
-    if (!file) return;
+    this.reload();
+  }
+
+  reload() {
+    if (!this.file) return;
     try {
-      const d = JSON.parse(readFileSync(file, 'utf8')) as Partial<ModelFile>;
-      this.data = { tracks: d.tracks ?? {}, cars: d.cars ?? {} };
+      const d = JSON.parse(readFileSync(this.file, 'utf8')) as Partial<ModelFile>;
+      this.data = { tracks: d.tracks ?? {}, cars: d.cars ?? {}, importedFiles: d.importedFiles ?? [] };
     } catch { /* first run */ }
   }
 
@@ -315,8 +325,32 @@ export class PitModelStore {
   }
 
   addLaneLoss(track: string, loss: number) {
-    this.data.tracks[track] = [...(this.data.tracks[track] ?? []), Math.round(loss * 10) / 10].slice(-KEEP);
-    this.save();
+    this.change((d) => {
+      d.tracks[track] = [...(d.tracks[track] ?? []), Math.round(loss * 10) / 10].slice(-KEEP);
+    });
+  }
+
+  /** Files the archive import has already read. */
+  isImported(file: string) {
+    return this.data.importedFiles.includes(file);
+  }
+
+  /**
+   * Adds pit lane passes from old .ibt files. They go in *before* live measurements, which
+   * are newer and win when only the last KEEP values are kept.
+   */
+  importLaneLosses(byTrack: Map<string, number[]>, files: string[]) {
+    this.change((d) => {
+      for (const [track, losses] of byTrack) {
+        d.tracks[track] = [...losses.map((x) => Math.round(x * 10) / 10), ...(d.tracks[track] ?? [])].slice(-KEEP);
+      }
+      d.importedFiles = [...new Set([...d.importedFiles, ...files])];
+    });
+  }
+
+  /** Tracks with measured values (for the import summary). */
+  measuredTracks() {
+    return Object.keys(this.data.tracks).filter((k) => this.data.tracks[k]!.length > 0).length;
   }
 
   /** Measured fuel rate and tyre time for a series/car, null until measured. */
@@ -330,14 +364,17 @@ export class PitModelStore {
   }
 
   addStop(key: string, s: StopSample) {
-    const c = this.data.cars[key] ?? { fillRates: [], tyreTimes: [] };
-    if (s.fillRate) c.fillRates = [...c.fillRates, Math.round(s.fillRate * 100) / 100].slice(-KEEP);
-    if (s.tyreTime) c.tyreTimes = [...c.tyreTimes, Math.round(s.tyreTime * 10) / 10].slice(-KEEP);
-    this.data.cars[key] = c;
-    this.save();
+    this.change((d) => {
+      const c = d.cars[key] ?? { fillRates: [], tyreTimes: [] };
+      if (s.fillRate) c.fillRates = [...c.fillRates, Math.round(s.fillRate * 100) / 100].slice(-KEEP);
+      if (s.tyreTime) c.tyreTimes = [...c.tyreTimes, Math.round(s.tyreTime * 10) / 10].slice(-KEEP);
+      d.cars[key] = c;
+    });
   }
 
-  private save() {
+  private change(fn: (d: ModelFile) => void) {
+    this.reload();
+    fn(this.data);
     if (!this.file) return;
     try {
       mkdirSync(dirname(this.file), { recursive: true });
@@ -430,6 +467,11 @@ export class PitPlanner {
 
   setOverride(o: PitOverride) {
     this.override = o;
+  }
+
+  /** After the archive import wrote new values. */
+  reloadModel() {
+    this.store.reload();
   }
 
   /** Regulation: chosen in the app, else from the SeriesID table, else standard. */

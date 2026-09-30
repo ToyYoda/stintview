@@ -60,6 +60,16 @@ export class IbtSource implements TelemetrySource {
     this.timer = null;
   }
 
+  /** Number of 60 Hz records in the file. */
+  get recordCount() {
+    return this.records;
+  }
+
+  /** Session info YAML of the file. */
+  get sessionInfo() {
+    return this.yaml;
+  }
+
   close() {
     this.stop();
     closeSync(this.fd);

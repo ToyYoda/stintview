@@ -29,6 +29,8 @@ const DEFAULT_SETTINGS = {
   opacity: { monitor: 78, vr: 100 },
   // Pit stop: rates null = measured at our own stops; regulation 'auto' = from the series.
   pitStop: { fillRate: null, tyreTime: null, regulation: 'auto' },
+  // iRacing telemetry folder chosen for the pit lane import; null = Documents\\iRacing\\telemetry.
+  telemetryDir: null,
 };
 const PANEL_IDS = Object.keys(DEFAULT_SETTINGS.panels);
 

@@ -25,4 +25,5 @@ contextBridge.exposeInMainWorld('stintview', {
   leave: () => ipcRenderer.invoke('app:leave'),
   checkUpdate: () => ipcRenderer.invoke('app:update-check'),
   installUpdate: () => ipcRenderer.invoke('app:update-install'),
+  pitImport: (choose) => ipcRenderer.invoke('app:pit-import', choose),
 });

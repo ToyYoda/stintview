@@ -42,6 +42,11 @@ export interface AppState {
   };
   autostartAvailable: boolean;
   cameraHotkeys: { incident: string | null; back: string | null };
+  /** Pit lane loss import from the .ibt archive. */
+  pitImport: {
+    running: boolean; finished: boolean; done: number; total: number; passes: number; tracks: number;
+    folder: string | null; error: string | null;
+  };
   hotkeys: HotkeyGroup[];
   update: {
     phase: 'unavailable' | 'idle' | 'checking' | 'downloading' | 'ready' | 'latest' | 'error';
@@ -74,6 +79,7 @@ declare global {
       leave(): Promise<AppState>;
       checkUpdate(): Promise<AppState>;
       installUpdate(): Promise<void>;
+      pitImport(choose: boolean): Promise<AppState>;
     };
   }
 }

@@ -10,7 +10,8 @@ import { HazardDetector } from './hazard.ts';
 import { StandingsTracker } from './standings.ts';
 import { countryCode } from './country.ts';
 import { parseSessionCars } from './spectator.ts';
-import { PitPlanner, type PitOverride } from './pitstop.ts';
+import { PitModelStore, PitPlanner, type PitOverride } from './pitstop.ts';
+import { importArchive, type ImportProgress } from './pitlane-import.ts';
 
 const USAGE = `StintView recorder
 
@@ -19,6 +20,8 @@ const USAGE = `StintView recorder
   run                       record live from iRacing (default)
   replay <file.ibt> [--speed 1] [--start 0] [--loop]
                             play an .ibt file as if it were live (start in minutes)
+  import-pitlane <telemetry dir>
+                            read pit lane losses from old .ibt files into pit-model.json
 
 Config: ${configPath()}`;
 
@@ -37,10 +40,11 @@ export type RecorderEvent =
   | { t: 'server'; connected: boolean; text: string }
   | { t: 'car'; inCar: boolean; driverName: string }
   | CameraState
-  | CameraResult;
+  | CameraResult
+  | ({ t: 'pit-import'; finished: boolean; error?: string } & Partial<ImportProgress>);
 interface ParentPort {
   postMessage(m: RecorderEvent): void;
-  on(event: 'message', fn: (e: { data: CameraCommand | { t: 'pit-settings'; pit: PitOverride } }) => void): void;
+  on(event: 'message', fn: (e: { data: CameraCommand | { t: 'pit-settings'; pit: PitOverride } | { t: 'pit-model-reload' } }) => void): void;
 }
 const parentPort = (process as { parentPort?: ParentPort }).parentPort;
 const report = (e: RecorderEvent) => parentPort?.postMessage(e);
@@ -109,6 +113,10 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
   recorderRef = recorder;
   // Camera commands from the desktop app (teammate watching the team car in iRacing).
   parentPort?.on('message', (e) => {
+    if (e.data?.t === 'pit-model-reload') {
+      console.log('[pit] reloading learned values (archive import finished)');
+      return pit.reloadModel();
+    }
     if (e.data?.t === 'pit-settings') {
       console.log(`[pit] crew values from the app: ${JSON.stringify(e.data.pit)}`);
       return pit.setOverride(e.data.pit);
@@ -152,6 +160,19 @@ async function main() {
         speed: Number(values.speed ?? 1), startMinutes: Number(values.start ?? 0), loop: values.loop,
       });
       return record(source, `replay ${file} (${source.durationMinutes.toFixed(0)} min, speed ${values.speed ?? 1}x)`);
+    }
+    case 'import-pitlane': {
+      // Separate process started by the app's "Boxengassen-Zeiten einlesen" button.
+      const dir = rest[0];
+      if (!dir) throw new Error('import-pitlane needs the telemetry folder');
+      try {
+        const r = await importArchive(dir, new PitModelStore(), (p) => report({ t: 'pit-import', finished: false, ...p }));
+        console.log(`[pit] archive import: ${r.files} files, ${r.passes} pit lane passes on ${r.tracks} tracks`);
+        report({ t: 'pit-import', finished: true, done: r.files, total: r.files, passes: r.passes, tracks: r.tracks });
+      } catch (e) {
+        report({ t: 'pit-import', finished: true, error: (e as Error).message });
+      }
+      return;
     }
     default:
       console.log(USAGE);
