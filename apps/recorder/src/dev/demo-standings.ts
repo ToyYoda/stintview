@@ -1,7 +1,7 @@
 /**
  * Dev tool: sends a realistic-looking Position and Boxenstopp panel (fictitious names) for ~60 s,
  * e.g. for website screenshots. Pretends to be the driving recorder.
- * Usage: tsx src/dev/demo-standings.ts   (uses the normal config / STINTVIEW_CONFIG)
+ * Usage: tsx src/dev/demo-standings.ts [--best]   (--best: qualifying view; uses the normal config / STINTVIEW_CONFIG)
  */
 import WebSocket from 'ws';
 import { PROTOCOL_VERSION, pack, type ClientMessage, type StandingRow } from '@stintview/protocol';
@@ -46,7 +46,16 @@ ws.on('open', async () => {
       { pos: 0, carIdx: 30, number: '211', name: 'Jonas Weber', country: 'de', lastLap: 512.4, isTeam: false, gap: 1.8, lapsGap: -1, tyreLaps: 9, inPit: false, lap: 'backmarker', otherClass: true },
       { pos: 0, carIdx: 31, number: '5', name: 'Henri Dubois', country: 'fr', lastLap: 452.2, isTeam: false, gap: -2.6, lapsGap: 1, tyreLaps: 4, inPit: false, lap: 'lapper', otherClass: true },
     ];
-    send({ t: 'standings', sessionTime: 5000 + i / 2, rows, lapping });
+    if (process.argv.includes('--best')) {
+      // Qualifying view: ranking by best lap.
+      const times = [125.104, 125.388, 125.412, 125.731, 125.802, 125.954, 126.020, 126.117, 126.390, 126.902];
+      const best: StandingRow[] = rows.map((r, k) => ({
+        ...r, pos: k < 3 ? k + 1 : k + 3, bestLap: times[k]!, gap: r.isTeam ? null : times[k]! - 126.020, lapsGap: 0, inPit: false,
+      }));
+      send({ t: 'standings', sessionTime: 5000 + i / 2, rows: best, mode: 'best', session: 'Qualifying' });
+    } else {
+      send({ t: 'standings', sessionTime: 5000 + i / 2, rows, lapping });
+    }
     send({
       t: 'pitplan', sessionTime: 5000 + i / 2, fuel: 86, fuelTime: 34.4, tyres: 4, tyreTime: 16, repair: 0, optRepair: 0,
       simultaneous: true, regulation: 'IMSA', regulationFrom: 'class', fillRate: 2.5, stationary: 34.4, laneLoss: 19, laneSamples: 7, laneFrom: 'measured', total: 53.4, source: 'rules', stops: 3,

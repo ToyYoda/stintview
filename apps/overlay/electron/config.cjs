@@ -10,7 +10,7 @@ const settingsPath = path.join(dataDir, 'app.json');
 const logDir = path.join(dataDir, 'logs');
 
 /** Columns of the Position panel that can be switched off. */
-const STANDINGS_COLUMNS = ['pos', 'num', 'flag', 'name', 'gap', 'tyre', 'delta'];
+const STANDINGS_COLUMNS = ['pos', 'num', 'flag', 'name', 'best', 'gap', 'tyre', 'delta'];
 
 /** Per panel: shown or not, size in percent of the normal size, panel-specific options. */
 const PANEL_DEFAULTS = {

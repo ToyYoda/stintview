@@ -1,4 +1,5 @@
 import type { StandingRow, Standings } from '@stintview/protocol';
+import { parse } from 'yaml';
 import type { Frame } from './irsdk/layout.ts';
 
 export interface CarProgress {
@@ -176,6 +177,67 @@ export class PitStopTracker {
   }
 }
 
+/** A car's best lap (practice/qualifying ranking); cars in the garage count too. */
+export interface BestLap { carIdx: number; best: number | null; lastLap: number | null; classId: number }
+
+/**
+ * Practice and qualifying: ranking by best lap within the team car's class (cars without a
+ * time last), P1–P`top` plus `around` cars ahead of and behind us. gap = their best − ours.
+ */
+export function computeBestStandings(
+  cars: BestLap[], teamIdx: number, info: Map<number, CarInfo>, top = 3, around = 3,
+  tyreLaps: (carIdx: number) => number | null = () => null,
+): StandingRow[] {
+  const team = cars.find((c) => c.carIdx === teamIdx);
+  if (!team) return [];
+  const field = cars
+    .filter((c) => c.classId === team.classId && (c.best !== null || c.carIdx === teamIdx))
+    .sort((a, b) => (a.best ?? Infinity) - (b.best ?? Infinity) || a.carIdx - b.carIdx);
+  const at = field.findIndex((c) => c.carIdx === teamIdx);
+  const wanted = new Set<number>();
+  for (let i = 0; i < Math.min(top, field.length); i++) wanted.add(i);
+  for (let i = Math.max(0, at - around); i <= Math.min(field.length - 1, at + around); i++) wanted.add(i);
+  return [...wanted].sort((a, b) => a - b).map((i) => {
+    const c = field[i]!;
+    const d = info.get(c.carIdx);
+    const isTeam = c.carIdx === teamIdx;
+    return {
+      pos: i + 1, carIdx: c.carIdx, number: d?.number ?? '?', name: d?.name ?? '', country: d?.country ?? null,
+      lastLap: c.lastLap, isTeam, bestLap: c.best,
+      gap: isTeam || c.best === null || team.best === null ? null : c.best - team.best,
+      lapsGap: 0, tyreLaps: tyreLaps(c.carIdx), inPit: false,
+    };
+  });
+}
+
+/** Best laps of all cars in the frame (also in the garage), from CarIdxBestLapTime. */
+export function readBestLaps(f: Frame): BestLap[] {
+  const n = f.count('CarIdxBestLapTime');
+  const out: BestLap[] = [];
+  for (let i = 0; i < n; i++) {
+    const best = f.num('CarIdxBestLapTime', i);
+    const last = f.has('CarIdxLastLapTime') ? f.num('CarIdxLastLapTime', i) : -1;
+    out.push({
+      carIdx: i, best: best > 0 ? best : null, lastLap: last > 0 ? last : null,
+      classId: f.has('CarIdxClass') ? f.num('CarIdxClass', i) : 0,
+    });
+  }
+  return out;
+}
+
+/** SessionNum -> SessionType ("Practice", "Open Qualify", "Race", ...) from the session YAML. */
+export function parseSessionTypes(text: string): Map<number, string> {
+  let y: { SessionInfo?: { Sessions?: { SessionNum?: number; SessionType?: string }[] } } = {};
+  try {
+    y = parse(text, { strict: false, uniqueKeys: false, maxAliasCount: -1 }) ?? {};
+  } catch { /* none */ }
+  return new Map((y.SessionInfo?.Sessions ?? []).filter((s) => s.SessionNum !== undefined).map((s) => [s.SessionNum!, s.SessionType ?? '']));
+}
+
+/** Races keep the running order on track; everything else ranks by best lap. */
+export const isRaceSession = (type: string | undefined) => type === undefined || /race/i.test(type);
+const sessionLabel = (type: string) => (/qualify/i.test(type) ? 'Qualifying' : 'Training');
+
 const SEND_EVERY_S = 1;
 const WHEELS = ['LF', 'RF', 'LR', 'RR'] as const;
 
@@ -189,10 +251,15 @@ export class StandingsTracker {
   private pits = new PitStopTracker();
   private sessionNum = -1;
   private trackLength = 0;
+  private sessionTypes = new Map<number, string>();
 
   setDrivers(info: Map<number, CarInfo>, trackLength = 0) {
     this.info = info;
     this.trackLength = trackLength;
+  }
+
+  setSessionTypes(types: Map<number, string>) {
+    this.sessionTypes = types;
   }
 
   onFrame(f: Frame, driving: boolean): Standings | null {
@@ -212,10 +279,15 @@ export class StandingsTracker {
     const laps = new Map(cars.map((c) => [c.carIdx, Math.floor(c.progress)]));
     const ownTyres = this.ownTyreLaps(f);
     const tyreLaps = (idx: number) => (idx === teamIdx && ownTyres !== null ? ownTyres : this.pits.laps(idx, laps.get(idx) ?? 0));
+    const type = this.sessionTypes.get(sessionNum);
+    if (!isRaceSession(type) && f.has('CarIdxBestLapTime')) {
+      const best = computeBestStandings(readBestLaps(f), teamIdx, this.info, 3, 3, tyreLaps);
+      return best.length ? { t: 'standings', sessionTime: t, rows: best, mode: 'best', session: sessionLabel(type!) } : null;
+    }
     const rows = computeStandings(cars, teamIdx, this.info, 3, 3, { tyreLaps });
     const lapRef = cars.find((c) => c.carIdx === teamIdx)?.lastLap ?? null;
     const lapping = lappingRows(cars, teamIdx, this.info, lapRef, tyreLaps);
-    return rows.length ? { t: 'standings', sessionTime: t, rows, lapping } : null;
+    return rows.length ? { t: 'standings', sessionTime: t, rows, lapping, mode: 'race' } : null;
   }
 
   /** Own car: exact, from the distance the tyres have run since they were fitted (newest tyre). */

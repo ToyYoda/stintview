@@ -202,6 +202,8 @@ export interface StandingRow {
   lap?: 'backmarker' | 'lapper';
   /** Only in `lapping`: other car class than ours. */
   otherClass?: boolean;
+  /** Practice/qualifying (mode 'best'): best lap time in seconds, null if none yet. */
+  bestLap?: number | null;
 }
 
 /** P1–P3 and the cars around the team car, about once per second. Additive, no version bump. */
@@ -209,6 +211,13 @@ export interface Standings {
   t: 'standings';
   sessionTime: number;
   rows: StandingRow[];
+  /**
+   * race = running order on track (gap = time on track, + ahead of us);
+   * best = practice/qualifying ranking by best lap (gap = their best − ours, + slower). Default race.
+   */
+  mode?: 'race' | 'best';
+  /** Shown in the title in mode 'best': "Training" or "Qualifying". */
+  session?: string;
   /**
    * The car right in front of / behind us on track (all classes) if it is a lap down on us
    * (backmarker, shown above our row) or a lap up (lapper, shown below).

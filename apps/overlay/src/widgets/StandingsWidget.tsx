@@ -4,7 +4,7 @@ import type { StandingsColumn, StandingsOptions } from '../feed.ts';
 
 
 const HEAD: [StandingsColumn, string][] = [
-  ['pos', 'P'], ['num', '#'], ['flag', ''], ['name', 'Fahrer'], ['gap', 'Abstand'], ['tyre', 'Reifen'], ['delta', 'Δ Runde'],
+  ['pos', 'P'], ['num', '#'], ['flag', ''], ['name', 'Fahrer'], ['best', 'Bestzeit'], ['gap', 'Abstand'], ['tyre', 'Reifen'], ['delta', 'Δ Runde'],
 ];
 
 /**
@@ -19,8 +19,10 @@ const HEAD: [StandingsColumn, string][] = [
 export function StandingsWidget({ standings, options }: { standings: Standings | null; options?: StandingsOptions | null }) {
   const rows = standings?.rows ?? [];
   const ours = rows.find((r) => r.isTeam)?.lastLap ?? null;
-  const col = (c: StandingsColumn) => options?.columns[c] ?? true;
-  const lapping = options?.lapping === false ? [] : standings?.lapping ?? [];
+  // Practice/qualifying: ranking by best lap, gap = their best − ours (+ slower than us).
+  const best = standings?.mode === 'best';
+  const col = (c: StandingsColumn) => (c === 'best' && !best ? false : options?.columns[c] ?? true);
+  const lapping = options?.lapping === false || best ? [] : standings?.lapping ?? [];
   const team = rows.find((r) => r.isTeam);
   // Class neighbours: the cars directly in front of and behind us in the running order.
   const front = team ? rows.find((r) => r.pos === team.pos - 1) : undefined;
@@ -39,13 +41,13 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
   return (
     <div className="panel standings">
       <div className="title">
-        Position
-        {col('tyre') && <span className="hint">Reifen = Runden seit Boxenstopp</span>}
+        {best ? `Bestzeiten · ${standings?.session ?? 'Training'}` : 'Position'}
+        {best ? <span className="hint">Abstand = seine Bestzeit − eure</span> : col('tyre') && <span className="hint">Reifen = Runden seit Boxenstopp</span>}
       </div>
       {options?.duel !== false && team && (front || back) && (
         <div className="st-duel">
-          <Duel car={front} arrow="▲" />
-          <Duel car={back} arrow="▼" />
+          <Duel car={front} arrow="▲" best={best} />
+          <Duel car={back} arrow="▼" best={best} />
         </div>
       )}
       {rows.length === 0 ? (
@@ -73,13 +75,16 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
                       {r.lap && <span className="st-lap-tag">{r.lap === 'backmarker' ? 'Nachzügler' : 'Überrunder'}</span>}
                     </td>
                   )}
+                  {col('best') && <td className="st-best">{r.bestLap ? lapTime(r.bestLap) : '–'}</td>}
                   {col('gap') && (
                     <td className="st-gap">
-                      {!r.isTeam && (
+                      {!r.isTeam && (best ? (
+                        r.gap != null && <span className={`gap-tile ${bestClass(r.gap)}`}>{bestGapText(r.gap)}</span>
+                      ) : (
                         <span className={`gap-tile ${r.lap ? '' : gapClass(r.gap, r.lapsGap)}`}>
                           {r.lap ? gapText(r.gap, 0) : gapText(r.gap, r.lapsGap)}
                         </span>
-                      )}
+                      ))}
                     </td>
                   )}
                   {col('tyre') && <td className="st-tyre">{r.inPit ? 'Box' : r.tyreLaps ?? '–'}</td>}
@@ -99,7 +104,7 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
 }
 
 /** Big line above the table: the class neighbour in front (▲) or behind (▼) and the gap to it. */
-function Duel({ car, arrow }: { car: StandingRow | undefined; arrow: string }) {
+function Duel({ car, arrow, best }: { car: StandingRow | undefined; arrow: string; best: boolean }) {
   if (!car) return <div className="duel empty" />;
   return (
     <div className="duel">
@@ -108,10 +113,19 @@ function Duel({ car, arrow }: { car: StandingRow | undefined; arrow: string }) {
         {car.country && /^[a-z]{2}(-[a-z]{3})?$/.test(car.country) && <span className={`fi fi-${car.country} st-flag`} />}
         #{car.number} {car.name}
       </span>
-      <span className={`gap-tile big ${gapClass(car.gap, car.lapsGap)}`}>{gapText(car.gap, car.lapsGap)}</span>
+      {best ? (
+        <span className={`gap-tile big ${car.gap == null ? 'far' : bestClass(car.gap)}`}>{car.gap == null ? '–' : bestGapText(car.gap)}</span>
+      ) : (
+        <span className={`gap-tile big ${gapClass(car.gap, car.lapsGap)}`}>{gapText(car.gap, car.lapsGap)}</span>
+      )}
     </div>
   );
 }
+
+/** Best-lap gap: thousandths, + = slower than us. */
+const bestGapText = (g: number) => `${g > 0 ? '+' : g < 0 ? '−' : '±'}${Math.abs(g).toFixed(3)}`;
+/** Within 0.3 s of our best: highlighted tile, otherwise dimmed. */
+const bestClass = (g: number) => (Math.abs(g) < 0.3 ? 'near' : 'far');
 
 /** Within 1 s: attack (ahead, amber) / defend (behind, red); 1–3 s normal; further away dimmed; other lap blue. */
 function gapClass(gap: number | null | undefined, laps: number | undefined) {

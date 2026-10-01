@@ -352,7 +352,7 @@ const PANEL_NAMES: [string, string][] = [
 
 const STANDINGS_COLUMNS: [StandingsColumn, string][] = [
   ['pos', 'Position'], ['num', 'Startnummer'], ['flag', 'Flagge'], ['name', 'Fahrer'],
-  ['gap', 'Abstand'], ['tyre', 'Reifenalter'], ['delta', 'Δ Runde'],
+  ['best', 'Bestzeit (Training/Quali)'], ['gap', 'Abstand'], ['tyre', 'Reifenalter'], ['delta', 'Δ Runde'],
 ];
 
 /**

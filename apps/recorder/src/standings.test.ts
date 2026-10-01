@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { countryCode } from './country.ts';
-import { computeStandings, lappingRows, PitStopTracker, trackGap, type CarInfo, type CarProgress } from './standings.ts';
+import { computeBestStandings, computeStandings, isRaceSession, lappingRows, parseSessionTypes, PitStopTracker, trackGap, type CarInfo, type CarProgress } from './standings.ts';
 
 const info = new Map<number, CarInfo>(
   Array.from({ length: 20 }, (_, i) => [i, { number: String(i + 1).padStart(2, '0'), name: `Driver ${i}` }]),
@@ -128,5 +128,31 @@ describe('lappingRows', () => {
   it('nothing when the neighbours are on our lap, and cars in the pits are ignored', () => {
     expect(lappingRows([at(0, 10.5), at(1, 10.55), at(2, 10.45)], 0, info, 100)).toEqual([]);
     expect(lappingRows([at(0, 10.5), at(1, 9.52, 0, true), at(2, 10.6)], 0, info, 100)).toEqual([]);
+  });
+});
+
+describe('practice and qualifying: ranking by best lap', () => {
+  const best = (carIdx: number, t: number | null, classId = 0) => ({ carIdx, best: t, lastLap: t, classId });
+
+  it('fastest first, own class only, cars without a time left out, gap to our best', () => {
+    const rows = computeBestStandings([
+      best(0, 101.5), best(1, 100.2), best(2, null), best(3, 99.9, 1), best(4, 102.0), best(5, 100.9),
+    ], 0, info);
+    expect(rows.map((r) => [r.pos, r.carIdx])).toEqual([[1, 1], [2, 5], [3, 0], [4, 4]]);
+    expect(rows[0]!.gap).toBeCloseTo(-1.3); // 1.3 s faster than us
+    expect(rows[3]!.gap).toBeCloseTo(0.5);
+    expect(rows[2]).toMatchObject({ isTeam: true, gap: null, bestLap: 101.5 });
+  });
+
+  it('we have no time yet: listed last, no gaps', () => {
+    const rows = computeBestStandings([best(0, null), best(1, 100), best(2, 101)], 0, info);
+    expect(rows.map((r) => [r.pos, r.carIdx, r.gap])).toEqual([[1, 1, null], [2, 2, null], [3, 0, null]]);
+  });
+
+  it('session types from the YAML; only races keep the order on track', () => {
+    const types = parseSessionTypes('SessionInfo:\n Sessions:\n - SessionNum: 0\n   SessionType: Practice\n - SessionNum: 1\n   SessionType: Open Qualify\n - SessionNum: 2\n   SessionType: Race\n');
+    expect([...types]).toEqual([[0, 'Practice'], [1, 'Open Qualify'], [2, 'Race']]);
+    expect([0, 1, 2].map((n) => isRaceSession(types.get(n)))).toEqual([false, false, true]);
+    expect(isRaceSession(undefined)).toBe(true);
   });
 });
