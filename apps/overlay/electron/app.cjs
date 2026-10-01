@@ -296,6 +296,8 @@ function updateMenuItem() {
 
 /** `route` '/setup/keys' opens the window scrolled to the hotkey overview. */
 function openSetup(route = '/setup') {
+  // Event handlers pass their event object: only a route string counts.
+  if (typeof route !== 'string') route = '/setup';
   if (setupWin && !setupWin.isDestroyed()) {
     if (route !== '/setup') loadRoute(setupWin, route);
     setupWin.show();
@@ -434,12 +436,12 @@ function onUpdateChange(u) {
 
 // ---------------------------------------------------------------------------
 
-app.on('second-instance', openSetup);
+app.on('second-instance', () => openSetup());
 
 app.whenReady().then(() => {
   onOverlayChange(() => refresh());
   tray = new Tray(nativeImage.createFromPath(ICON));
-  tray.on('click', openSetup);
+  tray.on('click', () => openSetup());
   startRecorder();
   startCamera((msg) => recorder?.post(msg) ?? false);
   applySettings();
