@@ -1,6 +1,7 @@
 // Updates from GitHub Releases (electron-updater): check, download in the background, and
 // install on request ("Jetzt aktualisieren") – or on quit, as before.
 const { app } = require('electron');
+const { t } = require('./i18n.cjs');
 
 const CHECK_EVERY_MS = 60 * 60 * 1000;
 
@@ -46,16 +47,17 @@ function installNow() {
   updater.quitAndInstall(true, true);
 }
 
-/** Short German status for tray and window. */
+/** Short status for tray and window, in the UI language. */
 function updateLabel() {
+  const v = { version: info.version, percent: info.percent };
   switch (info.phase) {
-    case 'checking': return 'Suche nach Updates …';
-    case 'downloading': return `Update ${info.version} wird geladen … ${info.percent} %`;
-    case 'ready': return `Update ${info.version} installieren und neu starten`;
-    case 'latest': return 'Nach Updates suchen (aktuell)';
-    case 'error': return 'Nach Updates suchen (letzte Suche fehlgeschlagen)';
-    case 'unavailable': return 'Updates nur in der installierten App';
-    default: return 'Nach Updates suchen';
+    case 'checking': return t('update.checking');
+    case 'downloading': return t('update.downloading', v);
+    case 'ready': return t('update.ready', v);
+    case 'latest': return t('update.latest');
+    case 'error': return t('update.error');
+    case 'unavailable': return t('update.unavailable');
+    default: return t('update.check');
   }
 }
 

@@ -1,11 +1,10 @@
 import type { StandingRow, Standings } from '@stintview/protocol';
+import { t } from '../i18n.ts';
 import 'flag-icons/css/flag-icons.min.css';
 import type { StandingsColumn, StandingsOptions } from '../feed.ts';
 
 
-const HEAD: [StandingsColumn, string][] = [
-  ['pos', 'P'], ['num', '#'], ['flag', ''], ['name', 'Fahrer'], ['best', 'Bestzeit'], ['gap', 'Abstand'], ['tyre', 'Reifen'], ['delta', 'Δ Runde'],
-];
+const HEAD: StandingsColumn[] = ['pos', 'num', 'flag', 'name', 'best', 'gap', 'tyre', 'delta'];
 
 /**
  * Running order on track: P1–P3 and three cars ahead of / behind the team car.
@@ -42,8 +41,8 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
   return (
     <div className="panel standings">
       <div className="title">
-        {best ? `Bestzeiten · ${standings?.session ?? 'Training'}` : 'Position'}
-        {best ? <span className="hint">Abstand = seine Bestzeit − eure</span> : col('tyre') && <span className="hint">Reifen = Runden seit Boxenstopp</span>}
+        {best ? t('st.bestTitle', { session: t(`st.session.${standings?.session ?? 'Training'}`) }) : t('st.title')}
+        {best ? <span className="hint">{t('st.bestHint')}</span> : col('tyre') && <span className="hint">{t('st.tyreHint')}</span>}
       </div>
       {options?.duel !== false && team && (front || back) && (
         <div className="st-duel">
@@ -52,11 +51,11 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
         </div>
       )}
       {rows.length === 0 ? (
-        <div className="label">Noch keine Daten</div>
+        <div className="label">{t('st.noData')}</div>
       ) : (
         <table>
           <thead>
-            <tr>{HEAD.filter(([c]) => col(c)).map(([c, label]) => <th key={c} className={`th-${c}`}>{label}</th>)}</tr>
+            <tr>{HEAD.filter((c) => col(c)).map((c) => <th key={c} className={`th-${c}`}>{t(`st.col.${c}`)}</th>)}</tr>
           </thead>
           <tbody>
             {list.map(({ r, gap }) => {
@@ -73,7 +72,7 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
                   {col('name') && (
                     <td className="st-name">
                       {r.name}
-                      {r.lap && <span className="st-lap-tag">{r.lap === 'backmarker' ? 'Nachzügler' : 'Überrunder'}</span>}
+                      {r.lap && <span className="st-lap-tag">{r.lap === 'backmarker' ? t('st.backmarker') : t('st.lapper')}</span>}
                     </td>
                   )}
                   {col('best') && <td className="st-best">{r.bestLap ? lapTime(r.bestLap) : '–'}</td>}
@@ -88,7 +87,7 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
                       ))}
                     </td>
                   )}
-                  {col('tyre') && <td className="st-tyre">{r.inPit ? 'Box' : r.tyreLaps ?? '–'}</td>}
+                  {col('tyre') && <td className="st-tyre">{r.inPit ? t('st.box') : r.tyreLaps ?? '–'}</td>}
                   {col('delta') && (
                     <td className={delta === null || delta === 0 || r.lap ? 'st-delta' : delta > 0 ? 'st-delta slower' : 'st-delta faster'}>
                       {delta === null ? (r.isTeam && ours !== null ? lapTime(ours) : '') : delta === 0 ? '0.00' : `${delta > 0 ? '+' : '−'}${Math.abs(delta).toFixed(2)}`}
@@ -138,7 +137,7 @@ function gapClass(gap: number | null | undefined, laps: number | undefined) {
 }
 
 function gapText(gap: number | null | undefined, laps: number | undefined) {
-  if (laps) return `${laps > 0 ? '+' : '−'}${Math.abs(laps)} R`;
+  if (laps) return `${laps > 0 ? '+' : '−'}${t('st.laps', { n: Math.abs(laps) })}`;
   if (gap == null) return '–';
   return `${gap >= 0 ? '+' : '−'}${Math.abs(gap).toFixed(1)}`;
 }

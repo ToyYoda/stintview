@@ -159,3 +159,8 @@ body.setup-body #root { height: auto; }
 .setup .options-grid label, .setup .option-line { display: flex; align-items: center; gap: 6px; cursor: pointer; }
 .setup .option-line { margin-top: 8px; align-items: flex-start; line-height: 1.35; }
 .setup .panel-options input { accent-color: var(--o-red); }
+
+/* Language switch in the header */
+.setup .setup-head { position: relative; }
+.setup .lang-switch { margin-left: auto; display: flex; align-self: flex-start; font-size: 12px; }
+.setup .lang-switch .seg { padding: 4px 10px; }

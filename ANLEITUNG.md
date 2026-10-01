@@ -27,6 +27,8 @@ Die Installation braucht keine Administratorrechte und startet StintView danach 
 
 ## Schritt 2: Dem Team beitreten
 
+StintView spricht **Deutsch und Englisch**: Es richtet sich nach der Windows-Sprache, umschalten kannst du jederzeit mit **DE / EN** oben rechts im StintView-Fenster.
+
 Im StintView-Fenster unter **Team beitreten** ausfüllen:
 
 - **Server-Adresse** und **Einladungscode** vom Teamchef

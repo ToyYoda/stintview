@@ -91,6 +91,8 @@ for (const lang of langs) {
     ...t,
     LANG: lang,
     BASE: base,
+    // Screenshots of the app in the page language (German ones in assets/, English in assets/en/).
+    SHOTS: `${base}assets/${lang === 'de' ? '' : `${lang}/`}`,
     ALT_LINKS: altLinks,
     LANG_SWITCH: switcher,
     TOC: toc,

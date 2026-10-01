@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { t } from '../i18n.ts';
 import { YELLOW_FLAGS } from '@stintview/protocol';
 import type { FeedState } from '../feed.ts';
 
@@ -17,7 +18,14 @@ interface CameraState {
   camCarNumber: number;
   camCarName: string;
 }
-interface CameraResult { t: 'camera-result'; ok: boolean; text: string }
+interface CameraResult { t: 'camera-result'; ok: boolean; text: string; code?: string; vars?: Record<string, string | number> }
+
+/** Result text in the UI language; recorders before 0.9 only send German `text`. */
+function resultText(r: CameraResult) {
+  if (!r.code) return r.text;
+  const key = r.code === 'jump-found' ? `cam.result.jump-found.${r.vars?.reason === 'offtrack' ? 'offtrack' : 'slow'}` : `cam.result.${r.code}`;
+  return t(key, r.vars);
+}
 interface Hotkeys { incident: string | null; back: string | null }
 
 /**
@@ -63,7 +71,7 @@ export function CameraBar({ state, interactive }: { state: FeedState; interactiv
   }, [warningNow, state.status, state.hazard]);
   useEffect(() => {
     if (!hazard) return;
-    const what = hazard.reason === 'offtrack' ? 'neben der Strecke' : 'steht';
+    const what = hazard.reason === 'offtrack' ? t('cam.offtrack') : t('cam.stopped');
     setLastHazard({ carIdx: hazard.carIdx, text: `#${hazard.carNumber} ${hazard.driverName} · ${hazard.distance} m · ${what}` });
   }, [hazard?.carIdx, hazard?.distance, hazard?.reason]);
   useEffect(() => {
@@ -106,20 +114,20 @@ export function CameraBar({ state, interactive }: { state: FeedState; interactiv
     <div className="camera-bar">
       {canJump ? (
         <div className="cam-actions">
-          {button('Zum Unfall', hotkeys.incident, 'incident', yellow)}
-          {button('Zurück', hotkeys.back, 'back', away)}
+          {button(t('cam.toIncident'), hotkeys.incident, 'incident', yellow)}
+          {button(t('cam.back'), hotkeys.back, 'back', away)}
         </div>
       ) : (
-        yellow && <span className="cam-hint">{camera?.available ? 'Du schaust eine andere iRacing-Session' : 'Zum Springen in iRacing zuschauen'}</span>
+        yellow && <span className="cam-hint">{camera?.available ? t('cam.otherSession') : t('cam.watchToJump')}</span>
       )}
       {yellow && (
         <div className={warningNow ? 'cam-row yellow live' : 'cam-row yellow'}>
-          <span className="cam-flag">{lastHazard ? 'Unfall voraus' : 'Gelb voraus'}</span>
+          <span className="cam-flag">{lastHazard ? t('cam.incidentAhead') : t('cam.yellowAhead')}</span>
           {lastHazard && <span className="cam-hint">{lastHazard.text}</span>}
         </div>
       )}
-      {away && <div className="cam-hint">Kamera: #{camera!.camCarNumber} {camera!.camCarName} · „Zurück“ = {state.active?.driverName ?? 'dein Fahrer'}</div>}
-      {showResult && <div className={result.ok ? 'cam-result' : 'cam-result bad'}>{result.text}</div>}
+      {away && <div className="cam-hint">{t('cam.camera', { number: camera!.camCarNumber, name: camera!.camCarName, driver: state.active?.driverName ?? t('cam.yourDriver') })}</div>}
+      {showResult && <div className={result.ok ? 'cam-result' : 'cam-result bad'}>{resultText(result)}</div>}
     </div>
   );
 }

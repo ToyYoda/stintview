@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld('stintview', {
   onOpacity: (cb) => ipcRenderer.on('opacity', (_e, v) => cb(v)),
   // Size factor and options per panel
   onPanelConfig: (cb) => ipcRenderer.on('panel-config', (_e, cfg) => cb(cfg)),
+  // UI language ('de' | 'en')
+  onLanguage: (cb) => ipcRenderer.on('language', (_e, l) => cb(l)),
   // Spectator camera
   setTeamCar: (team) => ipcRenderer.send('app:team-car', team),
   setHazard: (carIdx) => ipcRenderer.send('app:hazard', carIdx),

@@ -1,6 +1,7 @@
 // VR host: renders each widget offscreen and shows it as a SteamVR overlay panel.
 // Works with any SteamVR game regardless of whether iRacing runs in OpenVR or OpenXR mode.
 const { BrowserWindow, globalShortcut } = require('electron');
+const { t } = require('./i18n.cjs');
 const { mkdirSync, readFileSync, writeFileSync } = require('node:fs');
 const path = require('node:path');
 const { dataDir } = require('./config.cjs');
@@ -64,6 +65,13 @@ function saveLayout() {
 
 /** Panel background opacity 0–1; sent to every panel page (they are transparent textures). */
 let vrOpacity = 1;
+let vrLanguage = 'de';
+
+/** UI language of the panel pages. */
+function setVrLanguage(l) {
+  vrLanguage = l;
+  for (const panel of panels.values()) if (!panel.win.isDestroyed()) panel.win.webContents.send('language', l);
+}
 /** { [id]: { scale, options } } from the StintView window: size factor on top of the layout width. */
 let vrPanelConfig = {};
 
@@ -106,6 +114,7 @@ async function createPanelWindow(id) {
   win.webContents.on('did-finish-load', () => {
     win.webContents.send('opacity', vrOpacity);
     win.webContents.send('panel-config', vrPanelConfig);
+    win.webContents.send('language', vrLanguage);
   });
   await loadRoute(win, `/widget/${id}`);
   await new Promise((r) => setTimeout(r, 300));
@@ -268,18 +277,19 @@ function adjust(fn) {
 }
 
 const STEP = 0.02;
+/** Text keys (i18n.cjs) of the hotkey functions, for the overview. */
 const HOTKEY_LABELS = {
-  'Control+Shift+V': 'Nächstes Panel auswählen',
-  'Control+Shift+Left': 'Panel nach links',
-  'Control+Shift+Right': 'Panel nach rechts',
-  'Control+Shift+Up': 'Panel nach oben',
-  'Control+Shift+Down': 'Panel nach unten',
-  'Control+Shift+PageUp': 'Panel weiter weg',
-  'Control+Shift+PageDown': 'Panel näher heran',
-  'Control+Shift+Plus': 'Panel größer',
-  'Control+Shift+-': 'Panel kleiner',
-  'Control+Shift+H': 'Alle Panels aus-/einblenden',
-  'Control+Shift+R': 'SteamVR-Ausrichtung zurücksetzen (Blick nach vorn = neue Mitte)',
+  'Control+Shift+V': 'vr.select',
+  'Control+Shift+Left': 'vr.left',
+  'Control+Shift+Right': 'vr.right',
+  'Control+Shift+Up': 'vr.up',
+  'Control+Shift+Down': 'vr.down',
+  'Control+Shift+PageUp': 'vr.farther',
+  'Control+Shift+PageDown': 'vr.nearer',
+  'Control+Shift+Plus': 'vr.bigger',
+  'Control+Shift+-': 'vr.smaller',
+  'Control+Shift+H': 'vr.hide',
+  'Control+Shift+R': 'vr.recenter',
 };
 /** Keys another program already holds (registration failed). */
 const failedHotkeys = new Set();
@@ -368,7 +378,7 @@ const vrStatus = () => (!running ? 'off' : vr ? 'connected' : 'waiting');
 /** For the hotkey overview. */
 const vrHotkeyInfo = () => ({
   running,
-  keys: Object.keys(HOTKEYS).map((key) => ({ key, label: HOTKEY_LABELS[key] ?? key, ok: !failedHotkeys.has(key) })),
+  keys: Object.keys(HOTKEYS).map((key) => ({ key, label: HOTKEY_LABELS[key] ? t(HOTKEY_LABELS[key]) : key, ok: !failedHotkeys.has(key) })),
 });
 
-module.exports = { startVr, stopVr, vrStatus, vrHotkeyInfo, setVrOpacity, setVrPanelConfig, recenterVr };
+module.exports = { startVr, stopVr, vrStatus, vrHotkeyInfo, setVrOpacity, setVrPanelConfig, setVrLanguage, recenterVr };

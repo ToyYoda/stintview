@@ -7,6 +7,7 @@ import { TyresWidget } from './widgets/TyresWidget.tsx';
 import { WeatherWidget } from './widgets/WeatherWidget.tsx';
 import { StandingsWidget } from './widgets/StandingsWidget.tsx';
 import type { PanelConfig } from './feed.ts';
+import { setLang, t, useLang } from './i18n.ts';
 import { PitWidget } from './widgets/PitWidget.tsx';
 
 type WidgetId = 'header' | 'inputs' | 'fuel' | 'tyres' | 'weather' | 'standings' | 'pitstop';
@@ -36,6 +37,7 @@ function loadPositions(): Positions {
  * `#/widget/<id>` – a single widget, for VR panels (SteamVR overlay / OpenKneeboard).
  */
 export function App() {
+  useLang(); // re-render all widgets when the language changes
   const { state, inputs } = useTeamFeed();
   const [route, setRoute] = useState(location.hash);
   // Browser: always movable. Electron: toggled by hotkey (desktop) or panel selection (VR).
@@ -56,6 +58,7 @@ export function App() {
     });
     window.stintview?.onPanels?.(setShown);
     window.stintview?.onPanelConfig?.(setConfig);
+    window.stintview?.onLanguage?.(setLang);
     window.stintview?.onOpacity?.((v) => document.documentElement.style.setProperty('--panel-alpha', String(v)));
     return () => removeEventListener('hashchange', onHash);
   }, []);
@@ -85,8 +88,8 @@ export function App() {
     <div className={edit ? 'overlay edit' : 'overlay'}>
       {edit && window.stintview && (
         <div className="edit-banner">
-          Anzeigen mit der Maus ziehen{hotkey ? ` · ${hotkey} beendet` : ''}
-          <button type="button" onClick={() => window.stintview?.setEditMode(false)}>Fertig</button>
+          {t('edit.banner')}{hotkey ? ` · ${t('edit.endsWith', { key: hotkey })}` : ''}
+          <button type="button" onClick={() => window.stintview?.setEditMode(false)}>{t('edit.done')}</button>
         </div>
       )}
       {(Object.keys(widgets) as WidgetId[]).filter((id) => !shown || shown.includes(id)).map((id) => (

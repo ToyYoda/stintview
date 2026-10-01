@@ -13,12 +13,13 @@ let notify = () => {};
 let panels = null; // widget ids to show, null = all
 let opacity = 0.78; // panel background opacity 0–1
 let panelConfig = null; // { [id]: { scale, options } }
+let language = 'de';
 
 /** Called whenever edit mode or the overlay changes (tray menu, setup window). */
 const onOverlayChange = (fn) => { notify = fn; };
 
-/** "Control+Shift+O" -> "Strg+Umschalt+O" */
-const displayHotkey = (h) => h && h.replace('Control', 'Strg').replace('Shift', 'Umschalt');
+/** "Control+Shift+O" -> "Strg+Umschalt+O" (UI language). */
+const { displayKey: displayHotkey } = require('./hotkeys.cjs');
 
 function setEdit(on) {
   if (!win) return;
@@ -70,6 +71,7 @@ function startOverlay() {
     if (panels) win.webContents.send('panels', panels);
     win.webContents.send('opacity', opacity);
     if (panelConfig) win.webContents.send('panel-config', panelConfig);
+    win.webContents.send('language', language);
   });
   setEdit(false);
   loadRoute(win, '/');
@@ -89,6 +91,12 @@ function stopOverlay() {
 function setOverlayPanels(ids) {
   panels = ids;
   if (win) win.webContents.send('panels', ids);
+}
+
+/** UI language of the overlay page. */
+function setOverlayLanguage(l) {
+  language = l;
+  if (win) win.webContents.send('language', l);
 }
 
 /** Size and options per panel from the StintView window. */
@@ -111,5 +119,5 @@ const editing = () => edit;
 const editHotkeyInfo = () => ({ key: hotkey, candidates: EDIT_HOTKEYS });
 
 module.exports = {
-  startOverlay, stopOverlay, toggleEdit, setEditMode, overlayRunning, editHotkey, editHotkeyInfo, editing, onOverlayChange, setOverlayPanels, setOverlayOpacity, setOverlayPanelConfig,
+  startOverlay, stopOverlay, toggleEdit, setEditMode, overlayRunning, editHotkey, editHotkeyInfo, editing, onOverlayChange, setOverlayPanels, setOverlayOpacity, setOverlayPanelConfig, setOverlayLanguage,
 };

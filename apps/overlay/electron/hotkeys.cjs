@@ -2,14 +2,13 @@
 // function actually got (first free one wins), which ones are free-able alternatives, and
 // whether the function is active right now.
 
-/** "Control+Shift+PageUp" -> "Strg+Umschalt+Bild↑" */
+const { t } = require('./i18n.cjs');
+
+/** "Control+Shift+PageUp" -> "Strg+Umschalt+Bild↑" (German) / "Ctrl+Shift+PgUp" (English). */
 function displayKey(h) {
   if (!h) return null;
-  const names = {
-    Control: 'Strg', Shift: 'Umschalt', Alt: 'Alt', Left: '←', Right: '→', Up: '↑', Down: '↓',
-    PageUp: 'Bild↑', PageDown: 'Bild↓', Plus: 'Plus', '-': 'Minus',
-  };
-  return h.split('+').map((k) => names[k] ?? k).join('+');
+  const arrows = { Left: '←', Right: '→', Up: '↑', Down: '↓' };
+  return h.split('+').map((k) => arrows[k] ?? (t(`key.${k}`) === `key.${k}` ? k : t(`key.${k}`))).join('+');
 }
 
 /**
@@ -33,21 +32,21 @@ function hotkeyGroups(edit, camera, cameraCandidates, vr, active) {
   };
   return [
     {
-      title: 'Overlay am Monitor',
-      note: active.overlay ? null : 'Nur aktiv, wenn die Anzeigen am Monitor eingeblendet sind.',
-      items: [item('Anzeigen verschieben an/aus', edit.key ?? (active.overlay ? null : edit.candidates[0]), edit.candidates, active.overlay)],
+      title: t('keys.overlay'),
+      note: active.overlay ? null : t('keys.overlayNote'),
+      items: [item(t('keys.move'), edit.key ?? (active.overlay ? null : edit.candidates[0]), edit.candidates, active.overlay)],
     },
     {
-      title: 'Kamera (als Zuschauer in iRacing)',
+      title: t('keys.camera'),
       note: null,
       items: [
-        item('Zum Unfall vor deinem Fahrer springen', camera.incident, cameraCandidates.incident, true),
-        item('Zurück zu deinem Fahrer', camera.back, cameraCandidates.back, true),
+        item(t('keys.incident'), camera.incident, cameraCandidates.incident, true),
+        item(t('keys.back'), camera.back, cameraCandidates.back, true),
       ],
     },
     {
-      title: 'VR-Overlay (SteamVR)',
-      note: vr.running ? null : 'Nur aktiv, wenn die Anzeigen in VR eingeblendet sind.',
+      title: t('keys.vr'),
+      note: vr.running ? null : t('keys.vrNote'),
       items: vr.keys.map((k) => ({ label: k.label, key: k.ok ? displayKey(k.key) : null, taken: k.ok ? [] : [displayKey(k.key)], alternatives: [], active: vr.running && k.ok })),
     },
   ];

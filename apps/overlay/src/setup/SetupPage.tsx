@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import type { AppState, HotkeyGroup, PanelSetting, StandingsColumn, StandingsOptions } from '../feed.ts';
+import { setLang, t, useLang, type Lang } from '../i18n.ts';
 import './setup.css';
 
 const api = () => window.stintview!;
@@ -7,14 +8,19 @@ const api = () => window.stintview!;
 /** Setup and status window of the desktop app (route #/setup). */
 export function SetupPage() {
   const [state, setState] = useState<AppState | null>(null);
+  useLang();
 
   useEffect(() => {
     document.body.classList.add('setup-body');
     api().getState().then(setState);
     api().onState(setState);
   }, []);
+  useEffect(() => {
+    if (state) setLang(state.settings.language);
+  }, [state?.settings.language]);
 
   if (!state) return null;
+  const setLanguage = async (language: Lang) => setState(await api().updateSettings({ language }));
   return (
     <div className="setup">
       <header className="setup-head">
@@ -22,6 +28,14 @@ export function SetupPage() {
         <div>
           <div className="wordmark"><b>OUTCAST</b><span>ENDURANCE</span></div>
           <div className="product">StintView <small>v{state.version}</small></div>
+        </div>
+        <div className="lang-switch" role="radiogroup" aria-label={t('set.language')}>
+          {(['de', 'en'] as const).map((l) => (
+            <button key={l} type="button" role="radio" aria-checked={state.settings.language === l}
+              className={state.settings.language === l ? 'seg active' : 'seg'} onClick={() => setLanguage(l)}>
+              {l.toUpperCase()}
+            </button>
+          ))}
         </div>
       </header>
       {state.configured ? <Dashboard state={state} onState={setState} /> : <Onboarding onState={setState} serverPort={state.settings.serverPort} />}
@@ -37,10 +51,10 @@ function Onboarding({ onState, serverPort }: { onState(s: AppState): void; serve
   const [tab, setTab] = useState<'join' | 'create'>('join');
   return (
     <>
-      <p className="intro">Willkommen! Verbinde StintView einmalig mit deinem Team. Server-Adresse und Einladungscode bekommst du vom Teamchef.</p>
+      <p className="intro">{t('set.welcome')}</p>
       <div className="tabs" role="tablist">
-        <button role="tab" aria-selected={tab === 'join'} className={tab === 'join' ? 'on' : ''} onClick={() => setTab('join')}>Team beitreten</button>
-        <button role="tab" aria-selected={tab === 'create'} className={tab === 'create' ? 'on' : ''} onClick={() => setTab('create')}>Team anlegen (Teamchef)</button>
+        <button role="tab" aria-selected={tab === 'join'} className={tab === 'join' ? 'on' : ''} onClick={() => setTab('join')}>{t('set.join')}</button>
+        <button role="tab" aria-selected={tab === 'create'} className={tab === 'create' ? 'on' : ''} onClick={() => setTab('create')}>{t('set.createTab')}</button>
       </div>
       {tab === 'join' ? <JoinForm onState={onState} /> : <CreateForm onState={onState} serverPort={serverPort} />}
     </>
@@ -73,17 +87,17 @@ function JoinForm({ onState }: { onState(s: AppState): void }) {
   const { busy, error, submit } = useSubmit(() => api().join({ serverUrl, inviteCode, memberName }), onState);
   return (
     <form className="card" onSubmit={submit}>
-      <Field label="Server-Adresse" hint="z. B. beispiel.dyndns.org:8787">
-        <input value={serverUrl} onChange={(e) => setServerUrl(e.target.value)} placeholder="beispiel.dyndns.org:8787" required autoFocus spellCheck={false} />
+      <Field label={t('set.serverAddress')} hint={t('set.serverHint')}>
+        <input value={serverUrl} onChange={(e) => setServerUrl(e.target.value)} placeholder={t('set.serverPlaceholder')} required autoFocus spellCheck={false} />
       </Field>
-      <Field label="Einladungscode">
+      <Field label={t('set.inviteCode')}>
         <input value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} placeholder="ABCD-EFGH" required spellCheck={false} className="mono" />
       </Field>
-      <Field label="Dein Name" hint="So sieht dich dein Team.">
-        <input value={memberName} onChange={(e) => setMemberName(e.target.value)} placeholder="Max Mustermann" required maxLength={64} />
+      <Field label={t('set.yourName')} hint={t('set.yourNameHint')}>
+        <input value={memberName} onChange={(e) => setMemberName(e.target.value)} placeholder={t('set.namePlaceholder')} required maxLength={64} />
       </Field>
       {error && <p className="error" role="alert">{error}</p>}
-      <button className="btn" disabled={busy}>{busy ? 'Verbinde …' : 'Team beitreten'}</button>
+      <button className="btn" disabled={busy}>{busy ? t('set.connecting') : t('set.join')}</button>
     </form>
   );
 }
@@ -98,24 +112,22 @@ function CreateForm({ onState, serverPort }: { onState(s: AppState): void; serve
     <form className="card" onSubmit={submit}>
       <label className="check">
         <input type="checkbox" checked={hostHere} onChange={(e) => setHostHere(e.target.checked)} />
-        <span>Team-Server auf diesem PC betreiben <small>(Port {serverPort}, muss während der Rennen laufen)</small></span>
+        <span>{t('set.hostHere')} <small>{t('set.hostHereHint', { port: serverPort })}</small></span>
       </label>
       {!hostHere && (
-        <Field label="Server-Adresse">
-          <input value={serverUrl} onChange={(e) => setServerUrl(e.target.value)} placeholder="beispiel.dyndns.org:8787" required spellCheck={false} />
+        <Field label={t('set.serverAddress')}>
+          <input value={serverUrl} onChange={(e) => setServerUrl(e.target.value)} placeholder={t('set.serverPlaceholder')} required spellCheck={false} />
         </Field>
       )}
-      <Field label="Teamname">
+      <Field label={t('set.teamName')}>
         <input value={teamName} onChange={(e) => setTeamName(e.target.value)} required maxLength={64} />
       </Field>
-      <Field label="Dein Name">
+      <Field label={t('set.yourName')}>
         <input value={memberName} onChange={(e) => setMemberName(e.target.value)} required maxLength={64} autoFocus />
       </Field>
-      {hostHere && (
-        <p className="hint">Windows fragt beim ersten Start des Servers, ob StintView Verbindungen annehmen darf – bitte erlauben. Damit dein Team dich erreicht, braucht dein Router eine Portfreigabe für TCP {serverPort}.</p>
-      )}
+      {hostHere && <p className="hint">{t('set.firewall', { port: serverPort })}</p>}
       {error && <p className="error" role="alert">{error}</p>}
-      <button className="btn" disabled={busy}>{busy ? 'Lege an …' : 'Team anlegen'}</button>
+      <button className="btn" disabled={busy}>{busy ? t('set.creating') : t('set.create')}</button>
     </form>
   );
 }
@@ -137,55 +149,50 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
       {keysFirst && <HotkeyCard groups={state.hotkeys} />}
       {state.update.phase === 'ready' && (
         <section className="card update-ready">
-          <h2>Update bereit</h2>
-          <p>StintView {state.update.version} ist geladen. Die Installation dauert einige Sekunden, danach startet StintView von selbst neu.</p>
-          <button className="btn" onClick={() => api().installUpdate()}>Jetzt aktualisieren</button>
+          <h2>{t('set.updateReady')}</h2>
+          <p>{t('set.updateText', { version: state.update.version })}</p>
+          <button className="btn" onClick={() => api().installUpdate()}>{t('set.updateNow')}</button>
         </section>
       )}
       <section className="card">
-        <h2>Status</h2>
+        <h2>{t('set.status')}</h2>
         <ul className="status">
-          <li><Dot kind={serverDot} />Team-Server{status.server === 'error' ? `: ${status.serverText.replace(/^server error: /, '')}` : status.server === 'offline' ? ': keine Verbindung' : ': verbunden'}</li>
-          <li><Dot kind={status.iracing ? 'ok' : 'idle'} />iRacing{status.iracing ? ' läuft' : ' nicht aktiv'}</li>
-          <li><Dot kind={status.inCar ? (status.server === 'standby' ? 'warn' : 'ok') : 'idle'} />{status.inCar ? (status.server === 'standby' ? 'Im Auto – Standby (anderer Fahrer sendet noch)' : 'Du fährst – dein Team sieht deine Daten') : 'Nicht im Auto'}</li>
-          {settings.overlay && settings.output === 'vr' && <li><Dot kind={status.vr === 'connected' ? 'ok' : 'warn'} />SteamVR{status.vr === 'connected' ? ' verbunden' : ' – wartet auf SteamVR'}</li>}
-          {settings.server && <li><Dot kind={status.relay === 'running' ? 'ok' : 'bad'} />Team-Server auf diesem PC{status.relay === 'running' ? ' läuft' : ' gestoppt'}</li>}
+          <li><Dot kind={serverDot} />{t('set.teamServer')}{status.server === 'error' ? `: ${status.serverText.replace(/^server error: /, '')}` : status.server === 'offline' ? t('set.noConnection') : t('set.connected')}</li>
+          <li><Dot kind={status.iracing ? 'ok' : 'idle'} />{status.iracing ? t('set.iracingRunning') : t('set.iracingNot')}</li>
+          <li><Dot kind={status.inCar ? (status.server === 'standby' ? 'warn' : 'ok') : 'idle'} />{status.inCar ? (status.server === 'standby' ? t('set.standby') : t('set.driving')) : t('set.notInCar')}</li>
+          {settings.overlay && settings.output === 'vr' && <li><Dot kind={status.vr === 'connected' ? 'ok' : 'warn'} />{status.vr === 'connected' ? t('set.vrConnected') : t('set.vrWaiting')}</li>}
+          {settings.server && <li><Dot kind={status.relay === 'running' ? 'ok' : 'bad'} />{status.relay === 'running' ? t('set.relayRunning') : t('set.relayStopped')}</li>}
         </ul>
-
       </section>
 
       <section className="card">
-        <h2>Anzeigen</h2>
-        <Toggle checked={settings.overlay} onChange={(v) => set({ overlay: v })} label="Anzeigen einblenden" hint="Aus = keine Panels, weder am Monitor noch in VR." />
-        <div className="output-choice" role="radiogroup" aria-label="Ausgabe">
-          <span>Ausgabe</span>
+        <h2>{t('set.displays')}</h2>
+        <Toggle checked={settings.overlay} onChange={(v) => set({ overlay: v })} label={t('set.show')} hint={t('set.showHint')} />
+        <div className="output-choice" role="radiogroup" aria-label={t('set.output')}>
+          <span>{t('set.output')}</span>
           {(['monitor', 'vr'] as const).map((o) => (
             <button key={o} type="button" role="radio" aria-checked={settings.output === o}
               className={settings.output === o ? 'seg active' : 'seg'} onClick={() => set({ output: o })}>
-              {o === 'monitor' ? 'Monitor' : 'VR (SteamVR)'}
+              {o === 'monitor' ? t('set.monitor') : t('set.vr')}
             </button>
           ))}
         </div>
-        <p className="hint">
-          {settings.output === 'monitor'
-            ? 'Transparentes Fenster über iRacing – iRacing im randlosen Fenstermodus.'
-            : 'Panels in der Brille. Strg+Umschalt+V wählt ein Panel, Pfeiltasten/Bild↑↓ verschieben, Strg+Umschalt+R richtet die Ansicht neu aus.'}
-        </p>
+        <p className="hint">{settings.output === 'monitor' ? t('set.monitorHint') : t('set.vrHint')}</p>
         {status.overlay && (
           <div className="edit-row">
             <button className="btn ghost" onClick={async () => onState(await api().setEditMode(!status.editing))}>
-              {status.editing ? 'Verschieben beenden' : 'Anzeigen verschieben'}
+              {status.editing ? t('set.moveEnd') : t('set.move')}
             </button>
-            <small>{status.editHotkey ? `oder ${status.editHotkey}` : 'Kein Tastenkürzel frei – bitte diesen Knopf nutzen.'}</small>
+            <small>{status.editHotkey ? t('set.orKey', { key: status.editHotkey }) : t('set.noKey')}</small>
           </div>
         )}
-        <Slider label="Hintergrund" hint="für alle Panels: 0 % = durchsichtig, 100 % = deckend; die Schrift bleibt voll sichtbar"
+        <Slider label={t('set.background')} hint={t('set.backgroundHint')}
           value={settings.opacity} min={0} max={100} step={5} onCommit={(opacity) => set({ opacity })} />
         <PanelList panels={settings.panels} onChange={(panels) => set({ panels })} />
         <p className="hint cam-keys">
-          Als Zuschauer bei Gelb für deinen Fahrer: <b>{state.cameraHotkeys.incident ?? '–'}</b> springt mit der Kamera zum Unfall vor ihm,{' '}
-          <b>{state.cameraHotkeys.back ?? '–'}</b> zurück zu ihm. Am Monitor gibt es dafür auch Knöpfe in der Kopfzeile.{' '}
-          <a href="#keys" onClick={(e) => { e.preventDefault(); document.getElementById('keys')?.scrollIntoView({ behavior: 'smooth' }); }}>Alle Tastaturkürzel</a>
+          {t('set.camKeysA')}<b>{state.cameraHotkeys.incident ?? '–'}</b>{t('set.camKeysB')}
+          <b>{state.cameraHotkeys.back ?? '–'}</b>{t('set.camKeysC')}{' '}
+          <a href="#keys" onClick={(e) => { e.preventDefault(); document.getElementById('keys')?.scrollIntoView({ behavior: 'smooth' }); }}>{t('set.allKeys')}</a>
         </p>
       </section>
 
@@ -193,22 +200,22 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
         onImport={async (choose) => onState(await api().pitImport(choose))} />
 
       <section className="card">
-        <h2>Team</h2>
+        <h2>{t('set.team')}</h2>
         <dl className="team">
-          <dt>Team</dt><dd>{team?.teamName}</dd>
-          <dt>Du</dt><dd>{team?.memberName}</dd>
-          <dt>Server</dt><dd className="mono">{team?.serverUrl}</dd>
-          <dt>Einladungscode</dt><dd className="mono">{team?.inviteCode}</dd>
+          <dt>{t('set.team')}</dt><dd>{team?.teamName}</dd>
+          <dt>{t('set.you')}</dt><dd>{team?.memberName}</dd>
+          <dt>{t('set.server')}</dt><dd className="mono">{team?.serverUrl}</dd>
+          <dt>{t('set.inviteCode')}</dt><dd className="mono">{team?.inviteCode}</dd>
         </dl>
-        <Toggle checked={settings.autostart} disabled={!state.autostartAvailable} onChange={(v) => set({ autostart: v })} label="Mit Windows starten" hint="StintView läuft dann unauffällig im Infobereich der Taskleiste." />
-        <Toggle checked={settings.server} onChange={(v) => set({ server: v })} label={`Team-Server auf diesem PC (Port ${settings.serverPort})`} hint="Nur für den Teamchef." />
-        <button className="btn ghost" onClick={async () => onState(await api().leave())}>Team verlassen …</button>
+        <Toggle checked={settings.autostart} disabled={!state.autostartAvailable} onChange={(v) => set({ autostart: v })} label={t('set.autostart')} hint={t('set.autostartHint')} />
+        <Toggle checked={settings.server} onChange={(v) => set({ server: v })} label={t('set.serverHere', { port: settings.serverPort })} hint={t('set.serverHereHint')} />
+        <button className="btn ghost" onClick={async () => onState(await api().leave())}>{t('set.leave')}</button>
       </section>
 
       {!keysFirst && <HotkeyCard groups={state.hotkeys} />}
 
       <p className="foot">
-        Version {state.version}
+        {t('set.version', { version: state.version })}
         {state.update.phase !== 'unavailable' && state.update.phase !== 'ready' && (
           <>
             {' · '}
@@ -219,7 +226,7 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
           </>
         )}
         <br />
-        Du kannst dieses Fenster schließen – StintView läuft im Infobereich der Taskleiste weiter.
+        {t('set.closeHint')}
       </p>
     </>
   );
@@ -229,8 +236,8 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
 function HotkeyCard({ groups }: { groups: HotkeyGroup[] }) {
   return (
     <section className="card" id="keys">
-      <h2>Tastaturkürzel</h2>
-      <p className="hint">Gelten überall, auch während iRacing im Vordergrund ist. Ist ein Kürzel schon von einem anderen Programm belegt, nimmt StintView das nächste freie.</p>
+      <h2>{t('set.keys')}</h2>
+      <p className="hint">{t('set.keysHint')}</p>
       {groups.map((g) => (
         <div key={g.title} className="keys-group">
           <h3>{g.title}</h3>
@@ -241,9 +248,9 @@ function HotkeyCard({ groups }: { groups: HotkeyGroup[] }) {
                 <tr key={k.label} className={k.active ? '' : 'inactive'}>
                   <td>{k.label}</td>
                   <td className="keys-key">
-                    {k.key ? <kbd>{k.key}</kbd> : <span className="bad">belegt – bitte Knopf nutzen</span>}
-                    {k.taken.length > 0 && <small>belegt von anderem Programm: {k.taken.join(' / ')}</small>}
-                    {k.alternatives.length > 0 && <small>Ausweich: {k.alternatives.join(' / ')}</small>}
+                    {k.key ? <kbd>{k.key}</kbd> : <span className="bad">{t('set.keyTaken')}</span>}
+                    {k.taken.length > 0 && <small>{t('set.takenBy', { keys: k.taken.join(' / ') })}</small>}
+                    {k.alternatives.length > 0 && <small>{t('set.spare', { keys: k.alternatives.join(' / ') })}</small>}
                   </td>
                 </tr>
               ))}
@@ -263,8 +270,8 @@ function Slider({ label, hint, value, min, max, step, onCommit }: {
   useEffect(() => setV(value), [value]);
   useEffect(() => {
     if (v === value) return;
-    const t = setTimeout(() => onCommit(v), 150);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => onCommit(v), 150);
+    return () => clearTimeout(timer);
   }, [v]);
   return (
     <label className="slider-row">
@@ -292,46 +299,37 @@ function PitStopCard({ pit, onChange, imp, onImport }: {
   const save = (patch: Partial<AppState['settings']['pitStop']>) => onChange({ ...pit, ...patch });
   return (
     <section className="card">
-      <h2>Boxenstopp</h2>
-      <p className="hint">
-        Ablauf und Tankrate legt iRacings Regelwerk fest (Standard: erst Tanken, dann Reifen; IMSA und NEC gleichzeitig, NEC mit
-        langsamen Zapfsäulen; DTM: GT3 gleichzeitig mit schnellem Reifenwechsel). StintView erkennt das Regelwerk meist am
-        Klassennamen („NECGT3 2026“) und rechnet die Tankrate aus Regeltabelle und Tankgröße. Den Reifenwechsel misst es bei jedem
-        eigenen Stopp (auch im Training), die Durchfahrt der Boxengasse an allen Autos, die an die Box fahren.
-        Werte nur eintragen, wenn die Anzeige danebenliegt.
-      </p>
+      <h2>{t('set.pit')}</h2>
+      <p className="hint">{t('set.pitHint')}</p>
       <div className="pit-form">
-        <label>Tankrate <input inputMode="decimal" placeholder="automatisch" value={fill}
+        <label>{t('set.fillRate')} <input inputMode="decimal" placeholder={t('set.auto')} value={fill}
           onChange={(e) => setFill(e.target.value)} onBlur={() => save({ fillRate: num(fill) })} /> l/s</label>
-        <label>Reifenwechsel (alle 4) <input inputMode="decimal" placeholder="automatisch" value={tyre}
+        <label>{t('set.tyreTime')} <input inputMode="decimal" placeholder={t('set.auto')} value={tyre}
           onChange={(e) => setTyre(e.target.value)} onBlur={() => save({ tyreTime: num(tyre) })} /> s</label>
-        <label>Regelwerk der Serie
+        <label>{t('set.regulation')}
           <select value={pit.regulation} onChange={(e) => save({ regulation: e.target.value as AppState['settings']['pitStop']['regulation'] })}>
-            <option value="auto">automatisch</option>
-            <option value="standard">Standard – erst Tanken, dann Reifen</option>
-            <option value="imsa">IMSA – gleichzeitig</option>
-            <option value="nec">NEC – gleichzeitig</option>
-            <option value="dtm">DTM – gleichzeitig</option>
+            <option value="auto">{t('set.auto')}</option>
+            <option value="standard">{t('set.reg.standard')}</option>
+            <option value="imsa">{t('set.reg.imsa')}</option>
+            <option value="nec">{t('set.reg.nec')}</option>
+            <option value="dtm">{t('set.reg.dtm')}</option>
           </select>
         </label>
       </div>
       <div className="pit-import">
-        <p className="hint">
-          Boxengassen-Zeiten aus deinen alten Telemetrie-Dateien (.ibt) einlesen: StintView sucht darin jede eigene Fahrt durch die
-          Boxengasse und merkt sich den Zeitverlust je Strecke. Bereits eingelesene Dateien werden übersprungen.
-        </p>
+        <p className="hint">{t('set.importHint')}</p>
         <div className="edit-row">
           <button className="btn ghost" disabled={imp.running} onClick={() => onImport(false)}>
-            {imp.running ? 'Liest …' : 'Boxengassen-Zeiten einlesen'}
+            {imp.running ? t('set.reading') : t('set.import')}
           </button>
-          <button className="linkish" disabled={imp.running} onClick={() => onImport(true)}>anderer Ordner …</button>
+          <button className="linkish" disabled={imp.running} onClick={() => onImport(true)}>{t('set.otherFolder')}</button>
         </div>
         {(imp.running || imp.finished) && (
           <small className={imp.error ? 'bad' : ''}>
             {imp.error ? imp.error
-              : imp.running ? `${imp.done} von ${imp.total || '…'} Dateien · ${imp.passes} Durchfahrten auf ${imp.tracks} Strecken`
-                : imp.total === 0 ? 'Keine neuen Dateien – alles schon eingelesen.'
-                  : `Fertig: ${imp.total} Dateien, ${imp.passes} Durchfahrten auf ${imp.tracks} Strecken.`}
+              : imp.running ? t('set.importProgress', { done: imp.done, total: imp.total || '…', passes: imp.passes, tracks: imp.tracks })
+                : imp.total === 0 ? t('set.importNothing')
+                  : t('set.importDone', { total: imp.total, passes: imp.passes, tracks: imp.tracks })}
             {imp.folder && <><br />{imp.folder}</>}
           </small>
         )}
@@ -340,20 +338,8 @@ function PitStopCard({ pit, onChange, imp, onImport }: {
   );
 }
 
-const PANEL_NAMES: [string, string][] = [
-  ['header', 'Kopfzeile (Fahrer, Gelb-Knopf)'],
-  ['inputs', 'Eingaben (Lenkung, Gas, Bremse)'],
-  ['fuel', 'Sprit'],
-  ['tyres', 'Reifen'],
-  ['weather', 'Wetter'],
-  ['standings', 'Position (Reihenfolge auf der Strecke)'],
-  ['pitstop', 'Boxenstopp (Dauer und Rückkehr)'],
-];
-
-const STANDINGS_COLUMNS: [StandingsColumn, string][] = [
-  ['pos', 'Position'], ['num', 'Startnummer'], ['flag', 'Flagge'], ['name', 'Fahrer'],
-  ['best', 'Bestzeit (Training/Quali)'], ['gap', 'Abstand'], ['tyre', 'Reifenalter (Rennen)'], ['delta', 'Δ Runde (Rennen)'],
-];
+const PANEL_IDS = ['header', 'inputs', 'fuel', 'tyres', 'weather', 'standings', 'pitstop'] as const;
+const STANDINGS_COLUMNS: StandingsColumn[] = ['pos', 'num', 'flag', 'name', 'best', 'gap', 'tyre', 'delta'];
 
 /**
  * Every panel: on/off in the header, and when opened its size and panel-specific options.
@@ -366,19 +352,20 @@ function PanelList({ panels, onChange }: {
   const update = (id: string, patch: Partial<PanelSetting>) => onChange({ ...panels, [id]: { ...panels[id]!, ...patch } });
   return (
     <div className="panel-list">
-      {PANEL_NAMES.map(([id, name]) => {
+      {PANEL_IDS.map((id) => {
         const p = panels[id];
         if (!p) return null;
+        const name = t(`set.panel.${id}`);
         return (
           <details key={id} className={p.shown ? 'panel-item' : 'panel-item off'}>
             <summary>
-              <input type="checkbox" aria-label={`${name} anzeigen`} checked={p.shown}
+              <input type="checkbox" aria-label={t('set.showPanel', { name })} checked={p.shown}
                 onClick={(e) => e.stopPropagation()} onChange={() => update(id, { shown: !p.shown })} />
               <span className="panel-name">{name}</span>
               <span className="panel-meta">{p.size !== 100 ? `${p.size} %` : ''}</span>
             </summary>
             <div className="panel-body">
-              <Slider label="Größe" value={p.size} min={50} max={200} step={5} onCommit={(size) => update(id, { size })} />
+              <Slider label={t('set.size')} value={p.size} min={50} max={200} step={5} onCommit={(size) => update(id, { size })} />
               {id === 'standings' && p.options && <StandingsOptionsForm options={p.options} onChange={(options) => update(id, { options })} />}
             </div>
           </details>
@@ -391,23 +378,23 @@ function PanelList({ panels, onChange }: {
 function StandingsOptionsForm({ options, onChange }: { options: StandingsOptions; onChange(o: StandingsOptions): void }) {
   return (
     <div className="panel-options">
-      <div className="options-title">Spalten</div>
+      <div className="options-title">{t('set.columns')}</div>
       <div className="options-grid">
-        {STANDINGS_COLUMNS.map(([c, label]) => (
+        {STANDINGS_COLUMNS.map((c) => (
           <label key={c}>
             <input type="checkbox" checked={options.columns[c] ?? true}
               onChange={() => onChange({ ...options, columns: { ...options.columns, [c]: !(options.columns[c] ?? true) } })} />
-            {label}
+            {t(`set.col.${c}`)}
           </label>
         ))}
       </div>
       <label className="option-line">
         <input type="checkbox" checked={options.duel} onChange={() => onChange({ ...options, duel: !options.duel })} />
-        Duell-Zeile oben – Vorder- und Hintermann in der Klasse mit Abstand, groß
+        {t('set.duel')}
       </label>
       <label className="option-line">
         <input type="checkbox" checked={options.lapping} onChange={() => onChange({ ...options, lapping: !options.lapping })} />
-        Überrundungen zeigen – Auto direkt vor euch, das ihr gleich überrundet (blau), oder direkt hinter euch, das euch gleich überrundet (rot)
+        {t('set.lapping')}
       </label>
     </div>
   );

@@ -2,6 +2,7 @@
 const { mkdirSync, readFileSync, writeFileSync } = require('node:fs');
 const { homedir } = require('node:os');
 const path = require('node:path');
+const { systemLanguage, t } = require('./i18n.cjs');
 
 // STINTVIEW_HOME redirects everything (tests, a second profile on one PC).
 const dataDir = process.env.STINTVIEW_HOME ?? path.join(process.env.APPDATA ?? path.join(homedir(), 'AppData', 'Roaming'), 'StintView');
@@ -27,6 +28,7 @@ const PANEL_DEFAULTS = {
 };
 
 const DEFAULT_SETTINGS = {
+  language: null, // 'de' | 'en'; null = from Windows
   overlay: true, // show the panels at all
   output: 'monitor', // where: 'monitor' (transparent window over iRacing) or 'vr' (SteamVR panels)
   autostart: true, // start with Windows
@@ -70,6 +72,7 @@ function loadSettings() {
     ...DEFAULT_SETTINGS, ...rest,
     overlay: legacy ? (saved.overlay ?? true) || Boolean(saved.vr) : saved.overlay !== false,
     output,
+    language: cleanLanguage(saved.language),
     panels: cleanPanels(saved.panels, output),
     opacity: cleanOpacity(typeof saved.opacity === 'object' && saved.opacity ? saved.opacity[output] : saved.opacity),
     pitStop: cleanPitStop(saved.pitStop),
@@ -77,6 +80,7 @@ function loadSettings() {
 }
 
 const cleanOutput = (o) => (o === 'vr' ? 'vr' : 'monitor');
+const cleanLanguage = (l) => (l === 'de' || l === 'en' ? l : systemLanguage());
 
 /**
  * Known panel ids only, with shown/size/options (defaults for missing or invalid values).
@@ -140,11 +144,11 @@ async function register(serverUrl, kind, body) {
       signal: AbortSignal.timeout(8000),
     });
   } catch {
-    throw new Error(`Server nicht erreichbar: ${url.origin}`);
+    throw new Error(t('join.unreachable', { url: url.origin }));
   }
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(json.error === 'unknown invite code' ? 'Unbekannter Einladungscode' : (json.error ?? `Fehler ${res.status}`));
+    throw new Error(json.error === 'unknown invite code' ? t('join.unknownCode') : (json.error ?? t('join.error', { status: res.status })));
   }
   const config = { ...json, serverUrl: url.origin };
   saveConfig(config);
@@ -154,16 +158,16 @@ async function register(serverUrl, kind, body) {
 /** "beispiel.dyndns.org:8787" -> "http://beispiel.dyndns.org:8787" */
 function normalizeUrl(input) {
   const s = String(input ?? '').trim();
-  if (!s) throw new Error('Server-Adresse fehlt');
+  if (!s) throw new Error(t('join.noAddress'));
   const withScheme = /^https?:\/\//i.test(s) ? s : `http://${s}`;
   try {
     return new URL(withScheme).origin;
   } catch {
-    throw new Error(`Ungültige Server-Adresse: ${s}`);
+    throw new Error(t('join.badAddress', { address: s }));
   }
 }
 
 module.exports = {
   dataDir, logDir, configPath, loadConfig, saveConfig, clearConfig, loadSettings, saveSettings, register, normalizeUrl,
-  cleanPanels, cleanOpacity, cleanOutput, cleanPitStop, panelsFor, panelConfig,
+  cleanLanguage, cleanPanels, cleanOpacity, cleanOutput, cleanPitStop, panelsFor, panelConfig,
 };

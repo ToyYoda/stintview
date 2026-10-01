@@ -4,16 +4,17 @@ const { app, BrowserWindow, Menu, Tray, dialog, ipcMain, nativeImage, shell, uti
 const { createWriteStream, mkdirSync, readdirSync } = require('node:fs');
 const path = require('node:path');
 const {
-  cleanOpacity, cleanOutput, cleanPanels, cleanPitStop, clearConfig, configPath, dataDir, loadConfig, loadSettings, logDir, normalizeUrl, panelConfig, panelsFor, register, saveSettings,
+  cleanLanguage, cleanOpacity, cleanOutput, cleanPanels, cleanPitStop, clearConfig, configPath, dataDir, loadConfig, loadSettings, logDir, normalizeUrl, panelConfig, panelsFor, register, saveSettings,
 } = require('./config.cjs');
 const {
-  editHotkey, editing, onOverlayChange, overlayRunning, editHotkeyInfo, setEditMode, setOverlayOpacity, setOverlayPanelConfig, setOverlayPanels, startOverlay, stopOverlay, toggleEdit,
+  editHotkey, editing, onOverlayChange, overlayRunning, editHotkeyInfo, setEditMode, setOverlayLanguage, setOverlayOpacity, setOverlayPanelConfig, setOverlayPanels, startOverlay, stopOverlay, toggleEdit,
 } = require('./overlay-window.cjs');
 const { PRELOAD, loadRoute } = require('./renderer.cjs');
 const { cameraCommand, cameraHotkeyInfo, cameraInfo, onRecorderMessage, setHazardCar, setTeamCar, startCamera, stopCamera } = require('./camera.cjs');
-const { recenterVr, setVrOpacity, setVrPanelConfig, startVr, stopVr, vrHotkeyInfo, vrStatus } = require('./vr.cjs');
+const { recenterVr, setVrLanguage, setVrOpacity, setVrPanelConfig, startVr, stopVr, vrHotkeyInfo, vrStatus } = require('./vr.cjs');
 const { hotkeyGroups } = require('./hotkeys.cjs');
 const { checkNow, installNow, setupUpdates, updateInfo, updateLabel } = require('./updates.cjs');
+const { setLanguage, t } = require('./i18n.cjs');
 
 const BUNDLES = path.join(__dirname, '..', 'dist-bundles');
 const ICON = path.join(__dirname, 'icons', 'tray.png');
@@ -32,6 +33,7 @@ app.setAppUserModelId('com.outcastendurance.stintview');
 app.disableHardwareAcceleration();
 
 let settings = loadSettings();
+setLanguage(settings.language);
 let tray = null;
 let setupWin = null;
 let quitting = false;
@@ -114,12 +116,12 @@ async function startPitImport(choose) {
   let dir = settings.telemetryDir ?? path.join(app.getPath('documents'), 'iRacing', 'telemetry');
   if (choose || !hasIbt(dir)) {
     const r = await dialog.showOpenDialog(setupWin ?? undefined, {
-      title: 'iRacing-Telemetrie-Ordner wählen (enthält die .ibt-Dateien)', defaultPath: dir, properties: ['openDirectory'],
+      title: t('import.chooseFolder'), defaultPath: dir, properties: ['openDirectory'],
     });
     if (r.canceled || !r.filePaths[0]) return;
     dir = r.filePaths[0];
     if (!hasIbt(dir)) {
-      pitImport = { ...pitImport, finished: true, folder: dir, error: 'In diesem Ordner sind keine .ibt-Dateien.' };
+      pitImport = { ...pitImport, finished: true, folder: dir, error: t('import.noIbt') };
       return refresh();
     }
     settings = { ...settings, telemetryDir: dir };
@@ -140,7 +142,7 @@ async function startPitImport(choose) {
   });
   proc.on('exit', (code) => {
     if (!pitImport.running) return;
-    pitImport = { ...pitImport, running: false, finished: true, error: `Abgebrochen (Code ${code})` };
+    pitImport = { ...pitImport, running: false, finished: true, error: t('import.aborted', { code }) };
     refresh();
   });
   refresh();
@@ -193,7 +195,7 @@ async function waitForRelay() {
     } catch { /* not up yet */ }
     await new Promise((r) => setTimeout(r, 250));
   }
-  throw new Error('Der Team-Server auf diesem PC startet nicht (Port belegt?)');
+  throw new Error(t('relay.noStart'));
 }
 
 // ---------------------------------------------------------------------------
@@ -203,6 +205,9 @@ async function waitForRelay() {
 function applySettings() {
   const configured = Boolean(loadConfig());
   if (settings.server) startRelay(); else stopRelay();
+  setLanguage(settings.language);
+  setOverlayLanguage(settings.language);
+  setVrLanguage(settings.language);
   const shown = panelsFor(settings);
   setOverlayPanels(shown);
   setOverlayPanelConfig(panelConfig(settings));
@@ -237,12 +242,13 @@ function updateSettings(patch) {
 
 function statusLine() {
   const config = loadConfig();
-  if (!config) return 'Nicht eingerichtet';
-  if (status.server === 'error') return `Server: ${status.serverText.replace(/^server error: /, '')}`;
-  if (status.server === 'offline') return 'Keine Verbindung zum Team-Server';
-  if (!status.iracing) return `${config.teamName} · iRacing nicht aktiv`;
-  if (status.inCar) return status.server === 'standby' ? `${config.teamName} · im Auto, Standby` : `${config.teamName} · du fährst – sendet`;
-  return `${config.teamName} · bereit`;
+  if (!config) return t('status.notSetUp');
+  if (status.server === 'error') return t('status.server', { text: status.serverText.replace(/^server error: /, '') });
+  if (status.server === 'offline') return t('status.offline');
+  const team = config.teamName;
+  if (!status.iracing) return t('status.noIracing', { team });
+  if (status.inCar) return status.server === 'standby' ? t('status.standby', { team }) : t('status.driving', { team });
+  return t('status.ready', { team });
 }
 
 function refresh() {
@@ -260,25 +266,25 @@ function buildMenu() {
     { label: statusLine(), enabled: false },
     updateMenuItem(),
     { type: 'separator' },
-    { label: 'Anzeigen einblenden', type: 'checkbox', checked: settings.overlay, enabled: configured, click: (i) => updateSettings({ overlay: i.checked }) },
-    { label: 'am Monitor', type: 'radio', checked: settings.output === 'monitor', enabled: configured, click: () => updateSettings({ output: 'monitor' }) },
+    { label: t('menu.show'), type: 'checkbox', checked: settings.overlay, enabled: configured, click: (i) => updateSettings({ overlay: i.checked }) },
+    { label: t('menu.monitor'), type: 'radio', checked: settings.output === 'monitor', enabled: configured, click: () => updateSettings({ output: 'monitor' }) },
     {
-      label: `in VR (SteamVR)${settings.output === 'vr' && vr === 'waiting' ? ' – wartet auf SteamVR' : ''}`,
+      label: `${t('menu.vr')}${settings.output === 'vr' && vr === 'waiting' ? t('menu.vrWaiting') : ''}`,
       type: 'radio', checked: settings.output === 'vr', enabled: configured, click: () => updateSettings({ output: 'vr' }),
     },
     {
-      label: `Anzeigen verschieben${editHotkey() ? ` (${editHotkey()})` : ''}`,
+      label: `${t('menu.move')}${editHotkey() ? ` (${editHotkey()})` : ''}`,
       type: 'checkbox', checked: editing(), enabled: overlayRunning(), click: toggleEdit,
     },
-    { label: 'VR-Ausrichtung zurücksetzen (Strg+Umschalt+R)', enabled: vr === 'connected', click: recenterVr },
+    { label: t('menu.recenter'), enabled: vr === 'connected', click: recenterVr },
     { type: 'separator' },
-    { label: 'Einstellungen …', click: () => openSetup() },
-    { label: 'Tastaturkürzel …', click: () => openSetup('/setup/keys') },
-    { label: 'Mit Windows starten', type: 'checkbox', checked: settings.autostart, enabled: app.isPackaged, click: (i) => updateSettings({ autostart: i.checked }) },
-    { label: `Team-Server auf diesem PC (Port ${settings.serverPort})`, type: 'checkbox', checked: settings.server, click: (i) => updateSettings({ server: i.checked }) },
-    { label: 'Protokolle öffnen', click: () => shell.openPath(logDir) },
+    { label: t('menu.settings'), click: () => openSetup() },
+    { label: t('menu.hotkeys'), click: () => openSetup('/setup/keys') },
+    { label: t('menu.autostart'), type: 'checkbox', checked: settings.autostart, enabled: app.isPackaged, click: (i) => updateSettings({ autostart: i.checked }) },
+    { label: t('menu.server', { port: settings.serverPort }), type: 'checkbox', checked: settings.server, click: (i) => updateSettings({ server: i.checked }) },
+    { label: t('menu.logs'), click: () => shell.openPath(logDir) },
     { type: 'separator' },
-    { label: 'StintView beenden', click: () => app.quit() },
+    { label: t('menu.quit'), click: () => app.quit() },
   ]);
 }
 
@@ -361,11 +367,12 @@ ipcMain.handle('app:create', async (_e, { serverUrl, teamName, memberName, hostH
 });
 
 ipcMain.handle('app:settings', (_e, patch) => {
-  const allowed = ['overlay', 'output', 'autostart', 'server', 'panels', 'opacity', 'pitStop'];
+  const allowed = ['language', 'overlay', 'output', 'autostart', 'server', 'panels', 'opacity', 'pitStop'];
   const clean = Object.fromEntries(Object.entries(patch ?? {}).filter(([k]) => allowed.includes(k)));
   if (clean.panels) clean.panels = cleanPanels({ ...settings.panels, ...clean.panels });
   if ('opacity' in clean) clean.opacity = cleanOpacity(clean.opacity);
   if ('output' in clean) clean.output = cleanOutput(clean.output);
+  if ('language' in clean) clean.language = cleanLanguage(clean.language);
   if ('overlay' in clean) clean.overlay = Boolean(clean.overlay);
   if (clean.pitStop) clean.pitStop = cleanPitStop({ ...settings.pitStop, ...clean.pitStop });
   updateSettings(clean);
@@ -388,11 +395,11 @@ ipcMain.handle('app:camera-info', () => cameraInfo());
 ipcMain.handle('app:leave', async () => {
   const { response } = await dialog.showMessageBox(setupWin ?? undefined, {
     type: 'question',
-    buttons: ['Abbrechen', 'Team verlassen'],
+    buttons: [t('leave.cancel'), t('leave.confirm')],
     defaultId: 0,
     cancelId: 0,
-    message: 'Team auf diesem PC verlassen?',
-    detail: 'StintView sendet dann keine Daten mehr an dein Team. Zum erneuten Beitreten brauchst du einen Einladungscode.',
+    message: t('leave.question'),
+    detail: t('leave.detail'),
   });
   if (response !== 1) return appState();
   recorder?.stop();
@@ -417,8 +424,8 @@ function onUpdateChange(u) {
   if (u.phase === 'ready' && announced !== u.version && tray) {
     announced = u.version;
     tray.displayBalloon({
-      title: `StintView ${u.version} ist bereit`,
-      content: 'Rechtsklick auf das StintView-Symbol → „Update installieren und neu starten“.',
+      title: t('update.balloonTitle', { version: u.version }),
+      content: t('update.balloonText', { version: u.version }),
       iconType: 'info',
     });
   }

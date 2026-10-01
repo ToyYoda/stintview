@@ -17,7 +17,7 @@ let state = null; // last CameraState from the recorder
 let hazardCar = null;
 const keys = { incident: null, back: null };
 
-const display = (h) => h && h.replace('Control', 'Strg').replace('Shift', 'Umschalt');
+const { displayKey: display } = require('./hotkeys.cjs');
 
 function broadcast(channel, payload) {
   for (const w of BrowserWindow.getAllWindows()) if (!w.isDestroyed()) w.webContents.send(channel, payload);
@@ -32,9 +32,9 @@ function command(action, targetCarIdx) {
   const now = Date.now();
   if (now - lastCommandAt < COOLDOWN_MS) return console.log(`[camera] ${action} ignored (${now - lastCommandAt} ms after the previous command)`);
   lastCommandAt = now;
-  if (!team || team.carIdx < 0) return broadcast('camera', { t: 'camera-result', ok: false, text: 'Noch keine Daten vom Team-Auto' });
+  if (!team || team.carIdx < 0) return broadcast('camera', { t: 'camera-result', ok: false, text: 'Noch keine Daten vom Team-Auto', code: 'no-team' });
   const msg = { t: 'camera', action, team, ...(targetCarIdx !== undefined ? { targetCarIdx } : {}) };
-  if (!sendToRecorder(msg)) broadcast('camera', { t: 'camera-result', ok: false, text: 'Recorder läuft nicht' });
+  if (!sendToRecorder(msg)) broadcast('camera', { t: 'camera-result', ok: false, text: 'Recorder läuft nicht', code: 'no-recorder' });
 }
 
 function startCamera(post) {

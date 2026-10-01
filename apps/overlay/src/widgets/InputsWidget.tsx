@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { t } from '../i18n.ts';
 import type { InputBuffer } from '../feed.ts';
 
 const WIDTH = 420;
@@ -47,7 +48,7 @@ function render(ctx: CanvasRenderingContext2D, buf: InputBuffer) {
   if (now === null) {
     ctx.fillStyle = COLORS.muted;
     ctx.font = '13px system-ui';
-    ctx.fillText('Keine Eingabedaten', pad + 8, HEIGHT / 2 + 4);
+    ctx.fillText(t('inputs.none'), pad + 8, HEIGHT / 2 + 4);
     return;
   }
 

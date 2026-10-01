@@ -1,8 +1,8 @@
 import { estimateWear } from '@stintview/telemetry';
+import { t } from '../i18n.ts';
 import type { Status, Tyres, Wheel } from '@stintview/protocol';
 
 const LAYOUT: Wheel[] = ['LF', 'RF', 'LR', 'RR'];
-const NAMES: Record<Wheel, string> = { LF: 'VL', RF: 'VR', LR: 'HL', RR: 'HR' };
 
 /** Rough GT colour bands for carcass temperature, °C. */
 function tempClass(c: number) {
@@ -22,8 +22,8 @@ export function TyresWidget({ tyres, status }: { tyres: Tyres | null; status: St
   return (
     <div className="panel tyres">
       <div className="title">
-        Reifen
-        <span className="hint">{last ? `gemessen Stopp Runde ${last.lap}` : 'noch kein Stopp'}</span>
+        {t('tyres.title')}
+        <span className="hint">{last ? t('tyres.measured', { lap: last.lap }) : t('tyres.noStop')}</span>
       </div>
       <div className="wheels">
         {LAYOUT.map((w) => {
@@ -31,7 +31,7 @@ export function TyresWidget({ tyres, status }: { tyres: Tyres | null; status: St
           return (
             <div key={w} className="wheel">
               <div className="wheel-head">
-                <span>{NAMES[w]}</span>
+                <span>{t(`tyres.${w}`)}</span>
                 <span className="label">{status ? `${(status.odometer[w] / 1000).toFixed(1)} km` : ''}</span>
               </div>
               <div className="temps">
@@ -42,18 +42,18 @@ export function TyresWidget({ tyres, status }: { tyres: Tyres | null; status: St
                 ))}
               </div>
               <div className="wear">
-                <span title="Profil jetzt (Schätzung)" className="mid">
+                <span title={t('tyres.treadNow')} className="mid">
                   {e?.remaining != null ? `${Math.round(e.remaining * 100)}%` : '–'}
                 </span>
                 <span className="label">
-                  {last ? `Stopp ${Math.round(Math.min(...last.wear[w]) * 100)}%` : ''}
+                  {last ? t('tyres.atStop', { pct: Math.round(Math.min(...last.wear[w]) * 100) }) : ''}
                 </span>
               </div>
             </div>
           );
         })}
       </div>
-      {!last && <div className="label note">iRacing misst Reifen nur in der Box</div>}
+      {!last && <div className="label note">{t('tyres.onlyInPit')}</div>}
     </div>
   );
 }

@@ -30,7 +30,7 @@ Jedes Teammitglied fährt an seinem eigenen PC. Alle sollen die Daten des Teamko
 | A13 | **Position:** P1–3 und je 3 Autos vor/hinter dem Team-Auto, Reihenfolge **auf der Strecke** (nicht iRacings Runden-Position); Spalten Position, Startnummer, Länderflagge + Name, Abstand in s als farbige Kachel (seit 0.8; eigene Zeile + direkte Klassennachbarn größer; Duell-Zeile oben mit Vorder-/Hintermann, Option `duel`) (+ vor uns, ganze Runden als „R“; Farben: <1 s vor uns gelb, <1 s hinter uns rot, 1–3 s normal, >3 s grau, andere Runde blau), Reifenalter in Runden (eigenes Auto exakt über `xxodometer`/Streckenlänge, andere = Runden seit Verlassen der Boxengasse, „Box“ in der Boxengasse), Δ letzte Runde (unsere − seine; rot = wir langsamer, sonst grün). | umgesetzt |
 | A10 | **Live-Zuschauer:** Bekommt der Fahrer Gelb (Unfall voraus), kann ein zuschauender Teamkollege per Knopf die Kamera in seinem iRacing zum Unfall-Auto springen lassen (Verfolgerkamera „Far Chase“) und per Knopf zurück zum Team-Auto. Absprache mit dem Fahrer über Discord (außerhalb von StintView). In VR per Tastenkürzel (Maus kann SteamVR-Panels nicht treffen). | umgesetzt, live noch ungetestet (§7a) |
 
-Sprache für Nutzer: Deutsch (App-Oberfläche nur Deutsch; Website und Anleitung de/en).
+Sprache für Nutzer: Deutsch und Englisch – App-Oberfläche wählbar (seit 0.9: Einstellung `language`, Standard = Windows-Sprache; Umschalter DE/EN im StintView-Fenster), Website und Anleitung de/en. Texte: `apps/overlay/src/i18n.ts` (Panels, Fenster; Englisch muss jeden Schlüssel haben, prüft TypeScript) und `electron/i18n.cjs` (Tray, Dialoge, Kürzel, Meldungen); Kamera-Ergebnisse des Recorders kommen als `code` + `vars`.
 
 ## 2. Architektur
 
@@ -208,7 +208,7 @@ Sonstiges: Der Shared-Memory-Bereich existiert auch, wenn nur die iRacing-UI lä
 4. Installationsordner `@stintviewoverlay` → `StintView` (electron-builder `extraMetadata.name`; Update-Verhalten vorher prüfen).
 4a. Wettervorhersage (Issue #1): prüfen, ob iRacings Data API eine Vorhersage für gehostete/offizielle Sessions liefert und wie ein Login dafür aussähe.
 5. ~~Stint-Zusammenfassung aus der `.ibt`~~ – verworfen (30.09.2026): Telemetrie-Auswertung nach dem Stint macht das Team in Garage 61.
-6. App-Oberfläche/Overlay zweisprachig (derzeit nur Deutsch).
+6. ~~App-Oberfläche zweisprachig~~ – umgesetzt in 0.9.
 7. TLS für das Relay; Code-Signing-Zertifikat (z. B. Azure Trusted Signing) gegen SmartScreen.
 8. Mehrere Team-Autos in einem Team; Strategie-Features (Pit-Fenster, Stint-Planung, Gaps) – ursprüngliche „Später“-Liste im Konzept.
 

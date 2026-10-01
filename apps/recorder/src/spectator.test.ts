@@ -103,7 +103,7 @@ CameraInfo:
     expect(results).toEqual([]);
     advance(300);
     s.onFrame(frame(12), false);
-    expect(results).toEqual([{ t: 'camera-result', ok: true, text: '#44 Crash Test' }]);
+    expect(results).toEqual([{ t: 'camera-result', ok: true, text: '#44 Crash Test', code: 'jump-car', vars: { car: '#44 Crash Test' } }]);
   });
 
   it('reports a refused switch when the camera does not move (e.g. iRacing elevated)', () => {
@@ -111,7 +111,7 @@ CameraInfo:
     s.command({ t: 'camera', action: 'incident', team, targetCarIdx: 12 });
     advance(VERIFY_MS + 1);
     s.onFrame(frame(5), false);
-    expect(results).toEqual([{ t: 'camera-result', ok: false, text: NOT_ACCEPTED }]);
+    expect(results).toEqual([{ t: 'camera-result', ok: false, text: NOT_ACCEPTED, code: 'not-accepted' }]);
   });
 
   it('verifies "back" against the team car and restores the previous camera', () => {

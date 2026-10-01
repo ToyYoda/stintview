@@ -38,6 +38,8 @@ export interface AppState {
   settings: {
     /** Panels shown at all, and where: monitor overlay or VR (one at a time). */
     overlay: boolean; output: 'monitor' | 'vr'; autostart: boolean; server: boolean; serverPort: number;
+    /** UI language. */
+    language: 'de' | 'en';
     /** Per panel: shown, size in percent, panel-specific options. */
     panels: Record<string, PanelSetting>;
     /** Panel background opacity in percent, all panels. */
@@ -83,6 +85,7 @@ declare global {
       onPanels?(cb: (ids: string[]) => void): void;
       onOpacity?(cb: (value: number) => void): void;
       onPanelConfig?(cb: (cfg: PanelConfig) => void): void;
+      onLanguage?(cb: (lang: 'de' | 'en') => void): void;
       setTeamCar(team: { carIdx: number; carNumber: number; sessionId: string }): void;
       setHazard?(carIdx: number | null): void;
       camera(action: 'incident' | 'back', targetCarIdx?: number): Promise<void>;

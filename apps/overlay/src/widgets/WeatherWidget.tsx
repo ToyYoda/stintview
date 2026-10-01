@@ -1,8 +1,9 @@
 import type { Weather, WeatherEvent } from '@stintview/protocol';
+import { t, tList } from '../i18n.ts';
 
-const SKIES = ['klar', 'leicht bewölkt', 'stark bewölkt', 'bedeckt'];
-const PRECIP = ['kein Regen', 'leichter Regen', 'Regen', 'starker Regen'];
-const WETNESS = ['unbekannt', 'trocken', 'fast trocken', 'minimal feucht', 'leicht nass', 'nass', 'sehr nass', 'extrem nass'];
+const SKIES = () => tList('wx.skies');
+const PRECIP = () => tList('wx.precipLevels');
+const WETNESS = () => tList('wx.wetness');
 const MAX_EVENTS = 6;
 
 const clock = (s: number) => {
@@ -15,12 +16,12 @@ const pick = (list: string[], i: number) => list[i] ?? `? (${i})`;
 
 function describe(e: WeatherEvent): string {
   switch (e.kind) {
-    case 'skies': return `Wolken: ${pick(SKIES, e.from)} → ${pick(SKIES, e.to)}`;
-    case 'precip': return e.to > e.from ? `${pick(PRECIP, e.to)} setzt ein` : `${pick(PRECIP, e.from)} lässt nach → ${pick(PRECIP, e.to)}`;
-    case 'wetness': return `Strecke: ${pick(WETNESS, e.from)} → ${pick(WETNESS, e.to)}`;
-    case 'declaredWet': return e.to ? 'Regenreifen freigegeben' : 'Regenreifen-Freigabe aufgehoben';
-    case 'airTemp': return `Luft ${Math.round(e.from)} → ${Math.round(e.to)} °C`;
-    case 'trackTemp': return `Strecke ${Math.round(e.from)} → ${Math.round(e.to)} °C`;
+    case 'skies': return t('wx.ev.skies', { from: pick(SKIES(), e.from), to: pick(SKIES(), e.to) });
+    case 'precip': return e.to > e.from ? t('wx.ev.precipStart', { to: pick(PRECIP(), e.to) }) : t('wx.ev.precipEase', { from: pick(PRECIP(), e.from), to: pick(PRECIP(), e.to) });
+    case 'wetness': return t('wx.ev.wetness', { from: pick(WETNESS(), e.from), to: pick(WETNESS(), e.to) });
+    case 'declaredWet': return e.to ? t('wx.ev.wetOn') : t('wx.ev.wetOff');
+    case 'airTemp': return t('wx.ev.air', { from: Math.round(e.from), to: Math.round(e.to) });
+    case 'trackTemp': return t('wx.ev.track', { from: Math.round(e.from), to: Math.round(e.to) });
   }
 }
 
@@ -36,25 +37,25 @@ export function WeatherWidget({ weather }: { weather: Weather | null }) {
   return (
     <div className="panel weather">
       <div className="title">
-        Wetter
-        <span className="hint">{now ? `${clock(now.timeOfDay)} Uhr` : ''}</span>
+        {t('wx.title')}
+        <span className="hint">{now ? t('wx.clock', { time: clock(now.timeOfDay) }) : ''}</span>
       </div>
       {now ? (
         <>
           <div className="wx-grid">
-            <div><span className="label">Luft</span><span className="mid">{temp(now.airTemp)} <i>{arrow(now.airTrend)}</i></span></div>
-            <div><span className="label">Strecke</span><span className="mid">{temp(now.trackTemp)} <i>{arrow(now.trackTrend)}</i></span></div>
-            <div><span className="label">Wolken</span><span>{pick(SKIES, now.skies)}</span></div>
-            <div><span className="label">Niederschlag</span><span>{now.precipitation < 0.01 ? 'kein' : `${Math.round(now.precipitation * 100)} %`}</span></div>
+            <div><span className="label">{t('wx.air')}</span><span className="mid">{temp(now.airTemp)} <i>{arrow(now.airTrend)}</i></span></div>
+            <div><span className="label">{t('wx.track')}</span><span className="mid">{temp(now.trackTemp)} <i>{arrow(now.trackTrend)}</i></span></div>
+            <div><span className="label">{t('wx.clouds')}</span><span>{pick(SKIES(), now.skies)}</span></div>
+            <div><span className="label">{t('wx.precip')}</span><span>{now.precipitation < 0.01 ? t('wx.none') : `${Math.round(now.precipitation * 100)} %`}</span></div>
             <div className="wx-wide">
-              <span className="label">Streckenzustand</span>
-              <span className={wet ? 'wx-wet' : ''}>{pick(WETNESS, now.wetness)}</span>
-              {now.declaredWet && <span className="wx-badge">Regenreifen frei</span>}
+              <span className="label">{t('wx.state')}</span>
+              <span className={wet ? 'wx-wet' : ''}>{pick(WETNESS(), now.wetness)}</span>
+              {now.declaredWet && <span className="wx-badge">{t('wx.rainTyres')}</span>}
             </div>
           </div>
           <div className="wx-events">
-            <div className="label">Änderungen</div>
-            {events.length === 0 && <div className="label">bisher keine</div>}
+            <div className="label">{t('wx.changes')}</div>
+            {events.length === 0 && <div className="label">{t('wx.noChanges')}</div>}
             {events.map((e) => (
               <div key={`${e.sessionTime}|${e.kind}`} className="wx-event">
                 <span className="wx-time">{clock(e.timeOfDay)}</span>
@@ -64,7 +65,7 @@ export function WeatherWidget({ weather }: { weather: Weather | null }) {
           </div>
         </>
       ) : (
-        <div className="label">Noch keine Wetterdaten</div>
+        <div className="label">{t('wx.noData')}</div>
       )}
     </div>
   );
