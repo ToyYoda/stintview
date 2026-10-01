@@ -21,7 +21,8 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
   const ours = rows.find((r) => r.isTeam)?.lastLap ?? null;
   // Practice/qualifying: ranking by best lap, gap = their best − ours (+ slower than us).
   const best = standings?.mode === 'best';
-  const col = (c: StandingsColumn) => (c === 'best' && !best ? false : options?.columns[c] ?? true);
+  // Best lap only outside races; tyre age and last-lap delta only in races.
+  const col = (c: StandingsColumn) => (best ? c !== 'tyre' && c !== 'delta' : c !== 'best') && (options?.columns[c] ?? true);
   const lapping = options?.lapping === false || best ? [] : standings?.lapping ?? [];
   const team = rows.find((r) => r.isTeam);
   // Class neighbours: the cars directly in front of and behind us in the running order.
