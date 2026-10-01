@@ -136,17 +136,38 @@ function CreateForm({ onState, serverPort }: { onState(s: AppState): void; serve
 // Configured: status and switches
 // ---------------------------------------------------------------------------
 
+type Tab = 'status' | 'displays' | 'pit' | 'team' | 'keys';
+const TABS: Tab[] = ['status', 'displays', 'pit', 'team', 'keys'];
+const TAB_KEY = 'stintview.setupTab';
+
+/** Last tab, or the hotkey overview when opened via "Tastaturkürzel …" in the tray menu. */
+function initialTab(): Tab {
+  if (location.hash.endsWith('/keys')) return 'keys';
+  try {
+    const saved = localStorage.getItem(TAB_KEY) as Tab | null;
+    if (saved && TABS.includes(saved)) return saved;
+  } catch { /* no storage */ }
+  return 'status';
+}
+
 function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): void }) {
   const { team, settings, status } = state;
   const set = async (patch: Partial<AppState['settings']>) => onState(await api().updateSettings(patch));
   const serverDot = status.server === 'connected' || status.server === 'standby' ? 'ok' : status.server === 'error' ? 'bad' : 'warn';
-
-  // Opened via "Tastaturkürzel …" in the tray menu: the overview comes first.
-  const keysFirst = location.hash.endsWith('/keys');
+  const [tab, setTabState] = useState<Tab>(initialTab);
+  const setTab = (next: Tab) => {
+    setTabState(next);
+    try { localStorage.setItem(TAB_KEY, next); } catch { /* not remembered */ }
+  };
+  useEffect(() => {
+    // The tray menu reloads the window with #/setup/keys while it is open.
+    const onHash = () => { if (location.hash.endsWith('/keys')) setTab('keys'); };
+    addEventListener('hashchange', onHash);
+    return () => removeEventListener('hashchange', onHash);
+  }, []);
 
   return (
     <>
-      {keysFirst && <HotkeyCard groups={state.hotkeys} />}
       {state.update.phase === 'ready' && (
         <section className="card update-ready">
           <h2>{t('set.updateReady')}</h2>
@@ -154,6 +175,15 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
           <button className="btn" onClick={() => api().installUpdate()}>{t('set.updateNow')}</button>
         </section>
       )}
+      <div className="tabs main-tabs" role="tablist">
+        {TABS.map((id) => (
+          <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>
+            {t(`set.tab.${id}`)}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'status' && (
       <section className="card">
         <h2>{t('set.status')}</h2>
         <ul className="status">
@@ -164,7 +194,9 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
           {settings.server && <li><Dot kind={status.relay === 'running' ? 'ok' : 'bad'} />{status.relay === 'running' ? t('set.relayRunning') : t('set.relayStopped')}</li>}
         </ul>
       </section>
+      )}
 
+      {tab === 'displays' && (
       <section className="card">
         <h2>{t('set.displays')}</h2>
         <Toggle checked={settings.overlay} onChange={(v) => set({ overlay: v })} label={t('set.show')} hint={t('set.showHint')} />
@@ -192,13 +224,17 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
         <p className="hint cam-keys">
           {t('set.camKeysA')}<b>{state.cameraHotkeys.incident ?? '–'}</b>{t('set.camKeysB')}
           <b>{state.cameraHotkeys.back ?? '–'}</b>{t('set.camKeysC')}{' '}
-          <a href="#keys" onClick={(e) => { e.preventDefault(); document.getElementById('keys')?.scrollIntoView({ behavior: 'smooth' }); }}>{t('set.allKeys')}</a>
+          <a href="#keys" onClick={(e) => { e.preventDefault(); setTab('keys'); }}>{t('set.allKeys')}</a>
         </p>
       </section>
+      )}
 
-      <PitStopCard pit={settings.pitStop} onChange={(pitStop) => set({ pitStop })} imp={state.pitImport}
-        onImport={async (choose) => onState(await api().pitImport(choose))} />
+      {tab === 'pit' && (
+        <PitStopCard pit={settings.pitStop} onChange={(pitStop) => set({ pitStop })} imp={state.pitImport}
+          onImport={async (choose) => onState(await api().pitImport(choose))} />
+      )}
 
+      {tab === 'team' && (
       <section className="card">
         <h2>{t('set.team')}</h2>
         <dl className="team">
@@ -211,8 +247,9 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
         <Toggle checked={settings.server} onChange={(v) => set({ server: v })} label={t('set.serverHere', { port: settings.serverPort })} hint={t('set.serverHereHint')} />
         <button className="btn ghost" onClick={async () => onState(await api().leave())}>{t('set.leave')}</button>
       </section>
+      )}
 
-      {!keysFirst && <HotkeyCard groups={state.hotkeys} />}
+      {tab === 'keys' && <HotkeyCard groups={state.hotkeys} />}
 
       <p className="foot">
         {t('set.version', { version: state.version })}

@@ -44,7 +44,7 @@ Then click **Join team**. Under *Status*, **Team server: connected** appears.
 
 Nothing to do: StintView starts with Windows and runs in the notification area of the taskbar (bottom right, the red "O"; possibly hidden under the **^** arrow).
 
-- **Click** the icon to open the StintView window with status and switches.
+- **Click** the icon to open the StintView window with the tabs **Status**, **Displays**, **Pit stop**, **Team** and **Shortcuts**.
 - **Right-click** opens the menu with the same switches and **Quit StintView**.
 
 As soon as you are in the car, your team sees your data. When you get out, StintView stops sending on its own.
@@ -54,7 +54,7 @@ As soon as you are in the car, your team sees your data. When you get out, Stint
 Switch **Show displays** on and choose **Output** „Monitor“ (default). In iRacing's graphics options, choose **borderless window** – in exclusive fullscreen the overlay is invisible.
 
 - **Moving the displays:** click **Move displays** in the StintView window (or menu), drag the displays with the mouse, then click **Done** in the yellow banner at the top.
-- **All keyboard shortcuts:** right-click the StintView icon → **Keyboard shortcuts …** (or at the bottom of the StintView window). It shows which shortcut StintView actually got on your PC – if one is taken by another program (e.g. AMD Radeon Software), StintView automatically uses a fallback.
+- **All keyboard shortcuts:** right-click the StintView icon → **Keyboard shortcuts …** (or the **Shortcuts** tab in the StintView window). It shows which shortcut StintView actually got on your PC – if one is taken by another program (e.g. AMD Radeon Software), StintView automatically uses a fallback.
 - Faster via hotkey: **Ctrl+Shift+O**. If another program already uses it (e.g. AMD Radeon Software), StintView takes **Ctrl+Alt+O** or **Ctrl+Shift+F9** instead – the active one is shown in the StintView window.
 - Outside edit mode, all clicks go through the overlay to iRacing.
 

@@ -164,3 +164,7 @@ body.setup-body #root { height: auto; }
 .setup .setup-head { position: relative; }
 .setup .lang-switch { margin-left: auto; display: flex; align-self: flex-start; font-size: 12px; }
 .setup .lang-switch .seg { padding: 4px 10px; }
+
+/* Main window tabs (Status, Displays, Pit stop, Team, Shortcuts) */
+.setup .main-tabs { margin-bottom: 14px; }
+.setup .main-tabs button { padding: 9px 6px; font-size: 12px; min-width: 0; }
