@@ -7,7 +7,7 @@
 - Nutzer: Philipp, Teamchef von Outcast Endurance; Kommunikation auf **Deutsch**.
 - **Lokale Commits sind ok. Pushen, Tags/Releases** und andere Schritte nach außen **vorher bestätigen lassen** (Philipp sagt z. B. „ja, pushen und v0.9.1 veröffentlichen“).
 - Firewall-/Systemeinstellungen macht Philipp selbst. Seine echte StintView-Installation und sein Profil nie anfassen.
-- GitHub-Issue #1 (Wetter-Vorhersage) ist offen: in Commits „Refs #1“, nicht „Fixes #1“.
+- GitHub-Issue #1 (Wetter-Vorhersage) ist geschlossen: Vorhersage verworfen (02.10.2026, Begründung SPEC §5) – nicht erneut untersuchen.
 - Bei Änderungen an Anforderungen, Architektur, Protokoll oder Release **SPEC.md mitpflegen**; bei sichtbaren Funktionen auch `ANLEITUNG.md` (de), `INSTALL.md` (en, mit den englischen UI-Bezeichnungen) und `docs/TESTPLAN.md`.
 
 ## Prüfen
