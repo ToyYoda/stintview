@@ -149,6 +149,9 @@
     .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; border-top: 3px solid var(--red); }
     .card .shot { background: #000; border-radius: 4px; padding: 12px; margin-bottom: 18px; display: grid; place-items: center; aspect-ratio: 16 / 10; overflow: hidden; }
     .card .shot img { width: 100%; height: 100%; object-fit: contain; }
+    /* Fixed 16:10 frame: the image is fitted inside it (a tall one, e.g. fuel, would otherwise be cut off at the bottom). */
+    .card:not(.wide) .shot { position: relative; }
+    .card:not(.wide) .shot img { position: absolute; inset: 12px; width: calc(100% - 24px); height: calc(100% - 24px); }
     .card h3 { margin: 0 0 8px; font-size: 19px; font-style: italic; font-weight: 800; text-transform: uppercase; letter-spacing: 0.02em; }
     .card p { margin: 0; color: var(--muted); font-size: 15px; }
     .note { margin-top: 12px !important; font-size: 13.5px !important; color: var(--faint) !important; border-left: 2px solid var(--red); padding-left: 10px; }
