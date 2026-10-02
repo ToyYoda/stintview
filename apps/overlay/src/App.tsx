@@ -73,7 +73,7 @@ export function App() {
     // Buttons only on the desktop overlay; VR panels / browser widgets show hotkeys instead.
     header: <HeaderWidget state={state} interactive={Boolean(window.stintview) && !location.hash.startsWith('#/widget/')} />,
     inputs: <InputsWidget inputs={inputs} />,
-    fuel: <FuelWidget fuel={state.fuel} status={state.status} />,
+    fuel: <FuelWidget fuel={state.fuel} status={state.status} session={state.session} />,
     tyres: <TyresWidget tyres={state.tyres} status={state.status} />,
     weather: <WeatherWidget weather={state.weather} />,
     standings: <StandingsWidget standings={state.standings} options={config?.standings?.options as StandingsOptions | null | undefined} />,

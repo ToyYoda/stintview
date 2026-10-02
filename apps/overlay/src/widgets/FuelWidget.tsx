@@ -1,16 +1,24 @@
-import { fuelStats } from '@stintview/telemetry';
+import { fuelPlan, fuelStats, type FuelPlan } from '@stintview/telemetry';
 import { t } from '../i18n.ts';
-import type { Fuel, Status } from '@stintview/protocol';
+import type { Fuel, SessionInfo, Status } from '@stintview/protocol';
+
+/** A saving above this share of the consumption is not realistic: not shown. */
+const MAX_SAVE_PCT = 0.15;
 
 const fmt = (v: number | null, digits = 2) => (v === null ? '–' : v.toFixed(digits));
 
-/** Fuel used per lap (last / avg of 3 / avg of 5) and laps remaining. */
-export function FuelWidget({ fuel, status }: { fuel: Fuel | null; status: Status | null }) {
+/**
+ * Fuel used per lap (last / avg of 3 / avg of 5) and laps remaining; in the race also fuel
+ * to the finish: stops still needed, latest in-lap, the saving per lap that cuts a stop and
+ * the litres for the last stop.
+ */
+export function FuelWidget({ fuel, status, session }: { fuel: Fuel | null; status: Status | null; session?: SessionInfo | null }) {
   const level = status?.fuelLevel ?? null;
   const laps = fuel?.laps ?? [];
   const s = level !== null ? fuelStats(laps, level) : null;
   const recent = laps.slice(-8);
   const max = Math.max(...recent.map((l) => l.used), 0.001);
+  const plan = status && s && /race/i.test(session?.sessionType ?? '') ? planFor(laps, status, s.avg5 ?? s.avg3 ?? s.lastLap) : null;
 
   return (
     <div className="panel fuel">
@@ -52,6 +60,44 @@ export function FuelWidget({ fuel, status }: { fuel: Fuel | null; status: Status
         })}
         {!recent.length && <div className="label">{t('fuel.noLap')}</div>}
       </div>
+      {plan && <PlanBlock plan={plan} />}
+    </div>
+  );
+}
+
+/** Plan from the recent green laps (consumption, lap time) and the race length in `status`. */
+function planFor(laps: Fuel['laps'], status: Status, perLap: number | null): FuelPlan | null {
+  const green = laps.filter((l) => !l.pit && l.used > 0 && l.lapTime > 0).slice(-5);
+  if (!perLap || !green.length || !status.usableTank) return null;
+  return fuelPlan({
+    fuelLevel: status.fuelLevel, lap: status.lap, lapDistPct: status.lapDistPct, perLap,
+    lapTime: green.reduce((a, l) => a + l.lapTime, 0) / green.length,
+    timeRemain: status.timeRemain ?? null, lapsRemain: status.lapsRemain ?? null, usableTank: status.usableTank,
+  });
+}
+
+function PlanBlock({ plan }: { plan: FuelPlan }) {
+  const save = plan.saveTarget && plan.saveTarget.pct > 0 && plan.saveTarget.pct <= MAX_SAVE_PCT ? plan.saveTarget : null;
+  return (
+    <div className="fuel-plan">
+      <div className="fuel-plan-head">
+        <span>{t('fuel.toFinish')}</span>
+        <span className="mono">{t('fuel.lapsToGo', { n: plan.lapsToGo.toFixed(1) })} · {plan.needed.toFixed(1)} l</span>
+      </div>
+      {plan.stops === 0 ? (
+        <div className={plan.reserve! < 1 ? 'fuel-plan-main warn' : 'fuel-plan-main ok'}>
+          {t('fuel.enough')} · {t('fuel.reserve', { l: plan.reserve!.toFixed(1) })}
+        </div>
+      ) : (
+        <>
+          <div className="fuel-plan-main">
+            {plan.stops === 1 ? t('fuel.stop1') : t('fuel.stopsN', { n: plan.stops })}
+            {plan.pitByLap !== null && <span className="fuel-plan-pit"> · {t('fuel.pitBy', { lap: plan.pitByLap })}</span>}
+          </div>
+          {save && <div className="fuel-plan-line save">{t('fuel.save', { target: save.perLap.toFixed(2), save: save.save.toFixed(2), pct: save.pct < 0.1 ? (save.pct * 100).toFixed(1) : Math.round(save.pct * 100) })}</div>}
+          {plan.lastStopFuel !== null && <div className="fuel-plan-line">{t('fuel.lastStop', { l: Math.ceil(plan.lastStopFuel) })}</div>}
+        </>
+      )}
     </div>
   );
 }

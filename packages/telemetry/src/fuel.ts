@@ -86,6 +86,72 @@ export function fuelStats(laps: readonly FuelLap[], fuelLevel: number): FuelStat
   };
 }
 
+export interface FuelPlanInput {
+  fuelLevel: number;
+  /** Lap in progress (iRacing `Lap`) and how far into it, 0..1. */
+  lap: number;
+  lapDistPct: number;
+  /** Fuel per lap to plan with (average of recent green laps), litres. */
+  perLap: number;
+  /** Lap time to plan with, seconds. */
+  lapTime: number;
+  /** Seconds left in a timed race, null if the race goes over laps. */
+  timeRemain: number | null;
+  /** Laps left in a race over laps (`SessionLapsRemainEx`, including the current one), null if timed. */
+  lapsRemain: number | null;
+  /** Litres the car may carry (tank × allowed percentage). */
+  usableTank: number;
+}
+
+export interface FuelPlan {
+  /** Distance to the finish in laps, from where the car is now. */
+  lapsToGo: number;
+  /** Litres needed to the finish. */
+  needed: number;
+  /** Stops still needed for fuel (0 = enough in the tank). */
+  stops: number;
+  /** stops = 0: litres left at the finish. */
+  reserve: number | null;
+  /** Last lap to come in before running dry (in-lap), null if it reaches the finish. */
+  pitByLap: number | null;
+  /** Fuel per lap that saves one stop, and the saving it takes per lap; null without stops. */
+  saveTarget: { perLap: number; save: number; pct: number } | null;
+  /** Litres to add at the last stop (the others fill up). */
+  lastStopFuel: number | null;
+}
+
+/**
+ * Fuel to the finish. Timed race: the current lap, then laps until the clock runs out, then
+ * the lap in which it runs out (the race ends when the leader crosses the line after zero;
+ * being on the leader's lap is assumed). Each stop is assumed to fill up to `usableTank`.
+ */
+export function fuelPlan(i: FuelPlanInput): FuelPlan | null {
+  if (!(i.perLap > 0) || !(i.lapTime > 0) || !(i.usableTank > 0)) return null;
+  const rest = 1 - i.lapDistPct; // of the lap in progress
+  let lapsToGo: number;
+  if (i.lapsRemain !== null) lapsToGo = Math.max(0, i.lapsRemain - i.lapDistPct);
+  else if (i.timeRemain !== null) lapsToGo = rest + Math.ceil(Math.max(0, i.timeRemain - rest * i.lapTime) / i.lapTime);
+  else return null;
+  const needed = lapsToGo * i.perLap;
+  const missing = needed - i.fuelLevel;
+  const stops = missing > 0 ? Math.ceil(missing / i.usableTank) : 0;
+  const lapsOfFuel = i.fuelLevel / i.perLap;
+  const save = (() => {
+    if (stops === 0 || lapsToGo <= 0) return null;
+    const perLap = (i.fuelLevel + (stops - 1) * i.usableTank) / lapsToGo;
+    return { perLap: round(perLap), save: round(i.perLap - perLap), pct: round((i.perLap - perLap) / i.perLap) };
+  })();
+  return {
+    lapsToGo: round(lapsToGo),
+    needed: round(needed),
+    stops,
+    reserve: stops === 0 ? round(-missing) : null,
+    pitByLap: stops > 0 ? i.lap + Math.floor(i.lapDistPct + lapsOfFuel) - 1 : null,
+    saveTarget: save,
+    lastStopFuel: stops > 0 ? round(missing - (stops - 1) * i.usableTank) : null,
+  };
+}
+
 function round(n: number) {
   return Math.round(n * 1000) / 1000;
 }

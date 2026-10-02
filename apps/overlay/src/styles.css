@@ -227,3 +227,14 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .radio-btn:disabled { cursor: default; }
 .radio-text { line-height: 1.2; }
 .radio-key { font-size: 9.5px; font-weight: 400; color: var(--muted); font-family: var(--mono); }
+
+/* Fuel: to the finish (race only) */
+.fuel-plan { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 6px; display: flex; flex-direction: column; gap: 2px; }
+.fuel-plan-head { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.fuel-plan-head .mono { font-family: var(--mono); text-transform: none; letter-spacing: 0; }
+.fuel-plan-main { font-size: 14px; font-weight: 700; }
+.fuel-plan-main.ok { color: var(--ok); }
+.fuel-plan-main.warn { color: var(--warn); }
+.fuel-plan-pit { font-weight: 400; color: var(--accent); }
+.fuel-plan-line { font-size: 12px; }
+.fuel-plan-line.save { color: var(--cold); }

@@ -83,6 +83,12 @@ export interface Status {
   odometer: Record<Wheel, number>;
   /** iRacing SessionFlags as seen by the driver (irsdk_Flags bits, e.g. local yellow). */
   flags: number;
+  /** Fuel plan (since 0.12, optional): seconds left in a timed session, null if over laps. */
+  timeRemain?: number | null;
+  /** Laps left in a session over laps (SessionLapsRemainEx), null if timed. */
+  lapsRemain?: number | null;
+  /** Litres the car may carry (tank × series fuel limit). */
+  usableTank?: number | null;
 }
 
 /** irsdk_Flags bits that mean "incident ahead" for the driver. */

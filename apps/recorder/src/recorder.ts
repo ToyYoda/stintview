@@ -86,7 +86,15 @@ export class Recorder {
 
     if (t - this.lastStatus >= STATUS_INTERVAL || t < this.lastStatus) {
       this.lastStatus = t;
-      this.emit({ t: 'status', ...fuelSample, odometer, flags: f.num('SessionFlags') >>> 0 });
+      // Race length for the fuel plan: iRacing says 32767 laps / ~604800 s for "unlimited".
+      const timeRemain = f.has('SessionTimeRemain') ? f.num('SessionTimeRemain') : -1;
+      const lapsRemain = f.has('SessionLapsRemainEx') ? f.num('SessionLapsRemainEx') : -1;
+      this.emit({
+        t: 'status', ...fuelSample, odometer, flags: f.num('SessionFlags') >>> 0,
+        timeRemain: timeRemain >= 0 && timeRemain < 100_000 ? timeRemain : null,
+        lapsRemain: lapsRemain >= 0 && lapsRemain < 32767 ? lapsRemain : null,
+        usableTank: this.meta?.usableTank ?? null,
+      });
     }
 
     if (t - this.lastWeatherSample >= WEATHER_SAMPLE || t < this.lastWeatherSample) {

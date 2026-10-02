@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Triple, TyreMeasurement, Wheel } from '@stintview/protocol';
-import { FuelTracker, fuelStats } from './fuel.ts';
+import { FuelTracker, fuelPlan, fuelStats } from './fuel.ts';
 import { InputBatcher } from './inputs.ts';
 import { TyreTracker, estimateWear } from './tyres.ts';
 
@@ -83,5 +83,33 @@ describe('InputBatcher', () => {
     expect(batches).toHaveLength(10);
     expect(batches[0]!.samples.map((s) => s[0])).toEqual([0, 2, 4]);
     expect(batches[1]!.st).toBeCloseTo(6 / 60);
+  });
+});
+
+describe('fuelPlan', () => {
+  const base = { fuelLevel: 50, lap: 10, lapDistPct: 0.5, perLap: 3, lapTime: 100, timeRemain: 1000, lapsRemain: null, usableTank: 100 };
+
+  it('timed race: rest of this lap, laps until zero, the lap in which it runs out', () => {
+    const p = fuelPlan(base)!;
+    expect(p.lapsToGo).toBeCloseTo(10.5); // 0.5 + ceil(950 / 100)
+    expect(p).toMatchObject({ stops: 0, pitByLap: null, saveTarget: null, lastStopFuel: null });
+    expect(p.reserve).toBeCloseTo(50 - 31.5);
+  });
+
+  it('stops, latest in-lap, what saves a stop and the last fill', () => {
+    const p = fuelPlan({ ...base, timeRemain: 6000 })!;
+    expect(p.lapsToGo).toBeCloseTo(60.5);
+    expect(p.stops).toBe(2); // 181.5 l needed, 50 in the tank, 100 per stop
+    expect(p.pitByLap).toBe(26); // 16.7 laps of fuel from lap 10.5: dry in lap 27
+    expect(p.saveTarget!.perLap).toBeCloseTo(150 / 60.5);
+    expect(p.saveTarget!.pct).toBeCloseTo((3 - 150 / 60.5) / 3);
+    expect(p.lastStopFuel).toBeCloseTo(31.5);
+  });
+
+  it('race over laps; nothing without consumption, lap time, tank or race length', () => {
+    expect(fuelPlan({ ...base, timeRemain: null, lapsRemain: 20, lapDistPct: 0.25 })!.lapsToGo).toBeCloseTo(19.75);
+    expect(fuelPlan({ ...base, perLap: 0 })).toBeNull();
+    expect(fuelPlan({ ...base, usableTank: 0 })).toBeNull();
+    expect(fuelPlan({ ...base, timeRemain: null })).toBeNull();
   });
 });
