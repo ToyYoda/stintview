@@ -79,7 +79,8 @@ export function App() {
     standings: <StandingsWidget standings={state.standings} options={config?.standings?.options as StandingsOptions | null | undefined} />,
     duel: <DuelWidget standings={state.standings} options={config?.duel?.options as DuelOptions | null | undefined} />,
     pitstop: <PitWidget plan={state.pitplan} />,
-    messages: <MessagesWidget messages={state.messages} />,
+    // Empty without a current message; a placeholder while moving panels, so it can be placed.
+    messages: <MessagesWidget messages={state.messages} placeholder={edit} />,
     // Clickable on the desktop overlay only; VR panels show the hotkeys.
     radio: <RadioWidget interactive={Boolean(window.stintview) && !location.hash.startsWith('#/widget/')} />,
   };

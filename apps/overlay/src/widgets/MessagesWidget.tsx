@@ -2,37 +2,40 @@ import { useEffect, useState } from 'react';
 import { t } from '../i18n.ts';
 import type { ReceivedMessage } from '../feed.ts';
 
-/** A new message stands out this long. */
-const FRESH_MS = 10_000;
+/** A message is shown this long after it arrives, then the panel is empty again. */
+const SHOW_MS = 10_000;
 
 /**
- * Team message (usually from the spotter): the newest one large in its colour, highlighted
- * for 10 s after it arrives, with sender and age.
+ * Team message (usually from the spotter): large in its colour with the sender, for 10 s
+ * after it arrives. Messages from before the overlay connected (snapshot) are not shown.
+ * Without a current message the panel is invisible, except a placeholder while moving panels.
  */
-export function MessagesWidget({ messages }: { messages: ReceivedMessage[] }) {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
+export function MessagesWidget({ messages, placeholder = false }: { messages: ReceivedMessage[]; placeholder?: boolean }) {
+  const [, setNow] = useState(Date.now()); // re-render when the message expires
   const newest = messages[messages.length - 1];
-  if (!newest) return <div className="panel msg-panel"><div className="label">{t('msg.none')}</div></div>;
-  const fresh = newest.rx !== undefined && now - newest.rx < FRESH_MS;
+  const until = newest?.rx !== undefined ? newest.rx + SHOW_MS : 0;
+  useEffect(() => {
+    if (until <= Date.now()) return;
+    const timer = setTimeout(() => setNow(Date.now()), until - Date.now() + 50);
+    return () => clearTimeout(timer);
+  }, [until]);
+
+  if (!newest || Date.now() >= until) {
+    if (placeholder) return <div className="panel msg-panel"><div className="label">{t('msg.none')}</div></div>;
+    // Invisible but keeps its size: VR panels adapt their size only every 2 s, a message
+    // appearing in a panel that had shrunk would be cut off at first.
+    return (
+      <div className="panel msg-panel msg-idle" aria-hidden="true">
+        <div className="msg-main"><div className="msg-text">&nbsp;</div><div className="msg-meta">&nbsp;</div></div>
+      </div>
+    );
+  }
   return (
     <div className="panel msg-panel">
-      <div className={`msg-main color-${newest.color}${fresh ? ' fresh' : ''}`}>
+      <div className={`msg-main color-${newest.color}`}>
         <div className="msg-text">{newest.text}</div>
-        <div className="msg-meta">{newest.from} · {age(newest, now)}</div>
+        <div className="msg-meta">{newest.from}</div>
       </div>
     </div>
   );
-}
-
-/** "jetzt", "vor 40 s", "vor 3 min" – from the local arrival time where known. */
-function age(m: ReceivedMessage, now: number) {
-  const s = Math.max(0, Math.round((now - (m.rx ?? m.at)) / 1000));
-  if (s < 5) return t('msg.now');
-  if (s < 60) return t('msg.secondsAgo', { n: s });
-  return t('msg.minutesAgo', { n: Math.floor(s / 60) });
 }
