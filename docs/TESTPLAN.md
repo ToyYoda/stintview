@@ -149,8 +149,9 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 |---|---|---|---|---|
 | 4d.1 | Z | A fährt auf ein langsameres, überrundetes Auto auf | blaue Zeile „Nachzügler“ direkt über A's Zeile, Abstand wird kleiner, verschwindet nach dem Überholen | |
 | 4d.2 | Z | ein schnelleres Auto (andere Klasse oder Führende) nähert sich A von hinten, eine Runde voraus | rote Zeile „Überrunder“ direkt unter A's Zeile | |
-| 4d.3 | Z | Duell-Panel einschalten (StintView-Fenster → Anzeigen → Duell); A hat Vorder- und Hintermann in der Klasse | eine Zeile: links Hintermann (▼), Abstand, „P… #…“ von A, Abstand, rechts Vordermann (▲); Abstände wie in der Duell-Zeile des Positions-Panels | |
-| 4d.4 | Z | ein überrundetes Auto fährt zwischen A und seinem Vordermann (bzw. ein Überrunder zwischen A und Hintermann) | blaues (bzw. rotes) Kärtchen mit der Startnummer unter der Abstandskachel zum Vorder- (bzw. Hinter-)mann, umrandet bei anderer Klasse; verschwindet, sobald es nicht mehr dazwischen ist | |
+| 4d.3 | Z | Duell-Panel einschalten (StintView-Fenster → Anzeigen → Duell); A hat Vorder- und Hintermann in der Klasse | eine Zeile: links Hintermann (▼), Abstand, Position von A, Abstand, rechts Vordermann (▲); Abstände wie in der Duell-Zeile des Positions-Panels | |
+| 4d.3b | Z | A holt über einige Runden auf den Vordermann auf (oder verliert) | Balken füllt sich beim Annähern; nach ca. 15 s Aussicht „dran in ~N R“ (grün) bzw. „zieht weg“ (rot), N passt grob zum Abstand ÷ Zeitgewinn pro Runde | |
+| 4d.4 | Z | ein überrundetes Auto fährt zwischen A und seinem Vordermann (bzw. ein Überrunder zwischen A und Hintermann) | blaues (bzw. rotes) Kärtchen mit der Startnummer unter der Abstandskachel (neben der Aussicht) zum Vorder- (bzw. Hinter-)mann, umrandet bei anderer Klasse; verschwindet, sobald es nicht mehr dazwischen ist | |
 | 4d.5 | Z | Option „Autos auf anderen Runden dazwischen“ ausschalten | keine Kärtchen mehr | |
 
 ### Block 4c – Boxenstopp-Planer (während des Rennens)

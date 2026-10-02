@@ -62,7 +62,9 @@ ws.on('open', async () => {
       }));
       send({ t: 'standings', sessionTime: 5000 + i / 2, rows: best, mode: 'best', session: 'Qualifying' });
     } else {
-      send({ t: 'standings', sessionTime: 5000 + i / 2, rows, lapping, between });
+      // Duel trend: we close in on #19 (about 2 s per lap), #88 drops back.
+      const moving = rows.map((r) => (r.pos === 8 ? { ...r, gap: 2.9 - i * 0.002 } : r.pos === 10 ? { ...r, gap: -0.8 - i * 0.001 } : r));
+      send({ t: 'standings', sessionTime: 5000 + i / 2, rows: moving, lapping, between });
     }
     send({
       t: 'pitplan', sessionTime: 5000 + i / 2, fuel: 86, fuelTime: 34.4, tyres: 4, tyreTime: 16, repair: 0, optRepair: 0,

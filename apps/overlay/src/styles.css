@@ -174,14 +174,26 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .gap-tile.big { font-size: 20px; padding: 2px 8px; min-width: 64px; }
 .st-best { font-family: var(--mono); text-align: right; padding-right: 8px !important; }
 
-/* Duel panel: one line in driving direction – behind, gap, us, gap, in front */
-.duel-panel { display: flex; align-items: center; gap: 8px; padding: 6px 10px; }
-.duel-rival { display: flex; align-items: center; gap: 5px; max-width: 160px; min-width: 0; }
+/* Duel panel: one line in driving direction – behind, gap, our position, gap, in front */
+.duel-panel { display: flex; align-items: center; gap: 10px; padding: 6px 10px; min-width: 560px; }
+.duel-rival { display: flex; align-items: center; gap: 5px; max-width: 150px; min-width: 0; }
 .duel-rival .duel-name { font-size: 14px; }
 .duel-edge { max-width: 110px; font-size: 11px; color: var(--muted); line-height: 1.2; }
-.duel-us { padding: 4px 8px; border-radius: 4px; background: rgba(255, 176, 0, 0.25); font-weight: 700; font-size: 14px; white-space: nowrap; }
-.duel-us-pos { font-weight: 400; color: var(--accent); margin-right: 5px; }
-.duel-gap { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 72px; }
+.duel-us { padding: 4px 8px; border-radius: 4px; background: rgba(255, 176, 0, 0.25); color: var(--accent); font-weight: 700; font-size: 15px; }
+.duel-gap { flex: 1; min-width: 120px; display: flex; flex-direction: column; gap: 3px; }
+.duel-gap.behind { align-items: flex-end; }
+.duel-gap.ahead { align-items: flex-start; }
+.duel-bar { width: 100%; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); display: flex; }
+.duel-gap.behind .duel-bar { justify-content: flex-end; }
+.duel-bar-fill { height: 100%; border-radius: 3px; background: rgba(255, 255, 255, 0.35); transition: width 0.9s linear; }
+.duel-bar-fill.attack { background: var(--warn); }
+.duel-bar-fill.defend { background: var(--bad); }
+.duel-bar-fill.far { background: rgba(255, 255, 255, 0.2); }
+.duel-info { width: 100%; min-height: 15px; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.duel-outlook { font-size: 11px; white-space: nowrap; }
+.duel-outlook.good { color: var(--ok); }
+.duel-outlook.bad { color: var(--bad); }
+.duel-outlook.steady { color: var(--muted); }
 .duel-chips { display: flex; gap: 3px; }
 .duel-chip { font-size: 10.5px; font-family: var(--mono); padding: 0 4px; border-radius: 3px; border: 1px solid transparent; }
 .duel-chip.down { background: rgba(77, 163, 255, 0.35); color: #d6e9ff; }
