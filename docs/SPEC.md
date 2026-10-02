@@ -202,9 +202,9 @@ Sonstiges: Der Shared-Memory-Bereich existiert auch, wenn nur die iRacing-UI lä
 
 0. ~~„Unfall voraus“ im Rennen prüfen~~ – erfolgreich getestet (02.10.2026). Bei Auffälligkeiten weiter über `[hazard]`-Zeilen im `recorder.log` nachjustieren.
 0. ~~Zuschauer-Kamera live testen (§7a)~~ – erfolgreich getestet (02.10.2026).
-1. Auto-Update 0.2.1 → 0.2.2 beim Teamchef verifizieren; echtes Installieren testen.
-2. Recorder mit **laufendem iRacing** in der App testen (neue `RtlMoveMemory`-Auslese nur ohne Sim geprüft); VR in der installierten App mit SteamVR testen.
-3. Erster Start auf einem PC ohne Node.js (Teamkollege); Firewall-Abfrage des Relays.
+1. ~~Auto-Update beim Teamchef verifizieren; echtes Installieren testen~~ – erfolgreich getestet (02.10.2026).
+2. ~~Recorder mit laufendem iRacing in der App testen; VR in der installierten App mit SteamVR testen~~ – erfolgreich getestet (02.10.2026).
+3. ~~Erster Start auf einem PC ohne Node.js (Teamkollege); Firewall-Abfrage des Relays~~ – erfolgreich getestet (02.10.2026).
 4. Installationsordner `@stintviewoverlay` → `StintView` (electron-builder `extraMetadata.name`; Update-Verhalten vorher prüfen).
 4a. Wettervorhersage (Issue #1): prüfen, ob iRacings Data API eine Vorhersage für gehostete/offizielle Sessions liefert und wie ein Login dafür aussähe.
 5. ~~Stint-Zusammenfassung aus der `.ibt`~~ – verworfen (30.09.2026): Telemetrie-Auswertung nach dem Stint macht das Team in Garage 61.
