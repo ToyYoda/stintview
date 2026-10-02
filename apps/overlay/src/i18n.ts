@@ -96,6 +96,10 @@ const de = {
   'st.laps': '{n} R',
   'st.backmarker': 'Nachzügler',
   'st.lapper': 'Überrunder',
+  'duel.title': 'Duell',
+  'duel.leader': 'Klassenführung – niemand vor euch',
+  'duel.last': 'Letzter der Klasse – niemand hinter euch',
+  'duel.otherClass': 'andere Klasse',
   // Pit stop
   'pit.title': 'Boxenstopp, wenn jetzt',
   'pit.titleInPit': 'Boxenstopp – in der Box',
@@ -223,6 +227,7 @@ const de = {
   'set.panel.tyres': 'Reifen',
   'set.panel.weather': 'Wetter',
   'set.panel.standings': 'Position (Reihenfolge auf der Strecke)',
+  'set.panel.duel': 'Duell (Vorder- und Hintermann in der Klasse mit Abstand)',
   'set.panel.pitstop': 'Boxenstopp (Dauer und Rückkehr)',
   'set.showPanel': '{name} anzeigen',
   'set.size': 'Größe',
@@ -231,6 +236,7 @@ const de = {
   'set.col.best': 'Bestzeit (Training/Quali)', 'set.col.gap': 'Abstand', 'set.col.tyre': 'Reifenalter (Rennen)', 'set.col.delta': 'Δ Runde (Rennen)',
   'set.duel': 'Duell-Zeile oben – Vorder- und Hintermann in der Klasse mit Abstand, groß',
   'set.lapping': 'Überrundungen zeigen – Auto direkt vor euch, das ihr gleich überrundet (blau), oder direkt hinter euch, das euch gleich überrundet (rot)',
+  'set.traffic': 'Autos auf anderen Runden dazwischen zeigen – die ihr überrundet (blau) oder die euch überrunden (rot), je Seite bis zu 3',
 } as const;
 
 export type Key = keyof typeof de;
@@ -318,6 +324,10 @@ const en: Record<Key, string> = {
   'st.laps': '{n} L',
   'st.backmarker': 'Backmarker',
   'st.lapper': 'Lapping us',
+  'duel.title': 'Duel',
+  'duel.leader': 'Class lead – nobody in front',
+  'duel.last': 'Last in class – nobody behind',
+  'duel.otherClass': 'other class',
   'pit.title': 'Pit stop, if now',
   'pit.titleInPit': 'Pit stop – in the pits',
   'pit.noData': 'No data yet – appears as soon as someone drives',
@@ -443,6 +453,7 @@ const en: Record<Key, string> = {
   'set.panel.tyres': 'Tyres',
   'set.panel.weather': 'Weather',
   'set.panel.standings': 'Position (running order on track)',
+  'set.panel.duel': 'Duel (cars in front and behind in your class, with gap)',
   'set.panel.pitstop': 'Pit stop (duration and rejoin)',
   'set.showPanel': 'Show {name}',
   'set.size': 'Size',
@@ -451,6 +462,7 @@ const en: Record<Key, string> = {
   'set.col.best': 'Best lap (practice/quali)', 'set.col.gap': 'Gap', 'set.col.tyre': 'Tyre age (race)', 'set.col.delta': 'Δ lap (race)',
   'set.duel': 'Duel line on top – cars in front and behind in your class with gap, large',
   'set.lapping': 'Show lapping – the car right in front that you are about to lap (blue), or right behind that is about to lap you (red)',
+  'set.traffic': 'Show cars on other laps in between – ones you are lapping (blue) or that are lapping you (red), up to 3 per side',
 };
 
 const dicts: Record<Lang, Record<string, string>> = { de, en };

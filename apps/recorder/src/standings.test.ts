@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { countryCode } from './country.ts';
-import { computeBestStandings, computeStandings, isRaceSession, lappingRows, parseSessionTypes, PitStopTracker, trackGap, type CarInfo, type CarProgress } from './standings.ts';
+import { betweenRows, computeBestStandings, computeStandings, isRaceSession, lappingRows, parseSessionTypes, PitStopTracker, trackGap, type CarInfo, type CarProgress } from './standings.ts';
 
 const info = new Map<number, CarInfo>(
   Array.from({ length: 20 }, (_, i) => [i, { number: String(i + 1).padStart(2, '0'), name: `Driver ${i}` }]),
@@ -128,6 +128,44 @@ describe('lappingRows', () => {
   it('nothing when the neighbours are on our lap, and cars in the pits are ignored', () => {
     expect(lappingRows([at(0, 10.5), at(1, 10.55), at(2, 10.45)], 0, info, 100)).toEqual([]);
     expect(lappingRows([at(0, 10.5), at(1, 9.52, 0, true), at(2, 10.6)], 0, info, 100)).toEqual([]);
+  });
+});
+
+describe('betweenRows', () => {
+  const at = (carIdx: number, progress: number, classId = 0, onPitRoad = false): CarProgress =>
+    ({ carIdx, progress, lastLap: 100, classId, onPitRoad });
+
+  it('cars on another lap between us and our class neighbours, nearest first', () => {
+    const cars = [
+      at(0, 10.50), // us
+      at(1, 10.70), // class neighbour in front
+      at(2, 10.30), // class neighbour behind
+      at(3, 9.60, 1), // 10 % ahead, a lap down (other class)
+      at(4, 8.55), // 5 % ahead, two laps down
+      at(5, 10.60, 1), // 10 % ahead, same lap (other class) -> not shown
+      at(6, 9.65, 0, true), // in the pits -> not shown
+      at(7, 11.40, 1), // 10 % behind, a lap up
+      at(8, 9.80), // further ahead than the neighbour in front -> not shown
+    ];
+    const { ahead, behind } = betweenRows(cars, 0, 1, 2, info, 100);
+    expect(ahead.map((r) => [r.carIdx, r.lapsGap])).toEqual([[4, -2], [3, -1]]);
+    expect(ahead[0]!.gap).toBeCloseTo(5);
+    expect(ahead[1]!.otherClass).toBe(true);
+    expect(behind.map((r) => [r.carIdx, r.lapsGap])).toEqual([[7, 1]]);
+    expect(behind[0]!.gap).toBeCloseTo(-10);
+  });
+
+  it('nothing on a side without a class neighbour, at most `max` per side', () => {
+    const cars = [at(0, 10.5), at(1, 10.9), ...[9.55, 9.6, 9.65, 9.7].map((p, i) => at(2 + i, p))];
+    const { ahead, behind } = betweenRows(cars, 0, 1, null, info, 100, 3);
+    expect(ahead.map((r) => r.carIdx)).toEqual([2, 3, 4]);
+    expect(behind).toEqual([]);
+  });
+
+  it('neighbour more than a lap away: everything on the way counts', () => {
+    const { ahead } = betweenRows([at(0, 10.5), at(1, 12.0), at(2, 9.9), at(3, 11.2)], 0, 1, null, info, 100);
+    // car 2: 40 % ahead physically, a lap down; car 3: 70 % ahead on our lap -> not shown
+    expect(ahead.map((r) => [r.carIdx, r.lapsGap])).toEqual([[2, -1]]);
   });
 });
 

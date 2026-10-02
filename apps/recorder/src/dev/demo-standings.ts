@@ -1,5 +1,5 @@
 /**
- * Dev tool: sends a realistic-looking Position and Boxenstopp panel (fictitious names) for ~60 s,
+ * Dev tool: sends a realistic-looking Position, Duel and Boxenstopp panel (fictitious names) for ~60 s,
  * e.g. for website screenshots. Pretends to be the driving recorder.
  * Usage: tsx src/dev/demo-standings.ts [--best]   (--best: qualifying view; uses the normal config / STINTVIEW_CONFIG)
  */
@@ -20,7 +20,7 @@ const DEMO: [number, string, string | null, string, number, number, number | nul
   [3, '4', 'de', 'Lukas Brandt', 0, 1, 21, 488.130, false],
   [6, '31', 'fr', 'Hugo Martin', 12.4, 0, 17, 489.822, false],
   [7, '58', 'at', 'Felix Gruber', 5.1, 0, 3, 487.210, false],
-  [8, '19', 'it', 'Marco Rossi', 0.7, 0, 19, 490.518, false],
+  [8, '19', 'it', 'Marco Rossi', 2.9, 0, 19, 490.518, false],
   [9, '42', 'de', 'Outcast Endurance', 0, 0, 18, 489.604, false],
   [10, '88', 'gb-eng', 'Sam Porter', -0.8, 0, 6, 488.977, false],
   [11, '7', 'ch', 'Nico Keller', -2.6, 0, null, 491.340, false],
@@ -43,9 +43,17 @@ ws.on('open', async () => {
   for (let i = 0; i < 120; i++) {
     send({ t: 'status', sessionTime: 5000 + i / 2, lap: 16, lapDistPct: 0.3, fuelLevel: 51.2, onPitRoad: false, odometer: { LF: 30000, RF: 30000, LR: 30000, RR: 30000 }, flags: 0 });
     const lapping: StandingRow[] = [
-      { pos: 0, carIdx: 30, number: '211', name: 'Jonas Weber', country: 'de', lastLap: 512.4, isTeam: false, gap: 1.8, lapsGap: -1, tyreLaps: 9, inPit: false, lap: 'backmarker', otherClass: true },
-      { pos: 0, carIdx: 31, number: '5', name: 'Henri Dubois', country: 'fr', lastLap: 452.2, isTeam: false, gap: -2.6, lapsGap: 1, tyreLaps: 4, inPit: false, lap: 'lapper', otherClass: true },
+      { pos: 0, carIdx: 30, number: '211', name: 'Jonas Weber', country: 'de', lastLap: 512.4, isTeam: false, gap: 0.6, lapsGap: -1, tyreLaps: 9, inPit: false, lap: 'backmarker', otherClass: true },
+      { pos: 0, carIdx: 31, number: '5', name: 'Henri Dubois', country: 'fr', lastLap: 452.2, isTeam: false, gap: -0.5, lapsGap: 1, tyreLaps: 4, inPit: false, lap: 'lapper', otherClass: true },
     ];
+    // Duel panel: cars on other laps between us and our class neighbours, nearest first.
+    const between = {
+      ahead: [
+        { ...lapping[0]!, lap: undefined },
+        { pos: 0, carIdx: 32, number: '96', name: 'Mia Hoffmann', country: 'de', lastLap: 497.1, isTeam: false, gap: 2.1, lapsGap: -2, tyreLaps: 12, inPit: false, otherClass: false },
+      ],
+      behind: [{ ...lapping[1]!, lap: undefined }],
+    };
     if (process.argv.includes('--best')) {
       // Qualifying view: ranking by best lap.
       const times = [125.104, 125.388, 125.412, 125.731, 125.802, 125.954, 126.020, 126.117, 126.390, 126.902];
@@ -54,7 +62,7 @@ ws.on('open', async () => {
       }));
       send({ t: 'standings', sessionTime: 5000 + i / 2, rows: best, mode: 'best', session: 'Qualifying' });
     } else {
-      send({ t: 'standings', sessionTime: 5000 + i / 2, rows, lapping });
+      send({ t: 'standings', sessionTime: 5000 + i / 2, rows, lapping, between });
     }
     send({
       t: 'pitplan', sessionTime: 5000 + i / 2, fuel: 86, fuelTime: 34.4, tyres: 4, tyreTime: 16, repair: 0, optRepair: 0,

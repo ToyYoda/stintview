@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import type { AppState, HotkeyGroup, PanelSetting, StandingsColumn, StandingsOptions } from '../feed.ts';
+import type { AppState, HotkeyGroup, PanelSetting, DuelOptions, StandingsColumn, StandingsOptions } from '../feed.ts';
 import { setLang, t, useLang, type Lang } from '../i18n.ts';
 import './setup.css';
 
@@ -375,7 +375,7 @@ function PitStopCard({ pit, onChange, imp, onImport }: {
   );
 }
 
-const PANEL_IDS = ['header', 'inputs', 'fuel', 'tyres', 'weather', 'standings', 'pitstop'] as const;
+const PANEL_IDS = ['header', 'inputs', 'fuel', 'tyres', 'weather', 'standings', 'duel', 'pitstop'] as const;
 const STANDINGS_COLUMNS: StandingsColumn[] = ['pos', 'num', 'flag', 'name', 'best', 'gap', 'tyre', 'delta'];
 
 /**
@@ -403,7 +403,8 @@ function PanelList({ panels, onChange }: {
             </summary>
             <div className="panel-body">
               <Slider label={t('set.size')} value={p.size} min={50} max={200} step={5} onCommit={(size) => update(id, { size })} />
-              {id === 'standings' && p.options && <StandingsOptionsForm options={p.options} onChange={(options) => update(id, { options })} />}
+              {id === 'standings' && p.options && <StandingsOptionsForm options={p.options as StandingsOptions} onChange={(options) => update(id, { options })} />}
+              {id === 'duel' && p.options && <DuelOptionsForm options={p.options as DuelOptions} onChange={(options) => update(id, { options })} />}
             </div>
           </details>
         );
@@ -432,6 +433,17 @@ function StandingsOptionsForm({ options, onChange }: { options: StandingsOptions
       <label className="option-line">
         <input type="checkbox" checked={options.lapping} onChange={() => onChange({ ...options, lapping: !options.lapping })} />
         {t('set.lapping')}
+      </label>
+    </div>
+  );
+}
+
+function DuelOptionsForm({ options, onChange }: { options: DuelOptions; onChange(o: DuelOptions): void }) {
+  return (
+    <div className="panel-options">
+      <label className="option-line">
+        <input type="checkbox" checked={options.traffic} onChange={() => onChange({ ...options, traffic: !options.traffic })} />
+        {t('set.traffic')}
       </label>
     </div>
   );

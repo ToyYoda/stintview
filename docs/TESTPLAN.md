@@ -149,6 +149,9 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 |---|---|---|---|---|
 | 4d.1 | Z | A fährt auf ein langsameres, überrundetes Auto auf | blaue Zeile „Nachzügler“ direkt über A's Zeile, Abstand wird kleiner, verschwindet nach dem Überholen | |
 | 4d.2 | Z | ein schnelleres Auto (andere Klasse oder Führende) nähert sich A von hinten, eine Runde voraus | rote Zeile „Überrunder“ direkt unter A's Zeile | |
+| 4d.3 | Z | Duell-Panel einschalten (StintView-Fenster → Anzeigen → Duell); A hat Vorder- und Hintermann in der Klasse | ▲/▼ mit Abstand wie in der Duell-Zeile des Positions-Panels, A's Auto dazwischen | |
+| 4d.4 | Z | ein überrundetes Auto fährt zwischen A und seinem Vordermann (bzw. ein Überrunder zwischen A und Hintermann) | blaue (bzw. rote) Zeile zwischen ▲ und A (bzw. A und ▼) mit „−1 R“/„+1 R“, ggf. „andere Klasse“, Abstand passt zu iRacings Relative; verschwindet, sobald es nicht mehr dazwischen ist | |
+| 4d.5 | Z | Option „Autos auf anderen Runden dazwischen“ ausschalten | nur noch ▲, A, ▼ | |
 
 ### Block 4c – Boxenstopp-Planer (während des Rennens)
 

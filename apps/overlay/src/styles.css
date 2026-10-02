@@ -173,3 +173,16 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .duel-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
 .gap-tile.big { font-size: 20px; padding: 2px 8px; min-width: 64px; }
 .st-best { font-family: var(--mono); text-align: right; padding-right: 8px !important; }
+
+/* Duel panel: class neighbours large, cars on other laps in between, our car in the middle */
+.duel-panel { width: 330px; display: flex; flex-direction: column; gap: 4px; }
+.duel-panel .duel .duel-name { font-size: 14.5px; }
+.duel-edge { padding: 6px 8px; font-size: 12px; color: var(--muted); }
+.duel-us { padding: 4px 8px; border-radius: 4px; background: rgba(255, 176, 0, 0.18); font-weight: 700; font-size: 13px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.duel-traffic { display: flex; align-items: center; gap: 6px; margin: 0 6px; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+.duel-traffic.down { background: rgba(77, 163, 255, 0.28); color: #d6e9ff; }
+.duel-traffic.up { background: rgba(255, 77, 77, 0.30); color: #ffd9d9; }
+.duel-traffic .duel-name { font-size: 12px; }
+.duel-traffic .gap-tile { min-width: 40px; font-size: 12px; background: rgba(0, 0, 0, 0.3); color: #fff; }
+.duel-tag { font-size: 10px; padding: 0 4px; border-radius: 3px; background: rgba(0, 0, 0, 0.35); white-space: nowrap; }

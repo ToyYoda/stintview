@@ -1,6 +1,6 @@
 import type { StandingRow, Standings } from '@stintview/protocol';
 import { t } from '../i18n.ts';
-import 'flag-icons/css/flag-icons.min.css';
+import { Duel, Flag, bestClass, bestGapText, gapClass, gapText } from './gaps.tsx';
 import type { StandingsColumn, StandingsOptions } from '../feed.ts';
 
 
@@ -68,7 +68,7 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
                 <tr key={`${r.lap ?? 'row'}-${r.carIdx}`} className={cls}>
                   {col('pos') && <td className="st-pos">{r.lap ? '' : r.pos}</td>}
                   {col('num') && <td className="st-num">#{r.number}</td>}
-                  {col('flag') && <td className="st-flag-cell">{r.country && /^[a-z]{2}(-[a-z]{3})?$/.test(r.country) && <span className={`fi fi-${r.country} st-flag`} />}</td>}
+                  {col('flag') && <td className="st-flag-cell"><Flag country={r.country} /></td>}
                   {col('name') && (
                     <td className="st-name">
                       {r.name}
@@ -101,45 +101,6 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
       )}
     </div>
   );
-}
-
-/** Big line above the table: the class neighbour in front (▲) or behind (▼) and the gap to it. */
-function Duel({ car, arrow, best }: { car: StandingRow | undefined; arrow: string; best: boolean }) {
-  if (!car) return <div className="duel empty" />;
-  return (
-    <div className="duel">
-      <span className="duel-arrow">{arrow}</span>
-      <span className="duel-name">
-        {car.country && /^[a-z]{2}(-[a-z]{3})?$/.test(car.country) && <span className={`fi fi-${car.country} st-flag`} />}
-        #{car.number} {car.name}
-      </span>
-      {best ? (
-        <span className={`gap-tile big ${car.gap == null ? 'far' : bestClass(car.gap)}`}>{car.gap == null ? '–' : bestGapText(car.gap)}</span>
-      ) : (
-        <span className={`gap-tile big ${gapClass(car.gap, car.lapsGap)}`}>{gapText(car.gap, car.lapsGap)}</span>
-      )}
-    </div>
-  );
-}
-
-/** Best-lap gap: thousandths, + = slower than us. */
-const bestGapText = (g: number) => `${g > 0 ? '+' : g < 0 ? '−' : '±'}${Math.abs(g).toFixed(3)}`;
-/** Within 0.3 s of our best: highlighted tile, otherwise dimmed. */
-const bestClass = (g: number) => (Math.abs(g) < 0.3 ? 'near' : 'far');
-
-/** Within 1 s: attack (ahead, amber) / defend (behind, red); 1–3 s normal; further away dimmed; other lap blue. */
-function gapClass(gap: number | null | undefined, laps: number | undefined) {
-  if (laps) return 'lap';
-  if (gap == null) return '';
-  const a = Math.abs(gap);
-  if (a < 1) return gap >= 0 ? 'attack' : 'defend';
-  return a < 3 ? 'near' : 'far';
-}
-
-function gapText(gap: number | null | undefined, laps: number | undefined) {
-  if (laps) return `${laps > 0 ? '+' : '−'}${t('st.laps', { n: Math.abs(laps) })}`;
-  if (gap == null) return '–';
-  return `${gap >= 0 ? '+' : '−'}${Math.abs(gap).toFixed(1)}`;
 }
 
 function lapTime(s: number) {

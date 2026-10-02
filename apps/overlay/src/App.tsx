@@ -6,11 +6,12 @@ import { InputsWidget } from './widgets/InputsWidget.tsx';
 import { TyresWidget } from './widgets/TyresWidget.tsx';
 import { WeatherWidget } from './widgets/WeatherWidget.tsx';
 import { StandingsWidget } from './widgets/StandingsWidget.tsx';
-import type { PanelConfig } from './feed.ts';
+import { DuelWidget } from './widgets/DuelWidget.tsx';
+import type { DuelOptions, PanelConfig, StandingsOptions } from './feed.ts';
 import { setLang, t, useLang } from './i18n.ts';
 import { PitWidget } from './widgets/PitWidget.tsx';
 
-type WidgetId = 'header' | 'inputs' | 'fuel' | 'tyres' | 'weather' | 'standings' | 'pitstop';
+type WidgetId = 'header' | 'inputs' | 'fuel' | 'tyres' | 'weather' | 'standings' | 'duel' | 'pitstop';
 type Positions = Record<WidgetId, { x: number; y: number }>;
 
 const DEFAULT_POSITIONS: Positions = {
@@ -20,6 +21,7 @@ const DEFAULT_POSITIONS: Positions = {
   tyres: { x: 780, y: 100 },
   weather: { x: 1100, y: 100 },
   standings: { x: 1420, y: 100 },
+  duel: { x: 1040, y: 480 },
   pitstop: { x: 1420, y: 480 },
 };
 const STORAGE_KEY = 'stintview.positions';
@@ -70,7 +72,8 @@ export function App() {
     fuel: <FuelWidget fuel={state.fuel} status={state.status} />,
     tyres: <TyresWidget tyres={state.tyres} status={state.status} />,
     weather: <WeatherWidget weather={state.weather} />,
-    standings: <StandingsWidget standings={state.standings} options={config?.standings?.options} />,
+    standings: <StandingsWidget standings={state.standings} options={config?.standings?.options as StandingsOptions | null | undefined} />,
+    duel: <DuelWidget standings={state.standings} options={config?.duel?.options as DuelOptions | null | undefined} />,
     pitstop: <PitWidget plan={state.pitplan} />,
   };
 

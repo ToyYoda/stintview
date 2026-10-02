@@ -200,7 +200,7 @@ export interface StandingRow {
   country?: string | null;
   /** Only in `lapping`: we are about to lap them (backmarker) or they are about to lap us (lapper). */
   lap?: 'backmarker' | 'lapper';
-  /** Only in `lapping`: other car class than ours. */
+  /** Only in `lapping` and `between`: other car class than ours. */
   otherClass?: boolean;
   /** Practice/qualifying (mode 'best'): best lap time in seconds, null if none yet. */
   bestLap?: number | null;
@@ -223,6 +223,12 @@ export interface Standings {
    * (backmarker, shown above our row) or a lap up (lapper, shown below).
    */
   lapping?: StandingRow[];
+  /**
+   * Duel panel (race only): cars on track between us and the class neighbour in front (ahead)
+   * or behind (behind) that are on a different lap than us, any class. Nearest to us first,
+   * max 3 per side; gap = physical gap in s, lapsGap = laps ahead (+) / behind (−) in the race.
+   */
+  between?: { ahead: StandingRow[]; behind: StandingRow[] };
 }
 
 /** A car around us after the stop (all classes: traffic matters regardless of class). */

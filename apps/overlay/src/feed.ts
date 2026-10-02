@@ -20,16 +20,19 @@ export interface HotkeyGroup {
 export type StandingsColumn = 'pos' | 'num' | 'flag' | 'name' | 'best' | 'gap' | 'tyre' | 'delta';
 /** Position panel: which columns, and whether lapping cars are shown. */
 export interface StandingsOptions { columns: Record<StandingsColumn, boolean>; lapping: boolean; duel: boolean }
+/** Duel panel: whether cars on another lap between us and the class neighbours are shown. */
+export interface DuelOptions { traffic: boolean }
+export type PanelOptions = StandingsOptions | DuelOptions;
 
 export interface PanelSetting {
   shown: boolean;
   size: number;
-  /** Panel-specific (only the Position panel has some so far). */
-  options?: StandingsOptions;
+  /** Panel-specific: Position panel StandingsOptions, Duel panel DuelOptions. */
+  options?: PanelOptions;
 }
 
 /** Sent to the overlay pages: size factor and options per panel. */
-export type PanelConfig = Record<string, { scale: number; options: StandingsOptions | null }>;
+export type PanelConfig = Record<string, { scale: number; options: PanelOptions | null }>;
 
 export interface AppState {
   version: string;

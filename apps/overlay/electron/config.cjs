@@ -24,6 +24,8 @@ const PANEL_DEFAULTS = {
     shown: true, size: 100,
     options: { columns: Object.fromEntries(STANDINGS_COLUMNS.map((c) => [c, true])), lapping: true, duel: true },
   },
+  // Added later: off by default, so it does not suddenly appear on existing overlays.
+  duel: { shown: false, size: 100, options: { traffic: true } },
   pitstop: { shown: true, size: 100 },
 };
 
@@ -106,6 +108,7 @@ function cleanOptions(id, o) {
     const flag = (k) => (typeof o?.[k] === 'boolean' ? o[k] : d[k]);
     return { columns, lapping: flag('lapping'), duel: flag('duel') };
   }
+  if (id === 'duel') return { traffic: typeof o?.traffic === 'boolean' ? o.traffic : d.traffic };
   return d;
 }
 

@@ -24,6 +24,7 @@ const DEFAULT_LAYOUT = {
     tyres: { enabled: true, distance: 0.8, down: 0.3, right: 0.3, width: 0.24 },
     weather: { enabled: true, distance: 0.8, down: 0.08, right: 0.3, width: 0.22 },
     standings: { enabled: true, distance: 0.8, down: 0.08, right: -0.3, width: 0.22 },
+    duel: { enabled: true, distance: 0.8, down: 0.08, right: -0.55, width: 0.2 },
     pitstop: { enabled: true, distance: 0.8, down: 0.3, right: -0.3, width: 0.2 },
   },
 };

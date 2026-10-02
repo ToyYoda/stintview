@@ -105,21 +105,63 @@ export function lappingRows(
     if (o > 0 && (!ahead || o < ahead.o)) ahead = { c, o, laps };
     if (o < 0 && (!behind || o > behind.o)) behind = { c, o, laps };
   }
-  const row = (x: Near, lap: 'backmarker' | 'lapper'): StandingRow => {
-    const d = info.get(x.c.carIdx);
-    const g = trackGap(x.c, team, lapRef);
-    // Physical gap on track: race gap without the whole laps.
-    const gap = g !== null && lapRef ? g - x.laps * lapRef : lapRef ? x.o * lapRef : null;
-    return {
-      pos: 0, carIdx: x.c.carIdx, number: d?.number ?? '?', name: d?.name ?? '', country: d?.country ?? null,
-      lastLap: x.c.lastLap, isTeam: false, gap, lapsGap: x.laps, tyreLaps: tyreLaps(x.c.carIdx), inPit: false,
-      lap, otherClass: x.c.classId !== team.classId,
-    };
-  };
+  const row = (x: Near, lap: 'backmarker' | 'lapper'): StandingRow =>
+    ({ ...physicalRow(x.c, team, x.o, x.laps, info, lapRef, tyreLaps), lap });
   const out: StandingRow[] = [];
   if (ahead && ahead.laps <= -1) out.push(row(ahead, 'backmarker'));
   if (behind && behind.laps >= 1) out.push(row(behind, 'lapper'));
   return out;
+}
+
+/**
+ * A car near us on track: `o` = physical offset in laps (+ ahead), `laps` = whole laps it is
+ * ahead (+) or behind (−) in the race. gap = physical gap on track in seconds.
+ */
+function physicalRow(
+  c: CarProgress, team: CarProgress, o: number, laps: number, info: Map<number, CarInfo>, lapRef: number | null,
+  tyreLaps: (carIdx: number) => number | null,
+): StandingRow {
+  const d = info.get(c.carIdx);
+  const g = trackGap(c, team, lapRef);
+  // Physical gap on track: race gap without the whole laps.
+  const gap = g !== null && lapRef ? g - laps * lapRef : lapRef ? o * lapRef : null;
+  return {
+    pos: 0, carIdx: c.carIdx, number: d?.number ?? '?', name: d?.name ?? '', country: d?.country ?? null,
+    lastLap: c.lastLap, isTeam: false, gap, lapsGap: laps, tyreLaps: tyreLaps(c.carIdx), inPit: false,
+    otherClass: c.classId !== team.classId,
+  };
+}
+
+/**
+ * Duel panel: cars on track between us and our class neighbours (in front of / behind us in
+ * the running order) that are on a different lap than us – cars we are lapping and cars
+ * lapping us, any class, not in the pits. Nearest to us first, at most `max` per side.
+ */
+export function betweenRows(
+  cars: CarProgress[], teamIdx: number, frontIdx: number | null, backIdx: number | null,
+  info: Map<number, CarInfo>, lapRef: number | null, max = 3,
+  tyreLaps: (carIdx: number) => number | null = () => null,
+): { ahead: StandingRow[]; behind: StandingRow[] } {
+  const team = cars.find((c) => c.carIdx === teamIdx);
+  if (!team) return { ahead: [], behind: [] };
+  const side = (rivalIdx: number | null, dir: 1 | -1): StandingRow[] => {
+    const rival = cars.find((c) => c.carIdx === rivalIdx);
+    if (!rival) return [];
+    const span = (rival.progress - team.progress) * dir; // race distance to the rival in laps
+    if (!(span > 0)) return [];
+    const found: { c: CarProgress; o: number; laps: number }[] = [];
+    for (const c of cars) {
+      if (c.carIdx === teamIdx || c.carIdx === frontIdx || c.carIdx === backIdx || c.onPitRoad) continue;
+      const d = (c.progress - team.progress) * dir;
+      const o = d - Math.floor(d); // physical distance in that direction, 0..1 lap
+      if (!(o > 0 && o < span)) continue;
+      const laps = Math.round(c.progress - team.progress - o * dir);
+      if (laps !== 0) found.push({ c, o, laps });
+    }
+    return found.sort((a, b) => a.o - b.o).slice(0, max)
+      .map((x) => physicalRow(x.c, team, x.o * dir, x.laps, info, lapRef, tyreLaps));
+  };
+  return { ahead: side(frontIdx, 1), behind: side(backIdx, -1) };
 }
 
 /** Reads all cars from a telemetry frame; cars not on the track (pct < 0) are skipped. */
@@ -287,7 +329,10 @@ export class StandingsTracker {
     const rows = computeStandings(cars, teamIdx, this.info, 3, 3, { tyreLaps });
     const lapRef = cars.find((c) => c.carIdx === teamIdx)?.lastLap ?? null;
     const lapping = lappingRows(cars, teamIdx, this.info, lapRef, tyreLaps);
-    return rows.length ? { t: 'standings', sessionTime: t, rows, lapping, mode: 'race' } : null;
+    const us = rows.find((r) => r.isTeam);
+    const neighbour = (d: number) => (us ? rows.find((r) => r.pos === us.pos + d)?.carIdx ?? null : null);
+    const between = betweenRows(cars, teamIdx, neighbour(-1), neighbour(1), this.info, lapRef, 3, tyreLaps);
+    return rows.length ? { t: 'standings', sessionTime: t, rows, lapping, between, mode: 'race' } : null;
   }
 
   /** Own car: exact, from the distance the tyres have run since they were fitted (newest tyre). */
