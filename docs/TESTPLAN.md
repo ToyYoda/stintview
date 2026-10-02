@@ -171,10 +171,10 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 |---|---|---|---|---|
 | 4e.1 | alle | Panel **Nachrichten** einblenden; Z zusätzlich Panel **Funk** | Z sieht die Knöpfe mit Kürzel; beim Fahrer A ist das Funk-Panel unsichtbar, auch wenn eingeschaltet | |
 | 4e.2 | Z | Knopf „Box diese Runde“ klicken | bei allen (A groß, blinkt kurz) „Box diese Runde“ in Rot mit Z's Namen; iRacing behält beim Klick den Fokus | |
-| 4e.3 | Z | Kürzel Strg+Umschalt+3 drücken (während iRacing im Vordergrund ist) | „Push!“ kommt an, vorige Nachricht rutscht klein darunter | |
+| 4e.3 | Z | Kürzel Strg+Umschalt+3 drücken (während iRacing im Vordergrund ist) | „Push!“ kommt an und ersetzt die vorige Nachricht | |
 | 4e.4 | Z | Reiter **Funk**: Text/Farbe ändern, eigene Nachricht hinzufügen, einmalige Nachricht senden | Funk-Panel zeigt sofort die neue Liste; einmalige Nachricht kommt an, steht danach nicht in der Liste | |
 | 4e.5 | A | während der Fahrt Strg+Umschalt+1 drücken | keine Nachricht (Kürzel sind beim Fahrer aus), iRacing bekommt die Taste | |
-| 4e.6 | B | Overlay neu starten (Anzeigen aus/an) | die letzten Nachrichten sind wieder da | |
+| 4e.6 | B | Overlay neu starten (Anzeigen aus/an) | die letzte Nachricht ist wieder da | |
 
 ### Block 5 – Overlay bedienen (5 min)
 

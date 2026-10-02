@@ -210,16 +210,13 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .color-purple { --msg: #b07cff; }
 .color-white { --msg: #e8e8e8; }
 
-/* Messages panel: newest large, three older ones small */
+/* Messages panel: the newest message, large */
 .msg-panel { width: 360px; display: flex; flex-direction: column; gap: 4px; }
 .msg-main { border-left: 5px solid var(--msg); background: color-mix(in srgb, var(--msg) 16%, transparent); border-radius: 4px; padding: 6px 10px; }
 .msg-main.fresh { background: color-mix(in srgb, var(--msg) 38%, transparent); animation: msg-pulse 1s ease-in-out 3; }
 @keyframes msg-pulse { 50% { background: color-mix(in srgb, var(--msg) 65%, transparent); } }
 .msg-text { font-size: 20px; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
 .msg-meta { font-size: 11px; color: var(--muted); white-space: nowrap; }
-.msg-old { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 0 2px; }
-.msg-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--msg); flex: none; }
-.msg-old-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Radio panel: one button per message, hotkey in small print */
 .radio-panel { width: 300px; }

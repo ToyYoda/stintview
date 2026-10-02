@@ -72,7 +72,7 @@ As a spotter you can send your driver short calls that appear large in their ove
 
 - **Set up messages:** StintView window → **Radio** tab. Type a text, pick a colour, reorder with ↑/↓, delete with ✕, **Add message** (up to 12). For one-off calls there is a free text field at the bottom (not saved). Every message can also be **sent** right there.
 - **Sending during the race:** show the **Radio** panel (**Displays** tab) and click a button – or press the hotkey shown in small print on the button (**Ctrl+Shift+1** to **9** for the first nine; fallbacks in the **Shortcuts** tab). In VR only the hotkeys work.
-- **Receiving:** show the **Messages** panel – ideally everyone, above all the driver. The newest message is large in its colour and flashes briefly, below it the three before with sender and time.
+- **Receiving:** show the **Messages** panel – ideally everyone, above all the driver. The newest message is shown large in its colour with sender and time and flashes briefly; a new one replaces it.
 - While **you are driving yourself**, the Radio panel is hidden and the hotkeys are off – iRacing keeps all its keys.
 - Everyone in the team needs StintView 0.11 or newer for this (including the PC running the team server).
 

@@ -4,11 +4,10 @@ import type { ReceivedMessage } from '../feed.ts';
 
 /** A new message stands out this long. */
 const FRESH_MS = 10_000;
-const OLDER = 3;
 
 /**
- * Team messages (usually from the spotter): the newest one large in its colour – highlighted
- * for 10 s after it arrives – and the three before it small, with sender and age.
+ * Team message (usually from the spotter): the newest one large in its colour, highlighted
+ * for 10 s after it arrives, with sender and age.
  */
 export function MessagesWidget({ messages }: { messages: ReceivedMessage[] }) {
   const [now, setNow] = useState(Date.now());
@@ -18,7 +17,6 @@ export function MessagesWidget({ messages }: { messages: ReceivedMessage[] }) {
   }, []);
 
   const newest = messages[messages.length - 1];
-  const older = messages.slice(-1 - OLDER, -1).reverse();
   if (!newest) return <div className="panel msg-panel"><div className="label">{t('msg.none')}</div></div>;
   const fresh = newest.rx !== undefined && now - newest.rx < FRESH_MS;
   return (
@@ -27,13 +25,6 @@ export function MessagesWidget({ messages }: { messages: ReceivedMessage[] }) {
         <div className="msg-text">{newest.text}</div>
         <div className="msg-meta">{newest.from} · {age(newest, now)}</div>
       </div>
-      {older.map((m) => (
-        <div key={m.id} className={`msg-old color-${m.color}`}>
-          <span className="msg-dot" />
-          <span className="msg-old-text">{m.text}</span>
-          <span className="msg-meta">{m.from} · {age(m, now)}</span>
-        </div>
-      ))}
     </div>
   );
 }

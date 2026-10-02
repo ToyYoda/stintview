@@ -73,7 +73,7 @@ Als Spotter kannst du deinem Fahrer kurze Ansagen schicken, die bei ihm groß im
 
 - **Nachrichten anlegen:** StintView-Fenster → Reiter **Funk**. Text eingeben, Farbe wählen, Reihenfolge mit ↑/↓, löschen mit ✕, **Nachricht hinzufügen** (bis zu 12). Für einmalige Ansagen gibt es unten ein freies Textfeld (wird nicht gespeichert). Jede Nachricht lässt sich dort auch direkt **senden**.
 - **Senden im Rennen:** Panel **Funk** einblenden (Reiter **Anzeigen**) und auf den Knopf klicken – oder das Tastenkürzel drücken, das klein auf dem Knopf steht (**Strg+Umschalt+1** bis **9** für die ersten neun; Ausweichkürzel im Reiter **Kürzel**). In VR gehen nur die Kürzel.
-- **Empfangen:** Panel **Nachrichten** einblenden – am besten jeder, vor allem der Fahrer. Die neueste Nachricht steht groß in ihrer Farbe und blinkt kurz, darunter die drei vorherigen mit Absender und Zeit.
+- **Empfangen:** Panel **Nachrichten** einblenden – am besten jeder, vor allem der Fahrer. Die neueste Nachricht steht groß in ihrer Farbe mit Absender und Zeit und blinkt kurz; eine neue ersetzt sie.
 - Solange **du selbst fährst**, ist das Funk-Panel unsichtbar und die Kürzel sind aus – iRacing behält alle Tasten.
 - Alle Teammitglieder brauchen dafür StintView 0.11 oder neuer (auch der PC mit dem Team-Server).
 
