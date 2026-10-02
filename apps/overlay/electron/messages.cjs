@@ -67,11 +67,12 @@ function stopMessages() {
   unregister();
 }
 
-/** New list from the settings. */
+/** New list from the settings (also after a language change: hotkey names are translated). */
 function setMessages(list) {
-  if (JSON.stringify(list) === JSON.stringify(messages)) return;
-  messages = list;
-  register();
+  if (JSON.stringify(list) !== JSON.stringify(messages)) {
+    messages = list;
+    register();
+  }
   broadcast();
 }
 

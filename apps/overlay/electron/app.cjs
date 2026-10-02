@@ -387,7 +387,8 @@ ipcMain.handle('app:settings', (_e, patch) => {
   if ('language' in clean) clean.language = cleanLanguage(clean.language);
   if ('overlay' in clean) clean.overlay = Boolean(clean.overlay);
   if (clean.pitStop) clean.pitStop = cleanPitStop({ ...settings.pitStop, ...clean.pitStop });
-  if ('messages' in clean) clean.messages = cleanMessages(clean.messages);
+  // null ("restore defaults") stays null, so the defaults follow the UI language again.
+  if ('messages' in clean) clean.messages = Array.isArray(clean.messages) ? cleanMessages(clean.messages) : null;
   updateSettings(clean);
   return appState();
 });
