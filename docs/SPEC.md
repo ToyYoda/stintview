@@ -28,7 +28,7 @@ Jedes Teammitglied fährt an seinem eigenen PC. Alle sollen die Daten des Teamko
 | A13d | **Training/Qualifying (seit 0.9):** Positions-Panel zeigt die Rangliste nach Bestzeit (`CarIdxBestLapTime`, auch Autos in der Garage; eigene Klasse; ohne Zeit hinten) mit Spalte Bestzeit und Abstand = seine Bestzeit − unsere (ohne Reifen und Δ Runde); Sitzungsart aus `SessionInfo.Sessions[SessionNum].SessionType` – alles außer *Race* (Practice, Open/Lone Qualify, Warmup, Offline Testing). Keine Überrundungen. `standings`-Nachricht mit `mode: 'best'`, `session`. Rennen unverändert. | umgesetzt |
 | A13b | **Überrundungen im Positions-Panel:** das Auto physisch direkt vor uns (nächster positiver Streckenversatz, alle Klassen, nicht in der Boxengasse) als blaue Zeile „Nachzügler“ über unserer, wenn es ≥ 1 Runde zurück ist; das Auto direkt hinter uns als rote Zeile „Überrunder“ darunter, wenn es ≥ 1 Runde voraus ist. Abstand = physischer Abstand in s; Δ Runde nur bei gleicher Klasse. `lappingRows` in `standings.ts`, Feld `lapping` der `standings`-Nachricht. | umgesetzt |
 | A13 | **Position:** P1–3 und je 3 Autos vor/hinter dem Team-Auto, Reihenfolge **auf der Strecke** (nicht iRacings Runden-Position); Spalten Position, Startnummer, Länderflagge + Name, Abstand in s als farbige Kachel (seit 0.8; eigene Zeile + direkte Klassennachbarn größer; Duell-Zeile oben mit Vorder-/Hintermann, Option `duel`) (+ vor uns, ganze Runden als „R“; Farben: <1 s vor uns gelb, <1 s hinter uns rot, 1–3 s normal, >3 s grau, andere Runde blau), Reifenalter in Runden (eigenes Auto exakt über `xxodometer`/Streckenlänge, andere = Runden seit Verlassen der Boxengasse, „Box“ in der Boxengasse), Δ letzte Runde (unsere − seine; rot = wir langsamer, sonst grün). | umgesetzt |
-| A10 | **Live-Zuschauer:** Bekommt der Fahrer Gelb (Unfall voraus), kann ein zuschauender Teamkollege per Knopf die Kamera in seinem iRacing zum Unfall-Auto springen lassen (Verfolgerkamera „Far Chase“) und per Knopf zurück zum Team-Auto. Absprache mit dem Fahrer über Discord (außerhalb von StintView). In VR per Tastenkürzel (Maus kann SteamVR-Panels nicht treffen). | umgesetzt, live noch ungetestet (§7a) |
+| A10 | **Live-Zuschauer:** Bekommt der Fahrer Gelb (Unfall voraus), kann ein zuschauender Teamkollege per Knopf die Kamera in seinem iRacing zum Unfall-Auto springen lassen (Verfolgerkamera „Far Chase“) und per Knopf zurück zum Team-Auto. Absprache mit dem Fahrer über Discord (außerhalb von StintView). In VR per Tastenkürzel (Maus kann SteamVR-Panels nicht treffen). | umgesetzt, live getestet (02.10.2026) |
 
 Sprache für Nutzer: Deutsch und Englisch – App-Oberfläche wählbar (seit 0.9: Einstellung `language`, Standard = Windows-Sprache; Umschalter DE/EN im StintView-Fenster), Website und Anleitung de/en. Texte: `apps/overlay/src/i18n.ts` (Panels, Fenster; Englisch muss jeden Schlüssel haben, prüft TypeScript) und `electron/i18n.cjs` (Tray, Dialoge, Kürzel, Meldungen); Kamera-Ergebnisse des Recorders kommen als `code` + `vars`.
 
@@ -164,7 +164,7 @@ Sonstiges: Der Shared-Memory-Bereich existiert auch, wenn nur die iRacing-UI lä
 - **Knöpfe (seit 0.6.0) fest** in der ersten Zeile: „Zum Unfall“ (aktiv bei Warnung) und „Zurück“ (aktiv, solange `CamCarIdx` ≠ Team-`carIdx`), feste Breite, „…“ bis zur Bestätigung. Anlass: Rennen 29.09. – Knöpfe verrutschten mit wechselndem Text/Zeilen unter dem Mauszeiger, wiederholte Klicks trafen abwechselnd beide (36 Befehle in 7 s). Zusätzlich ignoriert `camera.cjs` Befehle < 1 s nach dem vorigen. Ursache des ausbleibenden Sprungs war dort **iRacing im Administrator-Modus** (bestätigt).
 - **Klickbar im click-through-Overlay:** Seite meldet Zeiger über Knopf (`overlay:interactive`) → Fenster nimmt nur dann Maus-Eingaben an; bleibt nicht fokussierbar (iRacing behält den Fokus).
 - **Kürzel:** erstes freies aus Strg+Umschalt+J / Strg+Alt+J / Strg+Umschalt+F7 (zum Unfall) und Strg+Umschalt+K / Strg+Alt+K / Strg+Umschalt+F8 (zurück); im StintView-Fenster angezeigt, VR-Panels zeigen die Kürzel statt Knöpfen.
-- **Test:** Banner per `.ibt`-Replay (Minute 22,4) geprüft; `.ibt` enthält **keine** `CarIdx*`-Daten → Unfallsuche und Kamerasprung nur live testbar (z. B. offizielles Rennen als Zuschauer).
+- **Test:** Banner per `.ibt`-Replay (Minute 22,4) geprüft; `.ibt` enthält **keine** `CarIdx*`-Daten → Unfallsuche und Kamerasprung nur live testbar. **Live erfolgreich getestet (02.10.2026):** „Unfall voraus“ und Kamerasprung „Zum Unfall“/„Zurück“; Schwellen unverändert.
 
 ## 8. Installer, Updates, Website
 
@@ -200,8 +200,8 @@ Sonstiges: Der Shared-Memory-Bereich existiert auch, wenn nur die iRacing-UI lä
 
 ## 11. Offene Punkte / Backlog
 
-0. „Unfall voraus“ im Rennen prüfen: Fehlalarme/verpasste Unfälle anhand `[hazard]`-Zeilen im `recorder.log` des Fahrers, Schwellen (1500 m, 30/80 km/h) justieren.
-0. Zuschauer-Kamera live testen (§7a): Knopf-Klick im Overlay, Sprung auf „Far Chase“, „Zurück“, Suchradius 3 km auf der Nordschleife bewerten.
+0. ~~„Unfall voraus“ im Rennen prüfen~~ – erfolgreich getestet (02.10.2026). Bei Auffälligkeiten weiter über `[hazard]`-Zeilen im `recorder.log` nachjustieren.
+0. ~~Zuschauer-Kamera live testen (§7a)~~ – erfolgreich getestet (02.10.2026).
 1. Auto-Update 0.2.1 → 0.2.2 beim Teamchef verifizieren; echtes Installieren testen.
 2. Recorder mit **laufendem iRacing** in der App testen (neue `RtlMoveMemory`-Auslese nur ohne Sim geprüft); VR in der installierten App mit SteamVR testen.
 3. Erster Start auf einem PC ohne Node.js (Teamkollege); Firewall-Abfrage des Relays.
