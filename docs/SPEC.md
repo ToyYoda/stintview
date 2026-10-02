@@ -206,7 +206,7 @@ Sonstiges: Der Shared-Memory-Bereich existiert auch, wenn nur die iRacing-UI lä
 1. ~~Auto-Update beim Teamchef verifizieren; echtes Installieren testen~~ – erfolgreich getestet (02.10.2026).
 2. ~~Recorder mit laufendem iRacing in der App testen; VR in der installierten App mit SteamVR testen~~ – erfolgreich getestet (02.10.2026).
 3. ~~Erster Start auf einem PC ohne Node.js (Teamkollege); Firewall-Abfrage des Relays~~ – erfolgreich getestet (02.10.2026).
-4. Installationsordner `@stintviewoverlay` → `StintView` (electron-builder `extraMetadata.name`; Update-Verhalten vorher prüfen).
+4. ~~Installationsordner `@stintviewoverlay` → `StintView`~~ – verworfen (02.10.2026): „StintView“ ist voraussichtlich nicht der endgültige Name. Bei einer späteren Umbenennung des Produkts den Installationsordner gleich mit festlegen (electron-builder `extraMetadata.name`) und das Update bestehender Installationen testen (alter Ordner, Verknüpfungen, Autostart, `…-updater`-Cache, Einstellungsordner `%APPDATA%\StintView`, appId).
 4a. ~~Wettervorhersage (Issue #1)~~ – verworfen (02.10.2026): weder aus dem Client noch über die Data API erreichbar (§5, Wetter). Nur neu bewerten, falls iRacing die Vorhersage ins SDK aufnimmt oder wieder OAuth-Client-IDs vergibt und die API eine Vorhersage je Session liefert.
 5. ~~Stint-Zusammenfassung aus der `.ibt`~~ – verworfen (30.09.2026): Telemetrie-Auswertung nach dem Stint macht das Team in Garage 61.
 6. ~~App-Oberfläche zweisprachig~~ – umgesetzt in 0.9.
