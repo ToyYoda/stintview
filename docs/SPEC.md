@@ -202,6 +202,7 @@ Sonstiges: Der Shared-Memory-Bereich existiert auch, wenn nur die iRacing-UI lä
 
 0. ~~„Unfall voraus“ im Rennen prüfen~~ – erfolgreich getestet (02.10.2026). Bei Auffälligkeiten weiter über `[hazard]`-Zeilen im `recorder.log` nachjustieren.
 0. ~~Zuschauer-Kamera live testen (§7a)~~ – erfolgreich getestet (02.10.2026).
+0. Boxenstopp-Planer (A16) live prüfen – nur über mehrere echte Endurance-Rennen möglich: vorhergesagte Stoppdauer und Rückkehrposition mit dem tatsächlichen Stopp vergleichen, gelernte Reifenzeiten/Boxengassen-Werte in `pit-model.json` beobachten.
 1. ~~Auto-Update beim Teamchef verifizieren; echtes Installieren testen~~ – erfolgreich getestet (02.10.2026).
 2. ~~Recorder mit laufendem iRacing in der App testen; VR in der installierten App mit SteamVR testen~~ – erfolgreich getestet (02.10.2026).
 3. ~~Erster Start auf einem PC ohne Node.js (Teamkollege); Firewall-Abfrage des Relays~~ – erfolgreich getestet (02.10.2026).
