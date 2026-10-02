@@ -201,3 +201,33 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .duel-chip.other { background: transparent; }
 .duel-chip.other.down { border-color: rgba(77, 163, 255, 0.8); }
 .duel-chip.other.up { border-color: rgba(255, 77, 77, 0.8); }
+
+/* Team messages: colours shared by the Messages panel, the Radio panel and the StintView window */
+.color-red { --msg: var(--bad); }
+.color-amber { --msg: var(--warn); }
+.color-green { --msg: var(--ok); }
+.color-blue { --msg: var(--cold); }
+.color-purple { --msg: #b07cff; }
+.color-white { --msg: #e8e8e8; }
+
+/* Messages panel: newest large, three older ones small */
+.msg-panel { width: 360px; display: flex; flex-direction: column; gap: 4px; }
+.msg-main { border-left: 5px solid var(--msg); background: color-mix(in srgb, var(--msg) 16%, transparent); border-radius: 4px; padding: 6px 10px; }
+.msg-main.fresh { background: color-mix(in srgb, var(--msg) 38%, transparent); animation: msg-pulse 1s ease-in-out 3; }
+@keyframes msg-pulse { 50% { background: color-mix(in srgb, var(--msg) 65%, transparent); } }
+.msg-text { font-size: 20px; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+.msg-meta { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.msg-old { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 0 2px; }
+.msg-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--msg); flex: none; }
+.msg-old-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Radio panel: one button per message, hotkey in small print */
+.radio-panel { width: 300px; }
+.radio-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.radio-btn { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 40px; padding: 5px 7px;
+  border: 0; border-left: 4px solid var(--msg); border-radius: 4px; background: color-mix(in srgb, var(--msg) 18%, rgba(255, 255, 255, 0.04));
+  color: var(--text); font: inherit; font-size: 12.5px; font-weight: 600; text-align: left; cursor: pointer; }
+.radio-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--msg) 35%, transparent); }
+.radio-btn:disabled { cursor: default; }
+.radio-text { line-height: 1.2; }
+.radio-key { font-size: 9.5px; font-weight: 400; color: var(--muted); font-family: var(--mono); }

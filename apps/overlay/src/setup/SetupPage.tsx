@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import type { AppState, HotkeyGroup, PanelSetting, DuelOptions, StandingsColumn, StandingsOptions } from '../feed.ts';
+import { MESSAGE_COLORS, MESSAGE_MAX_LENGTH, type MessageColor } from '@stintview/protocol';
+import type { AppState, HotkeyGroup, PanelSetting, DuelOptions, RadioState, StandingsColumn, StandingsOptions } from '../feed.ts';
 import { setLang, t, useLang, type Lang } from '../i18n.ts';
 import './setup.css';
 
@@ -136,8 +137,8 @@ function CreateForm({ onState, serverPort }: { onState(s: AppState): void; serve
 // Configured: status and switches
 // ---------------------------------------------------------------------------
 
-type Tab = 'status' | 'displays' | 'pit' | 'team' | 'keys';
-const TABS: Tab[] = ['status', 'displays', 'pit', 'team', 'keys'];
+type Tab = 'status' | 'displays' | 'pit' | 'radio' | 'team' | 'keys';
+const TABS: Tab[] = ['status', 'displays', 'pit', 'radio', 'team', 'keys'];
 const TAB_KEY = 'stintview.setupTab';
 
 /** Last tab, or the hotkey overview when opened via "Tastaturkürzel …" in the tray menu. */
@@ -234,6 +235,10 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
           onImport={async (choose) => onState(await api().pitImport(choose))} />
       )}
 
+      {tab === 'radio' && (
+        <RadioCard radio={state.radio} onChange={(messages) => set({ messages })} />
+      )}
+
       {tab === 'team' && (
       <section className="card">
         <h2>{t('set.team')}</h2>
@@ -266,6 +271,80 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
         {t('set.closeHint')}
       </p>
     </>
+  );
+}
+
+type EditableMessage = { id: string; text: string; color: MessageColor };
+
+/**
+ * "Funk": the team messages this PC can send – text and colour, editable, each with a hotkey
+ * (first nine) – plus a one-off message that isn't kept. Sending works from here too.
+ */
+function RadioCard({ radio, onChange }: { radio: RadioState; onChange(list: EditableMessage[] | null): void }) {
+  const list: EditableMessage[] = radio.messages.map(({ id, text, color }) => ({ id, text, color }));
+  const [once, setOnce] = useState<{ text: string; color: MessageColor }>({ text: '', color: 'white' });
+  const [sent, setSent] = useState<string | null>(null);
+  const update = (i: number, patch: Partial<EditableMessage>) => onChange(list.map((m, k) => (k === i ? { ...m, ...patch } : m)));
+  const move = (i: number, d: number) => {
+    const next = [...list];
+    [next[i], next[i + d]] = [next[i + d]!, next[i]!];
+    onChange(next);
+  };
+  const send = async (what: string | { text: string; color: MessageColor }, mark: string) => {
+    if (await api().sendMessage?.(what)) {
+      setSent(mark);
+      setTimeout(() => setSent((s) => (s === mark ? null : s)), 1500);
+    }
+  };
+  return (
+    <section className="card radio-card">
+      <h2>{t('set.radio')}</h2>
+      <p className="hint">{t('set.radioHint')}</p>
+      {radio.driving && <p className="hint warn">{t('set.radioDriving')}</p>}
+      <ul className="radio-list">
+        {radio.messages.map((m, i) => (
+          <li key={`${m.id}:${m.text}`}>
+            <ColorDots value={m.color} onChange={(color) => update(i, { color })} />
+            <input type="text" defaultValue={m.text} maxLength={MESSAGE_MAX_LENGTH} aria-label={t('set.radioText')}
+              onBlur={(e) => { const text = e.target.value.trim(); if (text && text !== m.text) update(i, { text }); else e.target.value = m.text; }}
+              onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
+            <span className="radio-key-label">{m.key ?? (i < 9 ? '' : t('set.radioNoKey'))}</span>
+            <button type="button" className="btn small" onClick={() => send(m.id, m.id)}>{sent === m.id ? '✓' : t('set.radioSend')}</button>
+            <span className="radio-tools">
+              <button type="button" className="icon" disabled={i === 0} aria-label={t('set.radioUp')} onClick={() => move(i, -1)}>↑</button>
+              <button type="button" className="icon" disabled={i === list.length - 1} aria-label={t('set.radioDown')} onClick={() => move(i, 1)}>↓</button>
+              <button type="button" className="icon" aria-label={t('set.radioDelete')} onClick={() => onChange(list.filter((_, k) => k !== i))}>✕</button>
+            </span>
+          </li>
+        ))}
+      </ul>
+      <div className="radio-actions">
+        <button type="button" className="btn ghost" disabled={list.length >= 12}
+          onClick={() => onChange([...list, { id: '', text: t('set.radioNew'), color: 'white' }])}>{t('set.radioAdd')}</button>
+        <button type="button" className="linkish" onClick={() => onChange(null)}>{t('set.radioReset')}</button>
+      </div>
+      <h3>{t('set.radioOnce')}</h3>
+      <div className="radio-once">
+        <ColorDots value={once.color} onChange={(color) => setOnce({ ...once, color })} />
+        <input type="text" value={once.text} maxLength={MESSAGE_MAX_LENGTH} placeholder={t('set.radioOncePlaceholder')}
+          onChange={(e) => setOnce({ ...once, text: e.target.value })}
+          onKeyDown={(e) => { if (e.key === 'Enter' && once.text.trim()) send({ text: once.text.trim(), color: once.color }, 'once'); }} />
+        <button type="button" className="btn small" disabled={!once.text.trim()}
+          onClick={() => send({ text: once.text.trim(), color: once.color }, 'once')}>{sent === 'once' ? '✓' : t('set.radioSend')}</button>
+      </div>
+    </section>
+  );
+}
+
+/** Colour choice for a team message. */
+function ColorDots({ value, onChange }: { value: MessageColor; onChange(c: MessageColor): void }) {
+  return (
+    <span className="color-dots" role="radiogroup" aria-label={t('set.radioColor')}>
+      {MESSAGE_COLORS.map((c) => (
+        <button key={c} type="button" role="radio" aria-checked={value === c} aria-label={t(`set.color.${c}`)}
+          className={`color-dot color-${c}${value === c ? ' on' : ''}`} onClick={() => onChange(c)} />
+      ))}
+    </span>
   );
 }
 
@@ -375,7 +454,7 @@ function PitStopCard({ pit, onChange, imp, onImport }: {
   );
 }
 
-const PANEL_IDS = ['header', 'inputs', 'fuel', 'tyres', 'weather', 'standings', 'duel', 'pitstop'] as const;
+const PANEL_IDS = ['header', 'inputs', 'fuel', 'tyres', 'weather', 'standings', 'duel', 'pitstop', 'messages', 'radio'] as const;
 const STANDINGS_COLUMNS: StandingsColumn[] = ['pos', 'num', 'flag', 'name', 'best', 'gap', 'tyre', 'delta'];
 
 /**

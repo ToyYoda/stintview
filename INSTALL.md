@@ -44,7 +44,7 @@ Then click **Join team**. Under *Status*, **Team server: connected** appears.
 
 Nothing to do: StintView starts with Windows and runs in the notification area of the taskbar (bottom right, the red "O"; possibly hidden under the **^** arrow).
 
-- **Click** the icon to open the StintView window with the tabs **Status**, **Displays**, **Pit stop**, **Team** and **Shortcuts**.
+- **Click** the icon to open the StintView window with the tabs **Status**, **Displays**, **Pit stop**, **Radio**, **Team** and **Shortcuts**.
 - **Right-click** opens the menu with the same switches and **Quit StintView**.
 
 As soon as you are in the car, your team sees your data. When you get out, StintView stops sending on its own.
@@ -65,6 +65,16 @@ When a car up to about 1.5 km ahead of your driver is stopped or crawling off tr
 - Requirement: you are watching the team session in iRacing (not driving yourself). Nothing is ever changed for the driver.
 - Hotkeys (also in VR): **Ctrl+Shift+J** = to the incident, **Ctrl+Shift+K** = back (fallback hotkeys are shown in the StintView window).
 - If StintView finds no stopped car ahead of your driver, iRacing shows the latest incident on track.
+
+### Radio: messages to your driver
+
+As a spotter you can send your driver short calls that appear large in their overlay – on top of Discord, in case voice comms get busy.
+
+- **Set up messages:** StintView window → **Radio** tab. Type a text, pick a colour, reorder with ↑/↓, delete with ✕, **Add message** (up to 12). For one-off calls there is a free text field at the bottom (not saved). Every message can also be **sent** right there.
+- **Sending during the race:** show the **Radio** panel (**Displays** tab) and click a button – or press the hotkey shown in small print on the button (**Ctrl+Shift+1** to **9** for the first nine; fallbacks in the **Shortcuts** tab). In VR only the hotkeys work.
+- **Receiving:** show the **Messages** panel – ideally everyone, above all the driver. The newest message is large in its colour and flashes briefly, below it the three before with sender and time.
+- While **you are driving yourself**, the Radio panel is hidden and the hotkeys are off – iRacing keeps all its keys.
+- Everyone in the team needs StintView 0.11 or newer for this (including the PC running the team server).
 
 ### Overlay in VR (SteamVR headsets)
 

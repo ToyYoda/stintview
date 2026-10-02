@@ -1,5 +1,5 @@
 import { parseArgs } from 'node:util';
-import type { CreateTeamRequest, JoinTeamRequest, TeamCredentials } from '@stintview/protocol';
+import type { CreateTeamRequest, JoinTeamRequest, SendMessage, TeamCredentials } from '@stintview/protocol';
 import { configPath, loadConfig, saveConfig, wsUrl } from './config.ts';
 import { Connection } from './connection.ts';
 import { IbtSource } from './irsdk/ibt.ts';
@@ -44,7 +44,7 @@ export type RecorderEvent =
   | ({ t: 'pit-import'; finished: boolean; error?: string } & Partial<ImportProgress>);
 interface ParentPort {
   postMessage(m: RecorderEvent): void;
-  on(event: 'message', fn: (e: { data: CameraCommand | { t: 'pit-settings'; pit: PitOverride } | { t: 'pit-model-reload' } }) => void): void;
+  on(event: 'message', fn: (e: { data: CameraCommand | { t: 'pit-settings'; pit: PitOverride } | { t: 'pit-model-reload' } | SendMessage }) => void): void;
 }
 const parentPort = (process as { parentPort?: ParentPort }).parentPort;
 const report = (e: RecorderEvent) => parentPort?.postMessage(e);
@@ -117,6 +117,11 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
     if (e.data?.t === 'pit-model-reload') {
       console.log('[pit] reloading learned values (archive import finished)');
       return pit.reloadModel();
+    }
+    if (e.data?.t === 'send-message') {
+      // Team message from the spotter (StintView window, overlay button or hotkey).
+      console.log(`[message] ${e.data.color}: ${e.data.text}`);
+      return conn.send({ t: 'send-message', text: e.data.text, color: e.data.color });
     }
     if (e.data?.t === 'pit-settings') {
       console.log(`[pit] crew values from the app: ${JSON.stringify(e.data.pit)}`);

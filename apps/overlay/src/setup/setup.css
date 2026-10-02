@@ -34,6 +34,9 @@ body.setup-body #root { height: auto; }
   clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
 }
 .setup .tabs button.on { background: var(--o-red); color: #fff; }
+/* Six main tabs: narrower padding so "Boxenstopp" fits the 560 px window */
+.setup .main-tabs { gap: 2px; }
+.setup .main-tabs button { flex: 1 1 auto; padding: 10px 8px; font-size: 12px; letter-spacing: 0.02em; white-space: nowrap; }
 
 .setup .card { background: var(--o-panel); border: 1px solid var(--o-line); border-top: 3px solid var(--o-red); border-radius: 6px; padding: 18px; margin-bottom: 14px; }
 
@@ -168,3 +171,35 @@ body.setup-body #root { height: auto; }
 /* Main window tabs (Status, Displays, Pit stop, Team, Shortcuts) */
 .setup .main-tabs { margin-bottom: 14px; }
 .setup .main-tabs button { padding: 9px 6px; font-size: 12px; min-width: 0; }
+
+/* Funk tab: team messages */
+.setup .hint.warn { color: #ffb000; }
+.setup .radio-list { list-style: none; margin: 10px 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+/* Per message: text and send button, below colour, hotkey and move/delete */
+.setup .radio-list li { display: grid; grid-template-columns: auto 1fr auto; gap: 6px 10px; align-items: center;
+  padding-bottom: 8px; border-bottom: 1px solid var(--o-line); }
+.setup .radio-list li input { grid-column: 1 / 3; grid-row: 1; }
+.setup .radio-list li .btn { grid-column: 3; grid-row: 1; margin: 0; }
+.setup .radio-list li .color-dots { grid-column: 1; grid-row: 2; }
+.setup .radio-list li .radio-key-label { grid-column: 2; grid-row: 2; }
+.setup .radio-list li .radio-tools { grid-column: 3; grid-row: 2; justify-self: end; }
+.setup .radio-once { display: flex; align-items: center; gap: 8px; }
+.setup .radio-list input, .setup .radio-once input { min-width: 0; }
+.setup .radio-once input { flex: 1; }
+.setup .radio-key-label { font-size: 11px; color: var(--o-muted); white-space: nowrap; }
+.setup .btn.small { padding: 6px 12px; font-size: 12px; }
+.setup .radio-tools { display: flex; gap: 2px; }
+.setup .icon { background: var(--o-panel-2); color: var(--o-muted); border: 0; border-radius: 3px; width: 24px; height: 26px; cursor: pointer; }
+.setup .icon:hover:not(:disabled) { color: var(--o-white); }
+.setup .icon:disabled { opacity: 0.35; cursor: default; }
+.setup .radio-actions { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+.setup .radio-card h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--o-muted); margin: 14px 0 6px; }
+.setup .color-dots { display: flex; gap: 3px; flex: none; }
+.setup .color-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid transparent; background: var(--msg); cursor: pointer; padding: 0; opacity: 0.45; }
+.setup .color-dot.on { opacity: 1; border-color: #fff; }
+.setup .color-red { --msg: #ff4d4d; }
+.setup .color-amber { --msg: #ffb000; }
+.setup .color-green { --msg: #3ddc84; }
+.setup .color-blue { --msg: #4da3ff; }
+.setup .color-purple { --msg: #b07cff; }
+.setup .color-white { --msg: #e8e8e8; }

@@ -4,7 +4,7 @@ const { app, BrowserWindow, Menu, Tray, dialog, ipcMain, nativeImage, shell, uti
 const { createWriteStream, mkdirSync, readdirSync } = require('node:fs');
 const path = require('node:path');
 const {
-  cleanLanguage, cleanOpacity, cleanOutput, cleanPanels, cleanPitStop, clearConfig, configPath, dataDir, loadConfig, loadSettings, logDir, normalizeUrl, panelConfig, panelsFor, register, saveSettings,
+  cleanLanguage, cleanMessages, cleanOpacity, cleanOutput, cleanPanels, cleanPitStop, clearConfig, configPath, dataDir, loadConfig, loadSettings, logDir, normalizeUrl, panelConfig, panelsFor, register, saveSettings,
 } = require('./config.cjs');
 const {
   editHotkey, editing, onOverlayChange, overlayRunning, editHotkeyInfo, setEditMode, setOverlayLanguage, setOverlayOpacity, setOverlayPanelConfig, setOverlayPanels, startOverlay, stopOverlay, toggleEdit,
@@ -13,6 +13,7 @@ const { PRELOAD, loadRoute } = require('./renderer.cjs');
 const { cameraCommand, cameraHotkeyInfo, cameraInfo, onRecorderMessage, setHazardCar, setTeamCar, startCamera, stopCamera } = require('./camera.cjs');
 const { recenterVr, setVrLanguage, setVrOpacity, setVrPanelConfig, startVr, stopVr, vrHotkeyInfo, vrStatus } = require('./vr.cjs');
 const { hotkeyGroups } = require('./hotkeys.cjs');
+const { messageHotkeyInfo, radioState, sendMessage, setDriving, setMessages, startMessages, stopMessages } = require('./messages.cjs');
 const { checkNow, installNow, setupUpdates, updateInfo, updateLabel } = require('./updates.cjs');
 const { setLanguage, t } = require('./i18n.cjs');
 
@@ -158,14 +159,20 @@ function startRecorder() {
     if (m.t === 'exit') needsPitSettings = true;
     else if (needsPitSettings && recorder?.post({ t: 'pit-settings', pit: settings.pitStop })) needsPitSettings = false;
     if (m.t === 'iracing') status.iracing = m.connected;
-    if (m.t === 'car') status.inCar = m.inCar;
+    if (m.t === 'car') {
+      status.inCar = m.inCar;
+      setDriving(m.inCar); // Radio panel and message hotkeys are off while you drive
+    }
     if (m.t === 'server') {
       status.serverText = m.text;
       status.server = m.text.startsWith('standby') ? 'standby'
         : m.connected ? 'connected'
           : m.text.startsWith('server error') ? 'error' : 'offline';
     }
-    if (m.t === 'exit') Object.assign(status, { iracing: false, inCar: false, server: 'offline' });
+    if (m.t === 'exit') {
+      Object.assign(status, { iracing: false, inCar: false, server: 'offline' });
+      setDriving(false);
+    }
     if (m.t === 'camera-state' || m.t === 'camera-result') return onRecorderMessage(m);
     refresh();
   });
@@ -215,6 +222,7 @@ function applySettings() {
   setVrPanelConfig(panelConfig(settings));
   setVrOpacity(settings.opacity / 100);
   recorder?.post({ t: 'pit-settings', pit: settings.pitStop });
+  setMessages(cleanMessages(settings.messages, settings.language));
   // One output at a time: the monitor overlay or the VR panels.
   if (configured && settings.overlay && settings.output === 'monitor') startOverlay(); else stopOverlay();
   // VR panels are separate windows: restart the VR host when the selection changes.
@@ -330,9 +338,11 @@ function appState() {
     autostartAvailable: app.isPackaged,
     cameraHotkeys: cameraInfo().hotkeys,
     pitImport,
+    radio: radioState(),
     hotkeys: (() => {
       const cam = cameraHotkeyInfo();
-      return hotkeyGroups(editHotkeyInfo(), cam.keys, cam.candidates, vrHotkeyInfo(), { overlay: overlayRunning() });
+      return hotkeyGroups(editHotkeyInfo(), cam.keys, cam.candidates, vrHotkeyInfo(), { overlay: overlayRunning() },
+        { items: messageHotkeyInfo(), driving: radioState().driving });
     })(),
     update: { ...updateInfo(), label: updateLabel() },
   };
@@ -369,7 +379,7 @@ ipcMain.handle('app:create', async (_e, { serverUrl, teamName, memberName, hostH
 });
 
 ipcMain.handle('app:settings', (_e, patch) => {
-  const allowed = ['language', 'overlay', 'output', 'autostart', 'server', 'panels', 'opacity', 'pitStop'];
+  const allowed = ['language', 'overlay', 'output', 'autostart', 'server', 'panels', 'opacity', 'pitStop', 'messages'];
   const clean = Object.fromEntries(Object.entries(patch ?? {}).filter(([k]) => allowed.includes(k)));
   if (clean.panels) clean.panels = cleanPanels({ ...settings.panels, ...clean.panels });
   if ('opacity' in clean) clean.opacity = cleanOpacity(clean.opacity);
@@ -377,6 +387,7 @@ ipcMain.handle('app:settings', (_e, patch) => {
   if ('language' in clean) clean.language = cleanLanguage(clean.language);
   if ('overlay' in clean) clean.overlay = Boolean(clean.overlay);
   if (clean.pitStop) clean.pitStop = cleanPitStop({ ...settings.pitStop, ...clean.pitStop });
+  if ('messages' in clean) clean.messages = cleanMessages(clean.messages);
   updateSettings(clean);
   return appState();
 });
@@ -393,6 +404,11 @@ ipcMain.on('app:hazard', (_e, carIdx) => setHazardCar(Number.isInteger(carIdx) ?
 ipcMain.handle('app:camera', (_e, action, target) =>
   cameraCommand(action === 'back' ? 'back' : 'incident', Number.isInteger(target) ? target : undefined));
 ipcMain.handle('app:camera-info', () => cameraInfo());
+
+// Team messages: a message id from the list, or { text, color } (StintView window, Radio panel).
+ipcMain.handle('app:send-message', (_e, what) => sendMessage(
+  typeof what === 'string' ? what : { text: String(what?.text ?? ''), color: String(what?.color ?? 'white') }));
+ipcMain.handle('app:radio', () => radioState());
 
 ipcMain.handle('app:leave', async () => {
   const { response } = await dialog.showMessageBox(setupWin ?? undefined, {
@@ -444,6 +460,7 @@ app.whenReady().then(() => {
   tray.on('click', () => openSetup());
   startRecorder();
   startCamera((msg) => recorder?.post(msg) ?? false);
+  startMessages((msg) => recorder?.post(msg) ?? false);
   applySettings();
   setupUpdates(onUpdateChange);
   // First run (or started manually): show the window. Autostart passes --hidden.
@@ -457,6 +474,7 @@ app.on('before-quit', () => {
   quitting = true;
   recorder?.stop();
   stopCamera();
+  stopMessages();
   stopRelay();
   stopVr();
   stopOverlay();

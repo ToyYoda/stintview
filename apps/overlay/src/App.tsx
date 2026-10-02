@@ -7,11 +7,13 @@ import { TyresWidget } from './widgets/TyresWidget.tsx';
 import { WeatherWidget } from './widgets/WeatherWidget.tsx';
 import { StandingsWidget } from './widgets/StandingsWidget.tsx';
 import { DuelWidget } from './widgets/DuelWidget.tsx';
+import { MessagesWidget } from './widgets/MessagesWidget.tsx';
+import { RadioWidget } from './widgets/RadioWidget.tsx';
 import type { DuelOptions, PanelConfig, StandingsOptions } from './feed.ts';
 import { setLang, t, useLang } from './i18n.ts';
 import { PitWidget } from './widgets/PitWidget.tsx';
 
-type WidgetId = 'header' | 'inputs' | 'fuel' | 'tyres' | 'weather' | 'standings' | 'duel' | 'pitstop';
+type WidgetId = 'header' | 'inputs' | 'fuel' | 'tyres' | 'weather' | 'standings' | 'duel' | 'pitstop' | 'messages' | 'radio';
 type Positions = Record<WidgetId, { x: number; y: number }>;
 
 const DEFAULT_POSITIONS: Positions = {
@@ -23,6 +25,8 @@ const DEFAULT_POSITIONS: Positions = {
   standings: { x: 1420, y: 100 },
   duel: { x: 700, y: 860 },
   pitstop: { x: 1420, y: 480 },
+  messages: { x: 760, y: 560 },
+  radio: { x: 40, y: 480 },
 };
 const STORAGE_KEY = 'stintview.positions';
 
@@ -75,6 +79,9 @@ export function App() {
     standings: <StandingsWidget standings={state.standings} options={config?.standings?.options as StandingsOptions | null | undefined} />,
     duel: <DuelWidget standings={state.standings} options={config?.duel?.options as DuelOptions | null | undefined} />,
     pitstop: <PitWidget plan={state.pitplan} />,
+    messages: <MessagesWidget messages={state.messages} />,
+    // Clickable on the desktop overlay only; VR panels show the hotkeys.
+    radio: <RadioWidget interactive={Boolean(window.stintview) && !location.hash.startsWith('#/widget/')} />,
   };
 
   const single = /^#\/widget\/(\w+)/.exec(route)?.[1] as WidgetId | undefined;

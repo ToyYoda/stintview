@@ -27,6 +27,19 @@ const PANEL_DEFAULTS = {
   // Added later: off by default, so it does not suddenly appear on existing overlays.
   duel: { shown: false, size: 100, options: { traffic: true } },
   pitstop: { shown: true, size: 100 },
+  // Team messages: received ones (everyone) and buttons to send (hidden while you drive).
+  messages: { shown: false, size: 100 },
+  radio: { shown: false, size: 100 },
+};
+
+/** Colours a team message can have (same list as the protocol's MESSAGE_COLORS). */
+const MESSAGE_COLORS = ['red', 'amber', 'green', 'blue', 'purple', 'white'];
+const MESSAGE_MAX_LENGTH = 60;
+const MAX_MESSAGES = 12;
+/** Messages a new installation starts with, in the UI language. */
+const DEFAULT_MESSAGES = {
+  de: [['Box diese Runde', 'red'], ['Sprit sparen', 'amber'], ['Push!', 'green'], ['Gelb voraus', 'amber'], ['Schnelleres Auto hinter dir', 'blue'], ['Gut so, weiter', 'green']],
+  en: [['Box this lap', 'red'], ['Save fuel', 'amber'], ['Push!', 'green'], ['Yellow ahead', 'amber'], ['Faster car behind you', 'blue'], ['Good job, keep going', 'green']],
 };
 
 const DEFAULT_SETTINGS = {
@@ -43,6 +56,8 @@ const DEFAULT_SETTINGS = {
   pitStop: { fillRate: null, tyreTime: null, regulation: 'auto' },
   // iRacing telemetry folder chosen for the pit lane import; null = Documents\\iRacing\\telemetry.
   telemetryDir: null,
+  // Team messages to send (StintView window, "Radio" panel, hotkeys); null = defaults in the UI language.
+  messages: null,
 };
 const PANEL_IDS = Object.keys(PANEL_DEFAULTS);
 
@@ -78,7 +93,28 @@ function loadSettings() {
     panels: cleanPanels(saved.panels, output),
     opacity: cleanOpacity(typeof saved.opacity === 'object' && saved.opacity ? saved.opacity[output] : saved.opacity),
     pitStop: cleanPitStop(saved.pitStop),
+    // Stays null until edited, so the defaults follow the UI language.
+    messages: Array.isArray(saved.messages) ? cleanMessages(saved.messages) : null,
   };
+}
+
+/**
+ * Team messages: { id, text, color }, at most MAX_MESSAGES, text trimmed and cut, unknown
+ * colours white. Not a list (never edited) = the defaults in `language`.
+ */
+function cleanMessages(list, language = 'de') {
+  if (!Array.isArray(list)) return DEFAULT_MESSAGES[language === 'en' ? 'en' : 'de'].map(([text, color], i) => ({ id: `m${i + 1}`, text, color }));
+  const ids = new Set();
+  const out = [];
+  for (const m of list) {
+    const text = typeof m?.text === 'string' ? m.text.replace(/\s+/g, ' ').trim().slice(0, MESSAGE_MAX_LENGTH) : '';
+    if (!text || out.length >= MAX_MESSAGES) continue;
+    let id = typeof m.id === 'string' && /^[\w-]{1,20}$/.test(m.id) && !ids.has(m.id) ? m.id : '';
+    for (let n = 1; !id; n++) if (!ids.has(`m${n}`)) id = `m${n}`;
+    ids.add(id);
+    out.push({ id, text, color: MESSAGE_COLORS.includes(m.color) ? m.color : 'white' });
+  }
+  return out;
 }
 
 const cleanOutput = (o) => (o === 'vr' ? 'vr' : 'monitor');
@@ -172,5 +208,5 @@ function normalizeUrl(input) {
 
 module.exports = {
   dataDir, logDir, configPath, loadConfig, saveConfig, clearConfig, loadSettings, saveSettings, register, normalizeUrl,
-  cleanLanguage, cleanPanels, cleanOpacity, cleanOutput, cleanPitStop, panelsFor, panelConfig,
+  cleanLanguage, cleanPanels, cleanOpacity, cleanOutput, cleanPitStop, cleanMessages, panelsFor, panelConfig, MESSAGE_COLORS,
 };

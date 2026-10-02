@@ -18,6 +18,24 @@ export interface Hello {
   v: number;
   token: string;
   role: Role;
+  /**
+   * Optional server messages this client understands (additive, no version bump):
+   * 'messages' = team messages (`message`, `Snapshot.messages`). Older clients omit it.
+   */
+  features?: string[];
+}
+
+/** Colours a team message can have. */
+export const MESSAGE_COLORS = ['red', 'amber', 'green', 'blue', 'purple', 'white'] as const;
+export type MessageColor = (typeof MESSAGE_COLORS)[number];
+/** Longest message text in characters; the server cuts longer ones. */
+export const MESSAGE_MAX_LENGTH = 60;
+
+/** A teammate (usually the spotter) sends a short message to the team, any role. */
+export interface SendMessage {
+  t: 'send-message';
+  text: string;
+  color: MessageColor;
 }
 
 /**
@@ -318,10 +336,25 @@ export interface Snapshot {
   t: 'snapshot';
   active: ActiveDriver;
   telemetry: Telemetry[];
+  /** Recent team messages, oldest first; only for clients with the 'messages' feature. */
+  messages?: TeamMessage[];
 }
 
-export type ClientMessage = Hello | DrivingState | Telemetry;
-export type ServerMessage = Welcome | ErrorMsg | Standby | ActiveDriver | Snapshot | Telemetry;
+/** A team message as relayed by the server, only to clients with the 'messages' feature. */
+export interface TeamMessage {
+  t: 'message';
+  /** Increasing per server run. */
+  id: number;
+  text: string;
+  color: MessageColor;
+  /** Team member who sent it. */
+  from: string;
+  /** Server time (ms since 1970). */
+  at: number;
+}
+
+export type ClientMessage = Hello | DrivingState | Telemetry | SendMessage;
+export type ServerMessage = Welcome | ErrorMsg | Standby | ActiveDriver | Snapshot | Telemetry | TeamMessage;
 
 const TELEMETRY_TYPES = new Set<string>(['inputs', 'status', 'fuel', 'tyres', 'session', 'weather', 'hazard', 'standings', 'pitplan']);
 

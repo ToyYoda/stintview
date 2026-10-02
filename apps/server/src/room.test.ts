@@ -128,3 +128,46 @@ describe('Room: silent active driver', () => {
     }
   });
 });
+
+describe('Room: team messages', () => {
+  const messages = (got: ServerMessage[]) => got.filter((m) => m.t === 'message');
+
+  it('relays to overlays that understand messages, with the sender', () => {
+    const { room, peer, overlay } = setup(); // `overlay` is an older client
+    const spotter = peer(1, 'Ben');
+    const viewer = Object.assign(peer(2, 'Anna'), { messages: true });
+    room.addRecorder(spotter);
+    room.addOverlay(viewer);
+    expect(room.message(spotter, '  Box   diese Runde ', 'red')).toMatchObject({ text: 'Box diese Runde', color: 'red', from: 'Ben' });
+    expect(messages(viewer.got)).toHaveLength(1);
+    expect(messages(overlay.got)).toHaveLength(0);
+  });
+
+  it('drops empty texts, unknown colours and repeats within a second; cuts long texts', () => {
+    const { room, peer, advance } = setup();
+    const s = peer(1, 'Ben');
+    expect(room.message(s, '   ', 'red')).toBeNull();
+    expect(room.message(s, 'Push', 'pink')).toBeNull();
+    expect(room.message(s, 'Push', 'green')).not.toBeNull();
+    expect(room.message(s, 'Push', 'green')).toBeNull(); // held hotkey
+    advance(1000);
+    expect(room.message(s, 'x'.repeat(100), 'white')!.text).toHaveLength(60);
+  });
+
+  it('late overlays get the last messages in the snapshot', () => {
+    const { room, peer, advance } = setup();
+    const s = peer(1, 'Ben');
+    for (let i = 0; i < 12; i++) {
+      room.message(s, `m${i}`, 'blue');
+      advance(1000);
+    }
+    const late = Object.assign(peer(3, 'Cleo'), { messages: true });
+    room.addOverlay(late);
+    const snap = late.got.find((m) => m.t === 'snapshot');
+    expect(snap?.t === 'snapshot' && snap.messages?.map((m) => m.text)).toEqual(['m2', 'm3', 'm4', 'm5', 'm6', 'm7', 'm8', 'm9', 'm10', 'm11']);
+    const old = peer(4, 'Dan');
+    room.addOverlay(old);
+    const oldSnap = old.got.find((m) => m.t === 'snapshot');
+    expect(oldSnap?.t === 'snapshot' && oldSnap.messages).toBeUndefined();
+  });
+});

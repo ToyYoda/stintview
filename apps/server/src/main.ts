@@ -102,7 +102,7 @@ wss.on('connection', (ws: WebSocket) => {
         send({ t: 'error', code: 'auth', message: 'invalid token' });
         return ws.close(4001, 'auth');
       }
-      peer = { id: nextId++, memberName: id.memberName, send };
+      peer = { id: nextId++, memberName: id.memberName, send, messages: Array.isArray(msg.features) && msg.features.includes('messages') };
       role = msg.role;
       room = rooms.get(id.teamId) ?? new Room(id.teamId);
       rooms.set(id.teamId, room);
@@ -113,7 +113,12 @@ wss.on('connection', (ws: WebSocket) => {
       return;
     }
 
-    if (role !== 'recorder' || !room) return; // overlays only listen
+    if (msg.t === 'send-message' && room) {
+      const sent = room.message(peer, msg.text, msg.color);
+      if (sent) log(`message from ${peer.memberName}: ${sent.text}`);
+      return;
+    }
+    if (role !== 'recorder' || !room) return; // overlays only listen (apart from team messages)
     if (msg.t === 'driving') {
       const wasActive = active;
       active = room.driving(peer, msg.driving, msg.driverName, msg.session);

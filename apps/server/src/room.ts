@@ -1,12 +1,21 @@
-import type {
-  ActiveDriver, Fuel, FuelLap, ServerMessage, SessionInfo, Snapshot, Telemetry, Tyres, WeatherEvent,
+import {
+  MESSAGE_COLORS, MESSAGE_MAX_LENGTH,
+  type ActiveDriver, type Fuel, type FuelLap, type MessageColor, type ServerMessage, type SessionInfo, type Snapshot,
+  type TeamMessage, type Telemetry, type Tyres, type WeatherEvent,
 } from '@stintview/protocol';
 
 export interface Peer {
   id: number;
   memberName: string;
   send(msg: ServerMessage): void;
+  /** Understands team messages (hello feature 'messages'); older overlays would choke on them. */
+  messages?: boolean;
 }
+
+/** Team messages kept for overlays that connect later. */
+export const MESSAGE_HISTORY = 10;
+/** A sender's messages this close together are dropped (held hotkey, double click). */
+export const MESSAGE_COOLDOWN_MS = 1000;
 
 /** An active driver silent this long (crash, network loss) can be replaced. */
 export const ACTIVE_STALE_MS = 10_000;
@@ -41,6 +50,9 @@ export class Room {
   /** iRacing session of the most recent active driver, and when it last sent data. */
   private raceSession: string | null = null;
   private lastDataAt = 0;
+  private messages: TeamMessage[] = [];
+  private nextMessageId = 1;
+  private lastMessageAt = new Map<number, number>();
 
   constructor(readonly teamId: string, private readonly now: () => number = Date.now) {
     this.active = { t: 'active', driverName: null, memberName: null, since: now() };
@@ -53,6 +65,7 @@ export class Room {
   addOverlay(p: Peer) {
     this.overlays.set(p.id, p);
     const snapshot: Snapshot = { t: 'snapshot', active: this.active, telemetry: [...this.latest.values()] };
+    if (p.messages) snapshot.messages = this.messages;
     p.send(snapshot);
   }
 
@@ -63,6 +76,7 @@ export class Room {
   remove(id: number) {
     this.overlays.delete(id);
     this.recorders.delete(id);
+    this.lastMessageAt.delete(id);
     if (id === this.activeId) this.setActive(null, null);
   }
 
@@ -110,6 +124,22 @@ export class Room {
     const out = this.merge(msg);
     this.latest.set(out.t, out);
     this.broadcast(out);
+  }
+
+  /**
+   * A message from any teammate (recorder or overlay connection) to everyone who can show it.
+   * Empty texts and unknown colours are dropped, long texts cut. Returns the relayed message.
+   */
+  message(p: Peer, text: unknown, color: unknown): TeamMessage | null {
+    const clean = typeof text === 'string' ? text.replace(/\s+/g, ' ').trim().slice(0, MESSAGE_MAX_LENGTH) : '';
+    if (!clean || !MESSAGE_COLORS.includes(color as MessageColor)) return null;
+    const now = this.now();
+    if (now - (this.lastMessageAt.get(p.id) ?? -Infinity) < MESSAGE_COOLDOWN_MS) return null;
+    this.lastMessageAt.set(p.id, now);
+    const msg: TeamMessage = { t: 'message', id: this.nextMessageId++, text: clean, color: color as MessageColor, from: p.memberName, at: now };
+    this.messages = [...this.messages, msg].slice(-MESSAGE_HISTORY);
+    for (const o of this.overlays.values()) if (o.messages) o.send(msg);
+    return msg;
   }
 
   private merge(msg: Telemetry): Telemetry {

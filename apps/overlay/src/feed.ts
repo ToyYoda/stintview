@@ -2,8 +2,16 @@ import { useEffect, useRef, useState } from 'react';
 import {
   PROTOCOL_VERSION, pack, unpack,
   type ActiveDriver, type Fuel, type InputSample, type Inputs, type ServerMessage,
-  type Hazard, type Pitplan, type SessionInfo, type Standings, type Status, type Telemetry, type Tyres, type Weather,
+  type Hazard, type MessageColor, type Pitplan, type SessionInfo, type Standings, type Status, type TeamMessage, type Telemetry, type Tyres, type Weather,
 } from '@stintview/protocol';
+
+/** A team message as shown; `rx` = local time it arrived (live messages only, not from the snapshot). */
+export type ReceivedMessage = TeamMessage & { rx?: number };
+
+/** A team message to send, from the StintView window; `key` = its hotkey (null = none). */
+export interface RadioMessage { id: string; text: string; color: MessageColor; key: string | null }
+/** Messages to send and whether this PC's user is driving (then the Radio panel hides). */
+export interface RadioState { driving: boolean; messages: RadioMessage[] }
 
 export interface LocalConfig { serverUrl: string; token: string; teamName: string; memberName: string }
 
@@ -48,6 +56,8 @@ export interface AppState {
     /** Panel background opacity in percent, all panels. */
     opacity: number;
     pitStop: { fillRate: number | null; tyreTime: number | null; regulation: 'auto' | 'standard' | 'imsa' | 'nec' | 'dtm' };
+    /** Team messages to send; null = defaults in the UI language (see `radio`). */
+    messages: { id: string; text: string; color: MessageColor }[] | null;
   };
   status: {
     line: string;
@@ -69,6 +79,7 @@ export interface AppState {
     folder: string | null; error: string | null;
   };
   hotkeys: HotkeyGroup[];
+  radio: RadioState;
   update: {
     phase: 'unavailable' | 'idle' | 'checking' | 'downloading' | 'ready' | 'latest' | 'error';
     version: string;
@@ -103,6 +114,9 @@ declare global {
       checkUpdate(): Promise<AppState>;
       installUpdate(): Promise<void>;
       pitImport(choose: boolean): Promise<AppState>;
+      sendMessage?(what: string | { text: string; color: MessageColor }): Promise<boolean>;
+      getRadio?(): Promise<RadioState>;
+      onRadio?(cb: (state: RadioState) => void): void;
     };
   }
 }
@@ -190,13 +204,15 @@ export interface FeedState {
   hazard: Hazard | null;
   standings: Standings | null;
   pitplan: Pitplan | null;
+  /** Recent team messages, oldest first. */
+  messages: ReceivedMessage[];
   /** Local time (ms) of the last telemetry message, for the data-age indicator. */
   lastData: number;
 }
 
 const initial: FeedState = {
   conn: 'connecting', error: null, teamName: '', active: null,
-  session: null, status: null, fuel: null, tyres: null, weather: null, hazard: null, standings: null, pitplan: null, lastData: 0,
+  session: null, status: null, fuel: null, tyres: null, weather: null, hazard: null, standings: null, pitplan: null, messages: [], lastData: 0,
 };
 
 /** Connects to the team relay and exposes the latest telemetry. */
@@ -225,6 +241,7 @@ export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
           // Lets the desktop app (hotkeys) know which car to jump back to.
           window.stintview?.setTeamCar?.({ carIdx: m.carIdx, carNumber: m.carNumber, sessionId: m.sessionId });
           return { ...s, session: m, lastData: now };
+        default: return s; // newer telemetry this version doesn't know
       }
     };
 
@@ -239,7 +256,7 @@ export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
       url.pathname = '/ws';
       ws = new WebSocket(url);
       ws.binaryType = 'arraybuffer';
-      ws.onopen = () => ws!.send(pack({ t: 'hello', v: PROTOCOL_VERSION, token: config.token, role: 'overlay' }));
+      ws.onopen = () => ws!.send(pack({ t: 'hello', v: PROTOCOL_VERSION, token: config.token, role: 'overlay', features: ['messages'] }));
       ws.onmessage = (ev) => {
         const m = unpack<ServerMessage>(ev.data as ArrayBuffer);
         if (m.t === 'inputs') return inputs.push(m);
@@ -250,7 +267,8 @@ export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
             case 'active':
               if (!m.driverName) inputs.clear();
               return { ...s, active: m };
-            case 'snapshot': return m.telemetry.reduce(applyTelemetry, { ...s, active: m.active });
+            case 'snapshot': return m.telemetry.reduce(applyTelemetry, { ...s, active: m.active, messages: m.messages ?? s.messages });
+            case 'message': return { ...s, messages: [...s.messages.filter((x) => x.id !== m.id), { ...m, rx: Date.now() }].slice(-10) };
             case 'standby': return s; // recorder-only
             default: return applyTelemetry(s, m);
           }

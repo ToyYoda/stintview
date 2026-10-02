@@ -52,6 +52,8 @@ const de = {
   'keys.back': 'Zurück zu deinem Fahrer',
   'keys.vr': 'VR-Overlay (SteamVR)',
   'keys.vrNote': 'Nur aktiv, wenn die Anzeigen in VR eingeblendet sind.',
+  'keys.radio': 'Funk – Nachrichten ans Team',
+  'keys.radioNote': 'Während du selbst fährst abgeschaltet, damit iRacing die Tasten behält.',
   'vr.select': 'Nächstes Panel auswählen',
   'vr.left': 'Panel nach links',
   'vr.right': 'Panel nach rechts',
@@ -63,7 +65,7 @@ const de = {
   'vr.smaller': 'Panel kleiner',
   'vr.hide': 'Alle Panels aus-/einblenden',
   'vr.recenter': 'SteamVR-Ausrichtung zurücksetzen (Blick nach vorn = neue Mitte)',
-  'key.Control': 'Strg', 'key.Shift': 'Umschalt', 'key.PageUp': 'Bild↑', 'key.PageDown': 'Bild↓', 'key.Plus': 'Plus', 'key.-': 'Minus',
+  'key.Control': 'Strg', 'key.Shift': 'Umschalt', 'key.Alt': 'Alt', 'key.PageUp': 'Bild↑', 'key.PageDown': 'Bild↓', 'key.Plus': 'Plus', 'key.-': 'Minus',
 };
 
 const en = {
@@ -116,6 +118,8 @@ const en = {
   'keys.back': 'Back to your driver',
   'keys.vr': 'VR overlay (SteamVR)',
   'keys.vrNote': 'Only active while the displays are shown in VR.',
+  'keys.radio': 'Radio – messages to the team',
+  'keys.radioNote': 'Off while you are driving yourself, so iRacing keeps the keys.',
   'vr.select': 'Select next panel',
   'vr.left': 'Panel left',
   'vr.right': 'Panel right',

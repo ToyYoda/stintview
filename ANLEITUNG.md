@@ -44,7 +44,7 @@ Dann **Team beitreten** klicken. Unter *Status* erscheint **Team-Server: verbund
 
 Nichts zu tun: StintView startet mit Windows und läuft im Infobereich der Taskleiste (unten rechts, das rote „O“; ggf. unter dem Pfeil **^** versteckt).
 
-- **Klick** auf das Symbol öffnet das StintView-Fenster mit den Reitern **Status**, **Anzeigen**, **Boxenstopp**, **Team** und **Kürzel**.
+- **Klick** auf das Symbol öffnet das StintView-Fenster mit den Reitern **Status**, **Anzeigen**, **Boxenstopp**, **Funk**, **Team** und **Kürzel**.
 - **Rechtsklick** öffnet das Menü mit denselben Schaltern und **StintView beenden**.
 
 Sobald du im Auto sitzt, sieht dein Team deine Daten. Steigst du aus, hört StintView von selbst auf zu senden.
@@ -66,6 +66,16 @@ Steht bis etwa 1,5 km vor deinem Fahrer ein Auto oder schleicht es neben der Str
 - Voraussetzung: Du schaust der Team-Session in iRacing zu (nicht selbst im Auto). Beim Fahrer wird nie etwas umgestellt.
 - Tastenkürzel (auch in VR): **Strg+Umschalt+J** = zum Unfall, **Strg+Umschalt+K** = zurück (Ausweichkürzel stehen im StintView-Fenster).
 - Findet StintView kein stehendes Auto vor deinem Fahrer, zeigt iRacing den letzten Unfall auf der Strecke.
+
+### Funk: Nachrichten an den Fahrer
+
+Als Spotter kannst du deinem Fahrer kurze Ansagen schicken, die bei ihm groß im Overlay erscheinen – zusätzlich zu Discord, falls im Funk zu viel los ist.
+
+- **Nachrichten anlegen:** StintView-Fenster → Reiter **Funk**. Text eingeben, Farbe wählen, Reihenfolge mit ↑/↓, löschen mit ✕, **Nachricht hinzufügen** (bis zu 12). Für einmalige Ansagen gibt es unten ein freies Textfeld (wird nicht gespeichert). Jede Nachricht lässt sich dort auch direkt **senden**.
+- **Senden im Rennen:** Panel **Funk** einblenden (Reiter **Anzeigen**) und auf den Knopf klicken – oder das Tastenkürzel drücken, das klein auf dem Knopf steht (**Strg+Umschalt+1** bis **9** für die ersten neun; Ausweichkürzel im Reiter **Kürzel**). In VR gehen nur die Kürzel.
+- **Empfangen:** Panel **Nachrichten** einblenden – am besten jeder, vor allem der Fahrer. Die neueste Nachricht steht groß in ihrer Farbe und blinkt kurz, darunter die drei vorherigen mit Absender und Zeit.
+- Solange **du selbst fährst**, ist das Funk-Panel unsichtbar und die Kürzel sind aus – iRacing behält alle Tasten.
+- Alle Teammitglieder brauchen dafür StintView 0.11 oder neuer (auch der PC mit dem Team-Server).
 
 ### Overlay in VR (SteamVR-Brillen)
 

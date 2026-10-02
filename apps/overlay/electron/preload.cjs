@@ -20,6 +20,10 @@ contextBridge.exposeInMainWorld('stintview', {
   camera: (action, targetCarIdx) => ipcRenderer.invoke('app:camera', action, targetCarIdx),
   getCameraInfo: () => ipcRenderer.invoke('app:camera-info'),
   onCamera: (cb) => ipcRenderer.on('camera', (_e, m) => cb(m)),
+  // Team messages: send one (id from the list, or { text, color }), list + hotkeys + whether you drive
+  sendMessage: (what) => ipcRenderer.invoke('app:send-message', what),
+  getRadio: () => ipcRenderer.invoke('app:radio'),
+  onRadio: (cb) => ipcRenderer.on('radio', (_e, state) => cb(state)),
   // Setup window
   getState: () => ipcRenderer.invoke('app:state'),
   onState: (cb) => ipcRenderer.on('app-state', (_e, state) => cb(state)),

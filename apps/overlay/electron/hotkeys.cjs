@@ -16,8 +16,9 @@ function displayKey(h) {
  * @param {{ incident: string | null, back: string | null }} camera  registered camera keys (raw)
  * @param {{ keys: { key: string, label: string, ok: boolean }[], running: boolean }} vr
  * @param {{ overlay: boolean }} active
+ * @param {{ items: { label: string, key: string | null, candidates: string[] }[], driving: boolean }} radio  team messages
  */
-function hotkeyGroups(edit, camera, cameraCandidates, vr, active) {
+function hotkeyGroups(edit, camera, cameraCandidates, vr, active, radio = { items: [], driving: false }) {
   // Candidates before the registered key are held by other programs, later ones are spares.
   const item = (label, key, candidates, on) => {
     const at = key ? candidates.indexOf(key) : -1;
@@ -48,6 +49,12 @@ function hotkeyGroups(edit, camera, cameraCandidates, vr, active) {
       title: t('keys.vr'),
       note: vr.running ? null : t('keys.vrNote'),
       items: vr.keys.map((k) => ({ label: k.label, key: k.ok ? displayKey(k.key) : null, taken: k.ok ? [] : [displayKey(k.key)], alternatives: [], active: vr.running && k.ok })),
+    },
+    {
+      title: t('keys.radio'),
+      // While driving the keys are released; show the preferred one greyed out.
+      note: radio.driving ? t('keys.radioNote') : null,
+      items: radio.items.map((m) => item(m.label, m.key ?? (radio.driving ? m.candidates[0] : null), m.candidates, !radio.driving)),
     },
   ];
 }

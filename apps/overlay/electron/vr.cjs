@@ -26,6 +26,8 @@ const DEFAULT_LAYOUT = {
     standings: { enabled: true, distance: 0.8, down: 0.08, right: -0.3, width: 0.22 },
     duel: { enabled: true, distance: 0.8, down: 0.44, right: 0.0, width: 0.34 },
     pitstop: { enabled: true, distance: 0.8, down: 0.3, right: -0.3, width: 0.2 },
+    messages: { enabled: true, distance: 0.8, down: 0.08, right: -0.55, width: 0.24 },
+    radio: { enabled: true, distance: 0.8, down: 0.3, right: 0.55, width: 0.24 },
   },
 };
 
