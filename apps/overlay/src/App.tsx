@@ -21,7 +21,7 @@ const DEFAULT_POSITIONS: Positions = {
   tyres: { x: 780, y: 100 },
   weather: { x: 1100, y: 100 },
   standings: { x: 1420, y: 100 },
-  duel: { x: 1040, y: 480 },
+  duel: { x: 700, y: 860 },
   pitstop: { x: 1420, y: 480 },
 };
 const STORAGE_KEY = 'stintview.positions';
