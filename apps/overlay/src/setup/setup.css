@@ -203,3 +203,34 @@ body.setup-body #root { height: auto; }
 .setup .color-blue { --msg: #4da3ff; }
 .setup .color-purple { --msg: #b07cff; }
 .setup .color-white { --msg: #e8e8e8; }
+
+/* Alternative app "Backseat Racer": Asphalt, Signal, Graphit, Kreide, Bremse (site/beta). */
+[data-brand="backseat"] body.setup-body {
+  --o-white: #f2f2ee;
+  --o-red: #ffd60a;
+  --o-red-hi: #ffe14d;
+  --o-panel: #1c1e22;
+  --o-panel-2: #2a2d33;
+  --o-line: rgba(242, 242, 238, 0.1);
+  --o-muted: #a9abaf;
+  background: #111214;
+  font-family: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+}
+[data-brand="backseat"] .setup .plate {
+  display: inline-grid; place-items: center; flex: none; width: 58px; height: 44px; border-radius: 10px;
+  background: #ffd60a; color: #111214; font: italic 900 26px/1 'Barlow Condensed', sans-serif; transform: skewX(-8deg);
+}
+[data-brand="backseat"] .setup .plate span { transform: skewX(8deg); }
+[data-brand="backseat"] .setup .wordmark.br { font-family: 'Barlow Condensed', sans-serif; font-style: italic; line-height: 0.92; }
+[data-brand="backseat"] .setup .wordmark.br span { font-weight: 600; font-size: 13px; letter-spacing: 0.32em; color: #f2f2ee; margin: 0; }
+[data-brand="backseat"] .setup .wordmark.br b { font-weight: 900; font-size: 30px; color: #ffd60a; }
+[data-brand="backseat"] .setup .product { margin-top: 4px; font-size: 12px; font-style: normal; font-weight: 400; }
+/* Yellow buttons and tabs carry dark text */
+[data-brand="backseat"] .setup .btn:not(.ghost), [data-brand="backseat"] .setup .tabs button.on,
+[data-brand="backseat"] .setup .seg.active { color: #111214; }
+[data-brand="backseat"] .setup h2, [data-brand="backseat"] .setup .tabs button, [data-brand="backseat"] .setup .btn {
+  font-family: 'Barlow Condensed', sans-serif; font-style: italic; font-weight: 800;
+}
+[data-brand="backseat"] .setup h2 { font-size: 18px; letter-spacing: 0.12em; }
+[data-brand="backseat"] .setup .tabs button { font-size: 15px; letter-spacing: 0.05em; }
+[data-brand="backseat"] .setup .btn { font-size: 17px; letter-spacing: 0.05em; }

@@ -2,6 +2,7 @@
 // install on request ("Jetzt aktualisieren") – or on quit, as before.
 const { app } = require('electron');
 const { t } = require('./i18n.cjs');
+const { brand } = require('./brand.cjs');
 
 const CHECK_EVERY_MS = 60 * 60 * 1000;
 
@@ -21,6 +22,11 @@ function setupUpdates(onChange) {
   const { autoUpdater } = require('electron-updater');
   updater = autoUpdater;
   autoUpdater.autoDownload = true;
+  // The alternative app reads backseat.yml from the same GitHub release (StintView: latest.yml).
+  if (brand.updateChannel) {
+    autoUpdater.channel = brand.updateChannel;
+    autoUpdater.allowDowngrade = false; // setting a channel turns it on
+  }
   autoUpdater.autoInstallOnAppQuit = true; // still installs on quit if nobody clicks
   autoUpdater.on('checking-for-update', () => set({ phase: 'checking', error: '' }));
   autoUpdater.on('update-not-available', () => set({ phase: 'latest' }));

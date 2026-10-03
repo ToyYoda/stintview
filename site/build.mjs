@@ -19,6 +19,8 @@ const out = join(root, '_site');
 const REPO = 'https://github.com/ToyYoda/stintview';
 const SITE = 'https://toyyoda.github.io/stintview/';
 const DOWNLOAD_URL = `${REPO}/releases/latest/download/StintView-Setup.exe`;
+// Alternative app "Backseat Racer": own installer in the same release (electron-builder.backseat.yml).
+const BETA_DOWNLOAD_URL = `${REPO}/releases/latest/download/BackseatRacer-Setup.exe`;
 
 const slug = (s) =>
   s.toLowerCase()
@@ -85,7 +87,7 @@ for (const [family, styles] of BETA_FONTS) {
 const langs = Object.keys(LANGUAGES);
 const VARIANTS = [
   { name: 'main', dir: '', template: 'template.html' },
-  { name: 'beta', dir: 'beta', template: join('beta', 'template.html'), rename: true },
+  { name: 'beta', dir: 'beta', template: join('beta', 'template.html'), rename: true, download: BETA_DOWNLOAD_URL },
 ];
 
 const built = [];
@@ -128,7 +130,7 @@ for (const lang of langs) {
     TOC: toc,
     GUIDE: html,
     VERSION: `${git('log', '-1', `--format=%cd`, `--date=format:${dateFormat}`)} · ${sha}`,
-    DOWNLOAD_URL,
+    DOWNLOAD_URL: variant.download ?? DOWNLOAD_URL,
     REPO,
     // Beta only: the main page in the same language, and the self-hosted fonts.
     MAIN: `${base}${langDir ? `${langDir}/` : ''}`,

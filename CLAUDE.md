@@ -18,6 +18,7 @@
 ## Testversion starten (ohne Philipps Installation zu stören)
 
 - Testprofil: `STINTVIEW_HOME=<scratchpad>/app-home` (eigener Team-Server auf Port 8796, eigene Einstellungen). Bauen: in `apps/overlay` `npx vite build && node scripts/bundle.mjs`; starten im Hintergrund: `STINTVIEW_HOME=… npx electron . --remote-debugging-port=9333`.
+- Alternativversion „Backseat Racer“ (SPEC A20): zusätzlich `STINTVIEW_BRAND=backseat` setzen (gleicher Oberflächen-Build). Installer lokal: `pnpm --filter @stintview/overlay dist:backseat` → `apps/overlay/release-backseat/`. Beim Prüfen gepackter Dateien nichts ins Projekt entpacken (überschreibt z. B. `package.json`).
 - Steuern/Screenshots: `node scripts/cdp.mjs eval "<js>" "<route>"` bzw. `shot <datei.png> "<route>" [selector]`; Route = Ende der URL (`#/setup`, `#/`, `#/widget/<id>`), in Git-Bash mit `MSYS_NO_PATHCONV=1`. `eval` wartet nicht auf Promises.
 - **Testprozesse nur gezielt beenden** (Electron/Node-Prozesse, deren Kommandozeile `stintview` bzw. `recorder.cjs|demo-standings|fake-hazard|cdp.mjs|main.ts replay` enthält) – **nie** `taskkill /IM StintView.exe` (trifft die echte Installation).
 - Wenn der Monitor schläft, liefert das Monitor-Overlay keine Screenshots: Ausgabe auf VR stellen und die Offscreen-Seiten `#/widget/<id>` ganz (ohne Selector) aufnehmen – ohne laufendes SteamVR erscheint nichts in einer Brille.

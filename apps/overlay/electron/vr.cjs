@@ -8,6 +8,7 @@ const { dataDir } = require('./config.cjs');
 const { D3D11 } = require('./d3d11.cjs');
 const { OpenVR, panelTransform, TRANSIENT_ERRORS } = require('./openvr.cjs');
 const { PRELOAD, loadRoute } = require('./renderer.cjs');
+const { brand } = require('./brand.cjs');
 
 const FPS = Number(process.env.STINTVIEW_VR_FPS ?? 30);
 const ZOOM = 2; // render at 2x for sharp text in the headset
@@ -238,7 +239,7 @@ function connectVr() {
 function openPanel(id) {
   const panel = panels.get(id);
   if (!panel) return;
-  panel.handle = vr.createOverlay(`stintview.${id}`, `StintView ${id}`);
+  panel.handle = vr.createOverlay(`${brand.id}.${id}`, `${brand.name} ${id}`);
   panel.width = panel.height = 0; // re-log the first upload
   panel.failures = 0;
   placePanel(id);

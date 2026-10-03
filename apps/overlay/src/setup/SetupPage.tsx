@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { MESSAGE_COLORS, MESSAGE_MAX_LENGTH, type MessageColor } from '@stintview/protocol';
 import type { AppState, HotkeyGroup, PanelSetting, DuelOptions, RadioState, StandingsColumn, StandingsOptions } from '../feed.ts';
 import { setLang, t, useLang, type Lang } from '../i18n.ts';
+import { brand } from '../brand.ts';
 import './setup.css';
 
 const api = () => window.stintview!;
@@ -25,11 +26,24 @@ export function SetupPage() {
   return (
     <div className="setup">
       <header className="setup-head">
-        <Emblem />
-        <div>
-          <div className="wordmark"><b>OUTCAST</b><span>ENDURANCE</span></div>
-          <div className="product">StintView <small>v{state.version}</small></div>
-        </div>
+        {brand === 'backseat' ? (
+          // Alternative app: "BR" race plate and its own wordmark.
+          <>
+            <span className="plate" aria-hidden="true"><span>BR</span></span>
+            <div>
+              <div className="wordmark br"><span>BACKSEAT</span><b>RACER</b></div>
+              <div className="product">v{state.version}</div>
+            </div>
+          </>
+        ) : (
+          <>
+            <Emblem />
+            <div>
+              <div className="wordmark"><b>OUTCAST</b><span>ENDURANCE</span></div>
+              <div className="product">StintView <small>v{state.version}</small></div>
+            </div>
+          </>
+        )}
         <div className="lang-switch" role="radiogroup" aria-label={t('set.language')}>
           {(['de', 'en'] as const).map((l) => (
             <button key={l} type="button" role="radio" aria-checked={state.settings.language === l}

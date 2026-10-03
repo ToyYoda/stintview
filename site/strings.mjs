@@ -233,12 +233,14 @@ export const STRINGS = {
 };
 
 /**
- * Experimental design: the app is called "Backseat Racer". Technical names stay as they are
- * in the app (installer StintView-Setup.exe, folder %APPDATA%\StintView, repo URLs in lower case).
+ * Experimental design: the app is called "Backseat Racer". Installer and data folder are the
+ * alternative app's own (BackseatRacer-Setup.exe, %APPDATA%\Backseat Racer); repo URLs stay.
  * German compounds: "StintView-Fenster" -> "Backseat-Racer-Fenster".
  */
 export function renameApp(text) {
   return text
+    .replace(/StintView-Setup\.exe/g, 'BackseatRacer-Setup.exe')
+    .replace(/%APPDATA%\\StintView/g, '%APPDATA%\\Backseat Racer')
     .replace(/(?<![\\/\w])StintViews(?!\w)/g, 'Backseat-Racer-Apps')
     .replace(/(?<![\\/\w])StintView-(?!Setup)/g, 'Backseat-Racer-')
     .replace(/(?<![\\/\w])StintView(?![-\w]|\.\w)/g, 'Backseat Racer')
@@ -253,8 +255,8 @@ export const BETA_STRINGS = {
     heroKicker: 'Team-Telemetrie für iRacing',
     heroTitle: 'Sitz hinten. <em>Fahr trotzdem mit.</em>',
     slogan: 'Vom Rücksitz an die Box. <em>Live.</em>',
-    betaNote: 'Experimentelles Design – der neue Name „Backseat Racer“ ist noch nicht in der App.',
-    betaLink: 'Zur bisherigen Seite',
+    betaNote: 'Backseat Racer ist die Alternativversion von StintView: gleiche Funktionen, eigener Name und eigenes Design – läuft neben StintView im selben Team.',
+    betaLink: 'Zur StintView-Seite',
     duelLabel: 'Duell',
     footerProject: 'Ein Projekt von Outcast Endurance. Kein offizielles Produkt von iRacing.com Motorsport Simulations.',
   },
@@ -264,8 +266,8 @@ export const BETA_STRINGS = {
     heroKicker: 'Team telemetry for iRacing',
     heroTitle: 'Ride in the back. <em>Race anyway.</em>',
     slogan: 'From the back seat to the pit wall. <em>Live.</em>',
-    betaNote: 'Experimental design – the new name "Backseat Racer" is not in the app yet.',
-    betaLink: 'Back to the current page',
+    betaNote: 'Backseat Racer is the alternative version of StintView: same features, its own name and design – runs next to StintView in the same team.',
+    betaLink: 'To the StintView page',
     duelLabel: 'Duel',
     footerProject: 'An Outcast Endurance project. Not an official product of iRacing.com Motorsport Simulations.',
   },

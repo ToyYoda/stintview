@@ -4,6 +4,7 @@
  * Texts use {name} placeholders.
  */
 import { useEffect, useState } from 'react';
+import { brandText } from './brand.ts';
 
 export type Lang = 'de' | 'en';
 
@@ -569,7 +570,8 @@ export const getLang = () => current;
 
 /** Translated text; `{name}` placeholders are filled from `vars`. Unknown keys fall back to German, then the key. */
 export function t(key: Key | string, vars?: Record<string, string | number>): string {
-  const s = dicts[current][key] ?? (de as Record<string, string>)[key] ?? key;
+  // In the alternative app "Backseat Racer" the texts name it instead of StintView.
+  const s = brandText(dicts[current][key] ?? (de as Record<string, string>)[key] ?? key);
   return vars ? s.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? '')) : s;
 }
 

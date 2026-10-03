@@ -1,8 +1,13 @@
 // Renders the Outcast "O" emblem to the app icons. Run once with: npx electron scripts/make-icons.cjs
 //   electron/icons/tray.png (32 px, tray + window), build/icon.ico (16–256 px, installer + exe)
+// Alternative app: npx electron scripts/make-icons.cjs backseat -> yellow "BR" race plate in
+//   electron/icons/backseat/ and build/backseat/.
 const { app, BrowserWindow, nativeImage } = require('electron');
 const { mkdirSync, writeFileSync } = require('node:fs');
+const { tmpdir } = require('node:os');
 const path = require('node:path');
+
+const BACKSEAT = process.argv.includes('backseat');
 
 const SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="256" height="256">
   <circle cx="32" cy="32" r="30" fill="#0a0a0a"/>
@@ -12,6 +17,15 @@ const SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="
   </g>
   <polygon points="9,47 55,17 58,20.5 13,50.5" fill="#d10f0f"/>
 </svg>`;
+
+// Signal-yellow plate, slightly slanted, with "BR" in Barlow Condensed Black Italic.
+const FONT = path.join(__dirname, '..', 'node_modules', '@fontsource', 'barlow-condensed', 'files', 'barlow-condensed-latin-900-italic.woff2');
+const BACKSEAT_HTML = `<style>@font-face { font-family: BR; src: url('${'file:///' + FONT.replace(/\\/g, '/')}'); }
+  html, body { margin: 0; background: transparent; overflow: hidden; }
+  .p { position: absolute; left: 22px; top: 36px; width: 212px; height: 184px; border-radius: 44px; background: #ffd60a; transform: skewX(-8deg);
+       display: grid; place-items: center; }
+  .p span { transform: skewX(8deg); font: italic 900 160px/1 BR; color: #111214; letter-spacing: -4px; margin-top: 6px; }
+</style><div class="p"><span>BR</span></div>`;
 
 /** ICO container with PNG-compressed entries (supported since Windows Vista). */
 function toIco(pngs) {
@@ -37,18 +51,29 @@ app.disableHardwareAcceleration();
 app.whenReady().then(async () => {
   const win = new BrowserWindow({ show: false, width: 256, height: 256, transparent: true, frame: false, webPreferences: { offscreen: true } });
   win.webContents.setZoomFactor(1);
-  await win.loadURL(`data:text/html,<body style="margin:0;background:transparent">${encodeURIComponent(SVG)}</body>`);
+  if (BACKSEAT) {
+    // A file page, so the font can be loaded from node_modules.
+    const page = path.join(tmpdir(), 'backseat-icon.html');
+    writeFileSync(page, BACKSEAT_HTML);
+    await win.loadFile(page);
+    await win.webContents.executeJavaScript('document.fonts.ready.then(() => true)');
+  } else {
+    await win.loadURL(`data:text/html,<body style="margin:0;background:transparent">${encodeURIComponent(SVG)}</body>`);
+  }
   await new Promise((r) => setTimeout(r, 300));
   const full = await win.webContents.capturePage({ x: 0, y: 0, width: 256, height: 256 });
   const at = (size) => nativeImage.createFromBuffer(full.toPNG()).resize({ width: size, height: size, quality: 'best' }).toPNG();
 
   const root = path.join(__dirname, '..');
-  mkdirSync(path.join(root, 'electron', 'icons'), { recursive: true });
-  mkdirSync(path.join(root, 'build'), { recursive: true });
-  writeFileSync(path.join(root, 'electron', 'icons', 'tray.png'), at(32));
-  writeFileSync(path.join(root, 'electron', 'icons', 'tray@2x.png'), at(64));
-  writeFileSync(path.join(root, 'build', 'icon.ico'), toIco([16, 24, 32, 48, 64, 128, 256].map((size) => ({ size, data: at(size) }))));
-  writeFileSync(path.join(root, 'build', 'icon.png'), at(256));
+  const sub = BACKSEAT ? 'backseat' : '';
+  const icons = path.join(root, 'electron', 'icons', sub);
+  const build = path.join(root, 'build', sub);
+  mkdirSync(icons, { recursive: true });
+  mkdirSync(build, { recursive: true });
+  writeFileSync(path.join(icons, 'tray.png'), at(32));
+  writeFileSync(path.join(icons, 'tray@2x.png'), at(64));
+  writeFileSync(path.join(build, 'icon.ico'), toIco([16, 24, 32, 48, 64, 128, 256].map((size) => ({ size, data: at(size) }))));
+  writeFileSync(path.join(build, 'icon.png'), at(256));
   console.log('icons written');
   app.quit();
 });

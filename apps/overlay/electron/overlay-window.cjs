@@ -1,6 +1,7 @@
 // Desktop overlay: transparent, always-on-top, click-through window over iRacing (borderless mode).
 const { BrowserWindow, globalShortcut, ipcMain, screen } = require('electron');
 const { PRELOAD, loadRoute } = require('./renderer.cjs');
+const { brand } = require('./brand.cjs');
 
 // Tried in order; the first one no other program holds wins (e.g. AMD Radeon Software
 // takes Ctrl+Shift+O for its metrics overlay).
@@ -57,7 +58,7 @@ function startOverlay() {
     hasShadow: false,
     focusable: false,
     skipTaskbar: true,
-    title: 'StintView Overlay',
+    title: `${brand.name} Overlay`,
     backgroundColor: '#00000000',
     webPreferences: { preload: PRELOAD, contextIsolation: true, sandbox: true },
   });

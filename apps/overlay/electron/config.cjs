@@ -3,9 +3,11 @@ const { mkdirSync, readFileSync, writeFileSync } = require('node:fs');
 const { homedir } = require('node:os');
 const path = require('node:path');
 const { systemLanguage, t } = require('./i18n.cjs');
+const { brand } = require('./brand.cjs');
 
 // STINTVIEW_HOME redirects everything (tests, a second profile on one PC).
-const dataDir = process.env.STINTVIEW_HOME ?? path.join(process.env.APPDATA ?? path.join(homedir(), 'AppData', 'Roaming'), 'StintView');
+// Each app (StintView / Backseat Racer) has its own folder, so both can run side by side.
+const dataDir = process.env.STINTVIEW_HOME ?? path.join(process.env.APPDATA ?? path.join(homedir(), 'AppData', 'Roaming'), brand.dataDirName);
 const configPath = () => process.env.STINTVIEW_CONFIG ?? path.join(dataDir, 'config.json');
 const settingsPath = path.join(dataDir, 'app.json');
 const logDir = path.join(dataDir, 'logs');

@@ -1,6 +1,7 @@
 // UI language of the main process (tray menu, dialogs, hotkey labels, messages).
 // The renderer has its own dictionary in src/i18n.ts; the language is the same setting.
 const { app } = require('electron');
+const { brandText } = require('./brand.cjs');
 
 const de = {
   'status.notSetUp': 'Nicht eingerichtet',
@@ -145,7 +146,8 @@ function setLanguage(l) {
 }
 
 function t(key, vars) {
-  const s = dicts[lang][key] ?? de[key] ?? key;
+  // In the alternative app "Backseat Racer" the texts name it instead of StintView.
+  const s = brandText(dicts[lang][key] ?? de[key] ?? key);
   return vars ? s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? '')) : s;
 }
 

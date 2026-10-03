@@ -1,0 +1,34 @@
+# Windows installer for the alternative app "Backseat Racer" – same code as StintView, own name,
+# logo, installer, data folder (%APPDATA%\Backseat Racer) and update channel, installable side by side.
+#   pnpm --filter @stintview/overlay dist:backseat  -> release-backseat/BackseatRacer-Setup.exe (local)
+# The release workflow builds it for every tag and adds it to the same GitHub release; the app
+# updates itself from backseat.yml there (StintView uses latest.yml).
+extends: ./electron-builder.yml
+appId: com.outcastendurance.backseatracer
+productName: Backseat Racer
+
+# Written into the packaged package.json: electron/brand.cjs reads "brand"; "name" is the
+# install folder (%LOCALAPPDATA%\Programs\backseat-racer).
+extraMetadata:
+  name: backseat-racer
+  productName: Backseat Racer
+  description: Backseat Racer – Team-Telemetrie für iRacing (Outcast Endurance)
+  brand: backseat
+
+directories:
+  output: release-backseat
+  buildResources: build
+
+win:
+  icon: build/backseat/icon.ico
+
+nsis:
+  shortcutName: Backseat Racer
+  artifactName: BackseatRacer-Setup.${ext}
+
+publish:
+  provider: github
+  owner: ToyYoda
+  repo: stintview
+  releaseType: release
+  channel: backseat

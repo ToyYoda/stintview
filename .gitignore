@@ -6,5 +6,6 @@ dist-electron/
 __pycache__/
 _site/
 release/
+release-backseat/
 dist-bundles/
 tools/live_vars.txt

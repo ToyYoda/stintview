@@ -16,20 +16,27 @@ const { hotkeyGroups } = require('./hotkeys.cjs');
 const { messageHotkeyInfo, radioState, sendMessage, setDriving, setMessages, startMessages, stopMessages } = require('./messages.cjs');
 const { checkNow, installNow, setupUpdates, updateInfo, updateLabel } = require('./updates.cjs');
 const { setLanguage, t } = require('./i18n.cjs');
+const { brand } = require('./brand.cjs');
 
 const BUNDLES = path.join(__dirname, '..', 'dist-bundles');
-const ICON = path.join(__dirname, 'icons', 'tray.png');
+const ICON = path.join(__dirname, 'icons', brand.icons, 'tray.png');
 const RESTART_MS = 5000;
 
 // A separate profile (tests, second profile) also needs its own Chromium data and instance lock.
 if (process.env.STINTVIEW_HOME) app.setPath('userData', path.join(dataDir, 'electron'));
+// The alternative app started from the sources: its own name, Chromium data and instance lock
+// (installed, its package.json already carries the name).
+else if (app.getName() !== brand.name) {
+  app.setName(brand.name);
+  app.setPath('userData', dataDir);
+}
 
 if (!app.requestSingleInstanceLock()) {
   // Already running: the first instance opens its window (see 'second-instance').
   app.quit();
   return; // CommonJS module scope
 }
-app.setAppUserModelId('com.outcastendurance.stintview');
+app.setAppUserModelId(brand.appId);
 // All rendering is simple 2D; keep the GPU for the sim (also what the VR panels were tested with).
 app.disableHardwareAcceleration();
 
@@ -61,7 +68,7 @@ function supervise(name, file, args, env, onMessage) {
   const start = () => {
     if (state.stopped || quitting) return;
     const proc = utilityProcess.fork(path.join(BUNDLES, file), args, {
-      serviceName: `StintView ${name}`,
+      serviceName: `${brand.name} ${name}`,
       stdio: 'pipe',
       env: { ...process.env, ...env },
     });
@@ -130,7 +137,7 @@ async function startPitImport(choose) {
   }
   pitImport = { running: true, finished: false, done: 0, total: 0, passes: 0, tracks: 0, folder: dir, error: null };
   const proc = utilityProcess.fork(path.join(BUNDLES, 'recorder.cjs'), ['import-pitlane', dir], {
-    serviceName: 'StintView Boxengassen-Import', stdio: 'pipe', env: { ...process.env, STINTVIEW_CONFIG: configPath() },
+    serviceName: `${brand.name} Boxengassen-Import`, stdio: 'pipe', env: { ...process.env, STINTVIEW_CONFIG: configPath() },
   });
   proc.stdout?.on('data', (d) => console.log(`[pit-import] ${String(d).trim()}`));
   proc.stderr?.on('data', (d) => console.error(`[pit-import] ${String(d).trim()}`));
@@ -261,7 +268,7 @@ function statusLine() {
 
 function refresh() {
   if (tray) {
-    tray.setToolTip(`StintView – ${statusLine()}`);
+    tray.setToolTip(`${brand.name} – ${statusLine()}`);
     tray.setContextMenu(buildMenu());
   }
   if (setupWin && !setupWin.isDestroyed()) setupWin.webContents.send('app-state', appState());
@@ -317,7 +324,7 @@ function openSetup(route = '/setup') {
     height: 720,
     minWidth: 460,
     minHeight: 560,
-    title: 'StintView',
+    title: brand.name,
     icon: ICON,
     backgroundColor: '#0a0a0a',
     autoHideMenuBar: true,

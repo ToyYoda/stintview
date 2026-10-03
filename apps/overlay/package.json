@@ -15,7 +15,8 @@
     "start": "vite build && node scripts/bundle.mjs && electron .",
     "dist": "vite build && node scripts/bundle.mjs && electron-builder --win --publish never",
     "release": "vite build && node scripts/bundle.mjs && electron-builder --win --publish always",
-    "typecheck": "tsc -p ."
+    "typecheck": "tsc -p .",
+    "dist:backseat": "vite build && node scripts/bundle.mjs && electron-builder --win --publish never --config electron-builder.backseat.yml"
   },
   "dependencies": {
     "electron-updater": "^6",
@@ -23,6 +24,8 @@
     "koffi": "^2.9.0"
   },
   "devDependencies": {
+    "@fontsource/barlow-condensed": "^5.3.0",
+    "@fontsource/space-grotesk": "^5.3.0",
     "@stintview/protocol": "workspace:*",
     "@stintview/telemetry": "workspace:*",
     "@types/react": "^18.3.12",

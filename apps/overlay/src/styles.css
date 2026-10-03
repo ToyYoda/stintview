@@ -238,3 +238,17 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .fuel-plan-pit { font-weight: 400; color: var(--accent); }
 .fuel-plan-line { font-size: 12px; }
 .fuel-plan-line.save { color: var(--cold); }
+
+/* Alternative app "Backseat Racer": asphalt panels, signal yellow accent, race-plate titles. */
+[data-brand="backseat"] {
+  --panel: rgba(17, 18, 20, var(--panel-alpha));
+  --border: rgba(242, 242, 238, 0.1);
+  --text: #f2f2ee;
+  --muted: #a9abaf;
+  --accent: #ffd60a;
+  --warn: #ffd60a;
+  --bad: #ff3b30;
+}
+[data-brand="backseat"] .panel { border-radius: 10px; }
+[data-brand="backseat"] .title { font: italic 800 13px 'Barlow Condensed', sans-serif; letter-spacing: 0.12em; color: #ffd60a; }
+[data-brand="backseat"] .title .hint { font: 400 11px 'Segoe UI', system-ui, sans-serif; letter-spacing: 0; color: var(--muted); }

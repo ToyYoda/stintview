@@ -31,3 +31,13 @@ jobs:
         run: pnpm --filter @stintview/overlay release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Alternative app "Backseat Racer" (same code, electron-builder.backseat.yml): its installer
+      # and backseat.yml (its update channel) go into the same release.
+      - name: Build Backseat Racer and add it to the release
+        shell: bash
+        run: |
+          pnpm --filter @stintview/overlay dist:backseat
+          cd apps/overlay/release-backseat
+          gh release upload "$GITHUB_REF_NAME" BackseatRacer-Setup.exe BackseatRacer-Setup.exe.blockmap backseat.yml --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
