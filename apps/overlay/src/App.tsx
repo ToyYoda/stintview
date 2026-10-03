@@ -16,17 +16,18 @@ import { PitWidget } from './widgets/PitWidget.tsx';
 type WidgetId = 'header' | 'inputs' | 'fuel' | 'tyres' | 'weather' | 'standings' | 'duel' | 'pitstop' | 'messages' | 'radio';
 type Positions = Record<WidgetId, { x: number; y: number }>;
 
+// Side by side on a 1920 px wide screen (panels are ~320 px, inputs ~440, standings ~500 wide).
 const DEFAULT_POSITIONS: Positions = {
   header: { x: 40, y: 40 },
   inputs: { x: 40, y: 100 },
   fuel: { x: 500, y: 100 },
-  tyres: { x: 780, y: 100 },
-  weather: { x: 1100, y: 100 },
+  tyres: { x: 840, y: 100 },
   standings: { x: 1420, y: 100 },
-  duel: { x: 700, y: 860 },
-  pitstop: { x: 1420, y: 480 },
-  messages: { x: 760, y: 560 },
   radio: { x: 40, y: 480 },
+  messages: { x: 660, y: 560 },
+  weather: { x: 1060, y: 480 },
+  pitstop: { x: 1420, y: 600 }, // below standings, which grows to ~450 px with lapping rows
+  duel: { x: 700, y: 860 },
 };
 const STORAGE_KEY = 'stintview.positions';
 
