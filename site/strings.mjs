@@ -231,3 +231,42 @@ export const STRINGS = {
     copyFail: 'Select & Ctrl+C',
   },
 };
+
+/**
+ * Experimental design: the app is called "Backseat Racer". Technical names stay as they are
+ * in the app (installer StintView-Setup.exe, folder %APPDATA%\StintView, repo URLs in lower case).
+ * German compounds: "StintView-Fenster" -> "Backseat-Racer-Fenster".
+ */
+export function renameApp(text) {
+  return text
+    .replace(/(?<![\\/\w])StintViews(?!\w)/g, 'Backseat-Racer-Apps')
+    .replace(/(?<![\\/\w])StintView-(?!Setup)/g, 'Backseat-Racer-')
+    .replace(/(?<![\\/\w])StintView(?![-\w]|\.\w)/g, 'Backseat Racer')
+    .replace(/(?<![\\/\w])STINTVIEW(?!\w)/g, 'BACKSEAT RACER');
+}
+
+/** Texts of the experimental page that differ from the main page (after renameApp). */
+export const BETA_STRINGS = {
+  de: {
+    title: 'Backseat Racer – Team-Telemetrie für iRacing',
+    brandLabel: 'Backseat Racer – nach oben',
+    heroKicker: 'Team-Telemetrie für iRacing',
+    heroTitle: 'Sitz hinten. <em>Fahr trotzdem mit.</em>',
+    slogan: 'Vom Rücksitz an die Box. <em>Live.</em>',
+    betaNote: 'Experimentelles Design – der neue Name „Backseat Racer“ ist noch nicht in der App.',
+    betaLink: 'Zur bisherigen Seite',
+    duelLabel: 'Duell',
+    footerProject: 'Ein Projekt von Outcast Endurance. Kein offizielles Produkt von iRacing.com Motorsport Simulations.',
+  },
+  en: {
+    title: 'Backseat Racer – team telemetry for iRacing',
+    brandLabel: 'Backseat Racer – back to top',
+    heroKicker: 'Team telemetry for iRacing',
+    heroTitle: 'Ride in the back. <em>Race anyway.</em>',
+    slogan: 'From the back seat to the pit wall. <em>Live.</em>',
+    betaNote: 'Experimental design – the new name "Backseat Racer" is not in the app yet.',
+    betaLink: 'Back to the current page',
+    duelLabel: 'Duel',
+    footerProject: 'An Outcast Endurance project. Not an official product of iRacing.com Motorsport Simulations.',
+  },
+};

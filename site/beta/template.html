@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="{{LANG}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{title}}</title>
+  <meta name="description" content="{{description}}">
+  <!-- Experimental design: not for search engines until the new name is decided. -->
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#111214">
+{{ALT_LINKS}}
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='10' width='56' height='44' rx='12' fill='%23FFD60A' transform='skewX(-8) translate(5 0)'/%3E%3Ctext x='33' y='45' text-anchor='middle' font-family='Arial Black,Arial,sans-serif' font-weight='900' font-style='italic' font-size='30' fill='%23111214'%3EBR%3C/text%3E%3C/svg%3E">
+  <style>
+    @font-face { font-family: "Barlow Condensed"; font-style: italic; font-weight: 600; font-display: swap; src: url("{{FONTS}}barlow-condensed-latin-600-italic.woff2") format("woff2"); }
+    @font-face { font-family: "Barlow Condensed"; font-style: italic; font-weight: 800; font-display: swap; src: url("{{FONTS}}barlow-condensed-latin-800-italic.woff2") format("woff2"); }
+    @font-face { font-family: "Barlow Condensed"; font-style: italic; font-weight: 900; font-display: swap; src: url("{{FONTS}}barlow-condensed-latin-900-italic.woff2") format("woff2"); }
+    @font-face { font-family: "Space Grotesk"; font-style: normal; font-weight: 400; font-display: swap; src: url("{{FONTS}}space-grotesk-latin-400-normal.woff2") format("woff2"); }
+    @font-face { font-family: "Space Grotesk"; font-style: normal; font-weight: 500; font-display: swap; src: url("{{FONTS}}space-grotesk-latin-500-normal.woff2") format("woff2"); }
+    @font-face { font-family: "Space Grotesk"; font-style: normal; font-weight: 700; font-display: swap; src: url("{{FONTS}}space-grotesk-latin-700-normal.woff2") format("woff2"); }
+    @font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 500; font-display: swap; src: url("{{FONTS}}jetbrains-mono-latin-500-normal.woff2") format("woff2"); }
+    @font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 700; font-display: swap; src: url("{{FONTS}}jetbrains-mono-latin-700-normal.woff2") format("woff2"); }
+
+    :root {
+      /* Backseat Racer palette */
+      --asphalt: #111214;
+      --signal: #ffd60a;
+      --graphite: #2a2d33;
+      --chalk: #f2f2ee;
+      --brake: #ff3b30;
+
+      --bg: var(--asphalt);
+      --bg-2: #17191c;
+      --panel: #1c1e22;
+      --panel-2: var(--graphite);
+      --line: rgba(242, 242, 238, 0.08);
+      --line-2: rgba(242, 242, 238, 0.16);
+      --text: var(--chalk);
+      --muted: #a9abaf;
+      --faint: #6d7076;
+      --green: #3ddc84;
+      --radius: 10px;
+      --race: "Barlow Condensed", "Bahnschrift", "Arial Narrow", sans-serif;
+      --sans: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+      --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+      --max: 1160px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 90px; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased;
+    }
+    img { max-width: 100%; height: auto; display: block; }
+    a { color: var(--signal); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { max-width: var(--max); margin: 0 auto; padding: 0 16px; }
+    @media (min-width: 720px) { .wrap { padding: 0 32px; } }
+
+    /* Type: condensed italic caps, like a race plate */
+    .display { font-family: var(--race); font-style: italic; font-weight: 900; text-transform: uppercase; letter-spacing: 0; line-height: 1.02; }
+    .label { font-family: var(--race); font-style: italic; font-weight: 800; text-transform: uppercase; letter-spacing: 0.14em; color: var(--signal); font-size: 15px; margin: 0 0 14px; }
+
+    /* Beta strip */
+    .beta { background: var(--signal); color: var(--asphalt); font-size: 13.5px; font-weight: 500; }
+    .beta .wrap { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center; justify-content: center; padding-top: 7px; padding-bottom: 7px; text-align: center; }
+    .beta a { color: var(--asphalt); font-weight: 700; text-decoration: underline; }
+
+    /* Header */
+    .top {
+      position: sticky; top: 0; z-index: 10;
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
+    }
+    .top .wrap { display: flex; align-items: center; justify-content: space-between; height: 68px; gap: 16px; }
+    .brand { display: flex; align-items: center; gap: 12px; color: var(--text); }
+    .brand:hover { text-decoration: none; }
+    .plate {
+      display: inline-grid; place-items: center; background: var(--signal); color: var(--asphalt);
+      font: italic 900 22px/1 var(--race); width: 50px; height: 38px; border-radius: 9px; transform: skewX(-8deg);
+    }
+    .plate span { transform: skewX(8deg); letter-spacing: -0.02em; }
+    .wordmark { display: flex; flex-direction: column; line-height: 0.92; font-family: var(--race); font-style: italic; text-transform: uppercase; }
+    .wordmark small { font-weight: 600; font-size: 12px; letter-spacing: 0.32em; color: var(--chalk); }
+    .wordmark b { font-weight: 900; font-size: 24px; color: var(--signal); letter-spacing: 0.01em; }
+    .nav { display: flex; align-items: center; gap: 22px; font-family: var(--race); font-style: italic; font-weight: 800; font-size: 17px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .nav a { color: var(--muted); }
+    .nav a:hover { color: var(--text); text-decoration: none; }
+    @media (max-width: 800px) { .nav .opt { display: none; } }
+    .lang { display: flex; gap: 2px; padding: 3px; background: var(--panel-2); border-radius: 8px; }
+    .nav .lang a { padding: 2px 10px; font-size: 14px; border-radius: 6px; color: var(--muted); }
+    .nav .lang a[aria-current="page"] { background: var(--signal); color: var(--asphalt); }
+
+    /* Buttons: race plates */
+    .btn {
+      display: inline-flex; align-items: center; gap: 10px; padding: 13px 26px; border-radius: var(--radius);
+      font-family: var(--race); font-style: italic; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; font-size: 19px;
+      transition: background .12s, color .12s, transform .12s;
+    }
+    .btn:hover { text-decoration: none; transform: translateY(-1px); }
+    .btn-primary { background: var(--signal); color: var(--asphalt); }
+    .btn-primary:hover { background: #ffe14d; }
+    .btn-ghost { background: var(--panel-2); color: var(--text); }
+    .btn-ghost:hover { background: #343841; }
+    .btn svg { width: 20px; height: 20px; }
+
+    /* Hero */
+    .hero { position: relative; overflow: hidden; padding: 72px 0 64px; }
+    .speed { position: absolute; left: 0; top: 112px; display: grid; gap: 10px; pointer-events: none; opacity: 0.9; }
+    .speed i { display: block; height: 8px; background: var(--signal); border-radius: 0 4px 4px 0; transform: skewX(-20deg); transform-origin: left; }
+    .speed i:nth-child(1) { width: 64px; } .speed i:nth-child(2) { width: 40px; } .speed i:nth-child(3) { width: 22px; }
+    @media (max-width: 720px) { .speed { display: none; } }
+    .hero .wrap { position: relative; display: grid; gap: 48px; align-items: center; }
+    @media (min-width: 980px) { .hero .wrap { grid-template-columns: 1fr 1.05fr; } }
+    h1 { font-size: clamp(52px, 7.4vw, 92px); margin: 0 0 24px; }
+    h1 em { font-style: italic; color: var(--signal); display: block; }
+    .lead { font-size: 18.5px; color: var(--muted); margin: 0 0 30px; max-width: 34em; }
+    .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+    .meta { font-size: 13.5px; color: var(--faint); font-family: var(--mono); }
+
+    /* Duel strip as in the design sheet */
+    .duel-strip {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 14px 18px; margin-bottom: 14px;
+      background: var(--panel); border: 1px solid var(--line); border-radius: 14px; font-family: var(--mono); font-weight: 700; font-size: 18px;
+    }
+    .duel-strip .tag { font: italic 800 15px var(--race); letter-spacing: 0.14em; text-transform: uppercase; color: var(--signal); margin-right: 6px; }
+    .duel-strip .car { color: var(--chalk); }
+    .duel-strip .chip { padding: 2px 9px; border-radius: 6px; }
+    .duel-strip .behind { background: var(--brake); color: #fff; }
+    .duel-strip .ahead { background: var(--chalk); color: var(--asphalt); }
+    .duel-strip .me { background: var(--signal); color: var(--asphalt); padding: 2px 11px; }
+    .showcase { display: grid; grid-template-columns: 1.08fr 1fr; gap: 12px; align-items: start; }
+    .showcase img { width: 100%; border-radius: 12px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--line); }
+    .showcase .s-inputs { grid-column: 1 / -1; }
+
+    /* Signal band (in place of the team livery) */
+    .band { background: var(--signal); color: var(--asphalt); overflow: hidden; }
+    .band .wrap { display: flex; align-items: center; justify-content: center; gap: 28px; padding-top: 30px; padding-bottom: 30px; }
+    .band .bars { display: grid; gap: 7px; }
+    .band .bars i { display: block; height: 9px; background: var(--asphalt); border-radius: 0 4px 4px 0; transform: skewX(-20deg); }
+    .band .bars i:nth-child(1) { width: 70px; } .band .bars i:nth-child(2) { width: 46px; } .band .bars i:nth-child(3) { width: 26px; }
+    .band p { margin: 0; font: italic 900 clamp(28px, 4.6vw, 58px)/0.95 var(--race); text-transform: uppercase; }
+    .band p em { font-style: italic; color: var(--brake); }
+    @media (max-width: 600px) { .band .bars { display: none; } }
+
+    /* Sections */
+    section { padding: 88px 0; border-top: 1px solid var(--line); }
+    .section-head { max-width: 720px; margin-bottom: 40px; }
+    h2 { font-size: clamp(38px, 5vw, 60px); margin: 0 0 14px; }
+    .section-head p { color: var(--muted); margin: 0; font-size: 17px; }
+
+    .features { display: grid; gap: 18px; }
+    @media (min-width: 760px) { .features { grid-template-columns: repeat(2, 1fr); } .card.wide { grid-column: 1 / -1; } }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; }
+    .card .shot { position: relative; background: var(--asphalt); border-radius: 10px; margin-bottom: 18px; aspect-ratio: 16 / 10; overflow: hidden; }
+    .card .shot img { position: absolute; inset: 12px; width: calc(100% - 24px); height: calc(100% - 24px); object-fit: contain; }
+    .card.wide .shot { aspect-ratio: auto; padding: 12px; }
+    .card.wide .shot img { position: static; width: 100%; height: auto; }
+    .card h3 { margin: 0 0 6px; font: italic 900 28px/1 var(--race); text-transform: uppercase; }
+    .card h3::before { content: ""; display: inline-block; width: 14px; height: 14px; border-radius: 4px; background: var(--signal); margin-right: 10px; transform: skewX(-8deg) translateY(-2px); }
+    .card p { margin: 0; color: var(--muted); font-size: 15px; }
+    .note { margin-top: 12px !important; font-size: 13.5px !important; color: var(--faint) !important; border-left: 3px solid var(--signal); padding-left: 10px; }
+
+    /* The app */
+    .app-grid { display: grid; gap: 32px; align-items: start; }
+    @media (min-width: 860px) { .app-grid { grid-template-columns: minmax(0, 460px) 1fr; } }
+    .app-shot { width: 100%; border-radius: 12px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--line); }
+    .app-points { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+    .app-points li { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px 14px 18px; color: var(--muted); font-size: 15.5px; position: relative; }
+    .app-points li::before { content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 4px; border-radius: 0 3px 3px 0; background: var(--signal); }
+    .app-points li b { color: var(--text); }
+
+    /* Flow */
+    .flow { display: grid; gap: 14px; align-items: stretch; }
+    @media (min-width: 900px) { .flow { grid-template-columns: 1fr auto 1fr auto 1fr; } }
+    .node { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 22px; }
+    .node .tag { font: italic 800 14px var(--race); letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint); margin-bottom: 8px; }
+    .node h3 { margin: 0 0 8px; font-size: 34px; }
+    .node p { margin: 0; color: var(--muted); font-size: 15px; }
+    .node.live { border-color: color-mix(in srgb, var(--signal) 60%, transparent); }
+    .node.live .tag { color: var(--signal); }
+    .arrow { display: grid; place-items: center; color: var(--signal); }
+    .arrow svg { width: 40px; height: 40px; }
+    @media (max-width: 899px) { .arrow svg { transform: rotate(90deg); } }
+    .facts { display: grid; gap: 18px; margin-top: 40px; }
+    @media (min-width: 720px) { .facts { grid-template-columns: repeat(2, 1fr); } }
+    .fact { display: flex; gap: 14px; align-items: flex-start; }
+    .fact .dot { flex: none; width: 12px; height: 12px; margin-top: 8px; border-radius: 3px; background: var(--signal); transform: skewX(-8deg); }
+    .fact strong { display: block; font: italic 900 22px/1.1 var(--race); text-transform: uppercase; margin-bottom: 2px; }
+    .fact span { color: var(--muted); font-size: 15px; }
+
+    /* Download */
+    .dl-box { display: grid; gap: 28px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 32px; position: relative; overflow: hidden; }
+    .dl-box::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 8px; background: var(--signal); }
+    @media (min-width: 860px) { .dl-box { grid-template-columns: 1.2fr 1fr; padding: 44px 44px 44px 52px; } }
+    .dl-box p { color: var(--muted); margin: 0 0 22px; }
+    .req { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+    .req li { display: flex; gap: 14px; align-items: baseline; padding: 12px 14px; background: var(--panel-2); border-radius: 10px; font-size: 15px; }
+    .req b { font: italic 800 15px var(--race); letter-spacing: 0.1em; text-transform: uppercase; color: var(--signal); min-width: 86px; }
+
+    /* Guide */
+    .guide-layout { display: grid; gap: 40px; }
+    @media (min-width: 980px) { .guide-layout { grid-template-columns: 240px 1fr; } }
+    .toc { position: sticky; top: 96px; align-self: start; font-size: 14.5px; }
+    .toc ol { list-style: none; margin: 0; padding: 0; border-left: 1px solid var(--line); }
+    .toc a { display: block; padding: 6px 0 6px 14px; color: var(--muted); margin-left: -1px; border-left: 3px solid transparent; }
+    .toc a:hover { color: var(--text); border-left-color: var(--signal); text-decoration: none; }
+    @media (max-width: 979px) { .toc { position: static; } .toc ol { columns: 2; } }
+    .guide { min-width: 0; max-width: 760px; }
+    .guide > :first-child { margin-top: 0; }
+    .guide h2 { font: italic 900 38px/1 var(--race); text-transform: uppercase; margin: 56px 0 16px; padding-top: 8px; }
+    .guide h2:first-child { margin-top: 0; }
+    .guide h3 { font: italic 800 25px/1.1 var(--race); text-transform: uppercase; margin: 32px 0 10px; }
+    .guide .anchor { color: var(--faint); margin-left: -0.9em; padding-right: 0.3em; opacity: 0; font-weight: 400; }
+    .guide h2:hover .anchor, .guide h3:hover .anchor { opacity: 1; text-decoration: none; }
+    .guide p, .guide li { color: #d3d4d0; }
+    .guide ol, .guide ul { padding-left: 1.3em; }
+    .guide li { margin: 6px 0; }
+    .guide li::marker { color: var(--signal); }
+    .guide strong { color: var(--text); }
+    .guide hr { border: 0; border-top: 1px solid var(--line); margin: 48px 0; }
+    .guide blockquote { margin: 16px 0; padding: 12px 16px; background: rgba(255, 214, 10, 0.07); border-left: 4px solid var(--signal); border-radius: 0 8px 8px 0; }
+    .guide blockquote p { margin: 0; }
+    .guide :not(pre) > code { font: 0.88em var(--mono); background: var(--panel-2); padding: 1px 6px; border-radius: 5px; color: var(--text); }
+    .code { position: relative; margin: 14px 0; }
+    .code pre { margin: 0; padding: 16px 104px 16px 18px; overflow-x: auto; background: #0b0c0d; border: 1px solid var(--line-2); border-radius: 10px; font: 14px/1.55 var(--mono); color: #f1f1f1; }
+    .copy {
+      position: absolute; top: 10px; right: 10px; font: italic 800 14px var(--race); text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--asphalt); background: var(--signal); border: 0; border-radius: 6px; padding: 5px 11px; cursor: pointer;
+    }
+    .copy.done { background: var(--green); }
+    .table-wrap { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line); border-radius: 10px; }
+    .guide table { border-collapse: collapse; width: 100%; font-size: 15px; }
+    .guide th, .guide td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    .guide th { background: var(--panel); color: var(--text); font-weight: 700; }
+    .guide tr:last-child td { border-bottom: 0; }
+
+    footer { border-top: 1px solid var(--line); padding: 44px 0 56px; color: var(--faint); font-size: 14px; }
+    footer .wrap { display: grid; gap: 22px; }
+    .foot-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+    .foot-slogan { font: italic 900 22px var(--race); text-transform: uppercase; color: var(--chalk); }
+    .foot-slogan em { color: var(--signal); font-style: italic; }
+    .foot-small { display: flex; flex-wrap: wrap; gap: 8px 28px; justify-content: space-between; }
+    footer a { color: var(--muted); }
+
+    :focus-visible { outline: 3px solid var(--signal); outline-offset: 3px; }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .btn { transition: none; } .btn:hover { transform: none; } }
+  </style>
+</head>
+<body>
+  <div class="beta"><div class="wrap"><span>{{betaNote}}</span><a href="{{MAIN}}">{{betaLink}}</a></div></div>
+
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="#" aria-label="{{brandLabel}}">
+        <span class="plate" aria-hidden="true"><span>BR</span></span>
+        <span class="wordmark"><small>Backseat</small><b>Racer</b></span>
+      </a>
+      <nav class="nav" aria-label="{{navLabel}}">
+        <a class="opt" href="#funktionen">{{navFeatures}}</a>
+        <a class="opt" href="#app">{{navApp}}</a>
+        <a class="opt" href="#so-funktionierts">{{navHow}}</a>
+        <a class="opt" href="#anleitung">{{navGuide}}</a>
+        <a class="opt" href="{{REPO}}" target="_blank" rel="noopener">GitHub</a>
+        {{LANG_SWITCH}}
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="hero">
+      <div class="speed" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="wrap">
+        <div>
+          <p class="label">{{heroKicker}}</p>
+          <h1 class="display">{{heroTitle}}</h1>
+          <p class="lead">{{heroLead}}</p>
+          <div class="cta">
+            <a class="btn btn-primary" href="{{DOWNLOAD_URL}}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>
+              {{btnDownload}}
+            </a>
+            <a class="btn btn-ghost" href="#anleitung">{{btnGuide}}</a>
+          </div>
+          <p class="meta">{{heroMeta}} {{VERSION}}</p>
+        </div>
+        <div>
+          <div class="duel-strip" aria-hidden="true">
+            <span class="tag">{{duelLabel}}</span>
+            <span class="car">▼ #44</span><span class="chip behind">−0,6</span>
+            <span class="chip me">P4 #23</span>
+            <span class="chip ahead">+1,8</span><span class="car">#7 ▲</span>
+          </div>
+          <div class="showcase" aria-label="{{showcaseLabel}}">
+            <img class="s-inputs" src="{{SHOTS}}inputs.png" alt="{{altInputs}}" width="900" height="352">
+            <img class="s-standings" src="{{SHOTS}}standings.png" alt="{{altStandings}}" width="1004" height="863">
+            <img class="s-pitstop" src="{{SHOTS}}pitstop.png" alt="{{altPitstop}}" width="740" height="478">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="band">
+      <div class="wrap">
+        <span class="bars" aria-hidden="true"><i></i><i></i><i></i></span>
+        <p>{{slogan}}</p>
+      </div>
+    </div>
+
+    <section id="funktionen">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="label">{{featKicker}}</p>
+          <h2 class="display">{{featTitle}}</h2>
+          <p>{{featLead}}</p>
+        </div>
+        <div class="features">
+          <article class="card wide">
+            <div class="shot"><img src="{{SHOTS}}header.png" alt="{{altHeader}}" width="970" height="195" loading="lazy"></div>
+            <h3>{{f7Title}}</h3>
+            <p>{{f7Text}}</p>
+          </article>
+          <article class="card">
+            <div class="shot"><img src="{{SHOTS}}inputs.png" alt="" width="900" height="352" loading="lazy"></div>
+            <h3>{{f1Title}}</h3>
+            <p>{{f1Text}}</p>
+          </article>
+          <article class="card">
+            <div class="shot"><img src="{{SHOTS}}fuel.png" alt="{{altFuel}}" width="660" height="610" loading="lazy"></div>
+            <h3>{{f2Title}}</h3>
+            <p>{{f2Text}}</p>
+          </article>
+          <article class="card">
+            <div class="shot"><img src="{{SHOTS}}standings.png" alt="" width="1004" height="863" loading="lazy"></div>
+            <h3>{{f4Title}}</h3>
+            <p>{{f4Text}}</p>
+            <p class="note">{{f4Note}}</p>
+          </article>
+          <article class="card">
+            <div class="shot"><img src="{{SHOTS}}pitstop.png" alt="" width="740" height="478" loading="lazy"></div>
+            <h3>{{f5Title}}</h3>
+            <p>{{f5Text}}</p>
+            <p class="note">{{f5Note}}</p>
+          </article>
+          <article class="card wide">
+            <div class="shot"><img src="{{SHOTS}}duel.png" alt="{{altDuel}}" width="1180" height="151" loading="lazy"></div>
+            <h3>{{f8Title}}</h3>
+            <p>{{f8Text}}</p>
+          </article>
+          <article class="card">
+            <div class="shot"><img src="{{SHOTS}}tyres.png" alt="{{altTyres}}" width="660" height="404" loading="lazy"></div>
+            <h3>{{f3Title}}</h3>
+            <p>{{f3Text}}</p>
+            <p class="note">{{f3Note}}</p>
+          </article>
+          <article class="card">
+            <div class="shot"><img src="{{SHOTS}}weather.png" alt="{{altWeather}}" width="660" height="375" loading="lazy"></div>
+            <h3>{{f6Title}}</h3>
+            <p>{{f6Text}}</p>
+          </article>
+          <article class="card">
+            <div class="shot"><img src="{{SHOTS}}radio.png" alt="{{altRadio}}" width="660" height="381" loading="lazy"></div>
+            <h3>{{f9Title}}</h3>
+            <p>{{f9Text}}</p>
+          </article>
+          <article class="card">
+            <div class="shot"><img src="{{SHOTS}}messages.png" alt="{{altMessages}}" width="780" height="152" loading="lazy"></div>
+            <h3>{{f10Title}}</h3>
+            <p>{{f10Text}}</p>
+            <p class="note">{{f10Note}}</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="app">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="label">{{appKicker}}</p>
+          <h2 class="display">{{appTitle}}</h2>
+          <p>{{appLead}}</p>
+        </div>
+        <div class="app-grid">
+          <img class="app-shot" src="{{SHOTS}}app.png" alt="{{altApp}}" width="544" height="681" loading="lazy">
+          <ul class="app-points">
+            <li>{{appP1}}</li>
+            <li>{{appP2}}</li>
+            <li>{{appP3}}</li>
+            <li>{{appP4}}</li>
+            <li>{{appP5}}</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="so-funktionierts">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="label">{{howKicker}}</p>
+          <h2 class="display">{{howTitle}}</h2>
+          <p>{{howLead}}</p>
+        </div>
+        <div class="flow">
+          <div class="node live">
+            <div class="tag">{{n1Tag}}</div>
+            <h3 class="display">Recorder</h3>
+            <p>{{n1Text}}</p>
+          </div>
+          <div class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15m0 0-5-5m5 5-5 5"/></svg></div>
+          <div class="node">
+            <div class="tag">{{n2Tag}}</div>
+            <h3 class="display">Relay</h3>
+            <p>{{n2Text}}</p>
+          </div>
+          <div class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15m0 0-5-5m5 5-5 5"/></svg></div>
+          <div class="node">
+            <div class="tag">{{n3Tag}}</div>
+            <h3 class="display">Overlay</h3>
+            <p>{{n3Text}}</p>
+          </div>
+        </div>
+        <div class="facts">
+          <div class="fact"><span class="dot" aria-hidden="true"></span><div><strong>{{fact1Title}}</strong><span>{{fact1Text}}</span></div></div>
+          <div class="fact"><span class="dot" aria-hidden="true"></span><div><strong>{{fact2Title}}</strong><span>{{fact2Text}}</span></div></div>
+          <div class="fact"><span class="dot" aria-hidden="true"></span><div><strong>{{fact3Title}}</strong><span>{{fact3Text}}</span></div></div>
+          <div class="fact"><span class="dot" aria-hidden="true"></span><div><strong>{{fact4Title}}</strong><span>{{fact4Text}}</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="download">
+      <div class="wrap">
+        <div class="dl-box">
+          <div>
+            <p class="label">{{dlKicker}}</p>
+            <h2 class="display">{{dlTitle}}</h2>
+            <p>{{dlText}}</p>
+            <p class="note">{{dlNote}}</p>
+            <div class="cta">
+              <a class="btn btn-primary" href="{{DOWNLOAD_URL}}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>
+                {{dlButton}}
+              </a>
+              <a class="btn btn-ghost" href="{{REPO}}" target="_blank" rel="noopener">{{btnSource}}</a>
+            </div>
+            <p class="meta">{{versionLabel}} {{VERSION}}</p>
+          </div>
+          <ul class="req" aria-label="{{reqLabel}}">
+            <li><b>{{reqSys}}</b>{{reqSysText}}</li>
+            <li><b>{{reqSw}}</b>{{reqSwText}}</li>
+            <li><b>{{reqIr}}</b>{{reqIrText}}</li>
+            <li><b>{{reqVr}}</b>{{reqVrText}}</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="anleitung">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="label">{{guideKicker}}</p>
+          <h2 class="display">{{guideTitle}}</h2>
+        </div>
+        <div class="guide-layout">
+          <nav class="toc" aria-label="{{tocAria}}">
+            <p class="label">{{tocLabel}}</p>
+            <ol>
+{{TOC}}
+            </ol>
+          </nav>
+          <article class="guide">
+{{GUIDE}}
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="foot-top">
+        <a class="brand" href="#" aria-label="{{toTop}}">
+          <span class="plate" aria-hidden="true"><span>BR</span></span>
+          <span class="wordmark"><small>Backseat</small><b>Racer</b></span>
+        </a>
+        <span class="foot-slogan">{{slogan}}</span>
+      </div>
+      <div class="foot-small">
+        <span>Backseat Racer · {{versionLabel}} {{VERSION}} · <a href="{{REPO}}" target="_blank" rel="noopener">GitHub</a></span>
+        <span>{{footerProject}}</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    document.querySelectorAll('.copy').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const text = btn.previousElementSibling.textContent;
+        try {
+          await navigator.clipboard.writeText(text);
+          btn.textContent = '{{copied}}';
+          btn.classList.add('done');
+        } catch {
+          btn.textContent = '{{copyFail}}';
+        }
+        setTimeout(() => { btn.textContent = '{{copy}}'; btn.classList.remove('done'); }, 1800);
+      });
+    });
+  </script>
+</body>
+</html>
