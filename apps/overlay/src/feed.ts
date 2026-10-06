@@ -48,7 +48,10 @@ export interface AppState {
   team: { teamName: string; memberName: string; serverUrl: string; inviteCode: string } | null;
   settings: {
     /** Panels shown at all, and where: monitor overlay or VR (one at a time). */
-    overlay: boolean; output: 'monitor' | 'vr'; autostart: boolean; server: boolean; serverPort: number;
+    overlay: boolean; output: 'monitor' | 'vr';
+    /** Start the displays only while the iRacing simulator runs. */
+    onlyWithIracing: boolean;
+    autostart: boolean; server: boolean; serverPort: number;
     /** UI language. */
     language: 'de' | 'en';
     /** Per panel: shown, size in percent, panel-specific options. */
@@ -66,6 +69,8 @@ export interface AppState {
     serverText: string;
     inCar: boolean;
     relay: 'off' | 'running' | 'error';
+    /** Displays switched on, but held back until iRacing runs. */
+    waitingForIracing: boolean;
     vr: 'off' | 'waiting' | 'connected';
     overlay: boolean;
     editing: boolean;

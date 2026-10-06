@@ -205,7 +205,8 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
           <li><Dot kind={serverDot} />{t('set.teamServer')}{status.server === 'error' ? `: ${status.serverText.replace(/^server error: /, '')}` : status.server === 'offline' ? t('set.noConnection') : t('set.connected')}</li>
           <li><Dot kind={status.iracing ? 'ok' : 'idle'} />{status.iracing ? t('set.iracingRunning') : t('set.iracingNot')}</li>
           <li><Dot kind={status.inCar ? (status.server === 'standby' ? 'warn' : 'ok') : 'idle'} />{status.inCar ? (status.server === 'standby' ? t('set.standby') : t('set.driving')) : t('set.notInCar')}</li>
-          {settings.overlay && settings.output === 'vr' && <li><Dot kind={status.vr === 'connected' ? 'ok' : 'warn'} />{status.vr === 'connected' ? t('set.vrConnected') : t('set.vrWaiting')}</li>}
+          {status.waitingForIracing && <li><Dot kind="idle" />{t('set.waitingForIracing')}</li>}
+          {settings.overlay && settings.output === 'vr' && !status.waitingForIracing && <li><Dot kind={status.vr === 'connected' ? 'ok' : 'warn'} />{status.vr === 'connected' ? t('set.vrConnected') : t('set.vrWaiting')}</li>}
           {settings.server && <li><Dot kind={status.relay === 'running' ? 'ok' : 'bad'} />{status.relay === 'running' ? t('set.relayRunning') : t('set.relayStopped')}</li>}
         </ul>
       </section>
@@ -215,6 +216,8 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
       <section className="card">
         <h2>{t('set.displays')}</h2>
         <Toggle checked={settings.overlay} onChange={(v) => set({ overlay: v })} label={t('set.show')} hint={t('set.showHint')} />
+        <Toggle checked={settings.onlyWithIracing} disabled={!settings.overlay} onChange={(v) => set({ onlyWithIracing: v })}
+          label={t('set.onlyWithIracing')} hint={t('set.onlyWithIracingHint')} />
         <div className="output-choice" role="radiogroup" aria-label={t('set.output')}>
           <span>{t('set.output')}</span>
           {(['monitor', 'vr'] as const).map((o) => (

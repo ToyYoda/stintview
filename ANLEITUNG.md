@@ -53,6 +53,8 @@ Sobald du im Auto sitzt, sieht dein Team deine Daten. Steigst du aus, hört Stin
 
 Schalter **Anzeigen einblenden** an und bei **Ausgabe** „Monitor“ wählen (Standard). In iRacing unter Grafikoptionen **randloses Fenster (Borderless)** einstellen – im Exklusiv-Vollbild ist das Overlay unsichtbar.
 
+- **Nur wenn iRacing läuft:** Mit diesem Schalter (StintView-Fenster, Reiter **Anzeigen**, oder im Menü) erscheinen die Anzeigen erst, wenn der iRacing-Simulator läuft – nicht schon in der iRacing-Oberfläche – und verschwinden 15 Sekunden nach dem Beenden wieder. Gilt für Monitor und VR. Standard: aus (Anzeigen immer da).
+
 - **Zum Unfall / Zurück:** stehen als feste Knöpfe oben in der Kopfzeile; „Zurück“ ist grau, solange die Kamera bei deinem Fahrer ist. Nach einem Klick zeigt der Knopf „…“, bis iRacing den Wechsel bestätigt.
 - **Anzeigen verschieben:** Knopf **Anzeigen verschieben** im StintView-Fenster (oder im Menü), dann die Anzeigen mit der Maus ziehen und im gelben Banner oben auf **Fertig** klicken.
 - **Alle Tastaturkürzel:** Rechtsklick auf das StintView-Symbol → **Tastaturkürzel …** (oder Reiter **Kürzel** im StintView-Fenster). Dort steht, welches Kürzel StintView auf deinem PC tatsächlich bekommen hat – ist eines von einem anderen Programm belegt (z. B. AMD Radeon Software), nimmt StintView automatisch ein Ausweich-Kürzel.

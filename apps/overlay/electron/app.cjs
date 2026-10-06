@@ -21,6 +21,9 @@ const { brand } = require('./brand.cjs');
 const BUNDLES = path.join(__dirname, '..', 'dist-bundles');
 const ICON = path.join(__dirname, 'icons', brand.icons, 'tray.png');
 const RESTART_MS = 5000;
+// "Only while iRacing runs": keep the displays this long after the sim stops ticking
+// (session change, loading, recorder restart), so they don't flicker and VR isn't restarted.
+const SIM_GONE_MS = 15000;
 
 // A separate profile (tests, second profile) also needs its own Chromium data and instance lock.
 if (process.env.STINTVIEW_HOME) app.setPath('userData', path.join(dataDir, 'electron'));
@@ -165,7 +168,10 @@ function startRecorder() {
     // (Re)started process: hand it the manual pit stop values with its first message.
     if (m.t === 'exit') needsPitSettings = true;
     else if (needsPitSettings && recorder?.post({ t: 'pit-settings', pit: settings.pitStop })) needsPitSettings = false;
-    if (m.t === 'iracing') status.iracing = m.connected;
+    if (m.t === 'iracing') {
+      status.iracing = m.connected;
+      setSimRunning(m.connected);
+    }
     if (m.t === 'car') {
       status.inCar = m.inCar;
       setDriving(m.inCar); // Radio panel and message hotkeys are off while you drive
@@ -179,6 +185,7 @@ function startRecorder() {
     if (m.t === 'exit') {
       Object.assign(status, { iracing: false, inCar: false, server: 'offline' });
       setDriving(false);
+      setSimRunning(false);
     }
     if (m.t === 'camera-state' || m.t === 'camera-result') return onRecorderMessage(m);
     refresh();
@@ -217,7 +224,6 @@ async function waitForRelay() {
 // ---------------------------------------------------------------------------
 
 function applySettings() {
-  const configured = Boolean(loadConfig());
   if (settings.server) startRelay(); else stopRelay();
   setLanguage(settings.language);
   setOverlayLanguage(settings.language);
@@ -230,19 +236,50 @@ function applySettings() {
   setVrOpacity(settings.opacity / 100);
   recorder?.post({ t: 'pit-settings', pit: settings.pitStop });
   setMessages(cleanMessages(settings.messages, settings.language));
+  applyOutputs();
+  if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: settings.autostart, args: ['--hidden'] });
+  refresh();
+}
+
+// iRacing simulator running (the recorder sees live ticks); goes false only after SIM_GONE_MS.
+let simRunning = false;
+let simGoneTimer = null;
+
+function setSimRunning(running) {
+  if (running) {
+    clearTimeout(simGoneTimer);
+    simGoneTimer = null;
+    if (!simRunning) {
+      simRunning = true;
+      applyOutputs();
+    }
+  } else if (simRunning && !simGoneTimer) {
+    simGoneTimer = setTimeout(() => {
+      simGoneTimer = null;
+      simRunning = false;
+      applyOutputs();
+      refresh();
+    }, SIM_GONE_MS);
+  }
+}
+
+/** Displays wanted, but held back until iRacing runs ("only while iRacing runs"). */
+const waitingForSim = () => Boolean(loadConfig()) && settings.overlay && settings.onlyWithIracing && !simRunning;
+
+/** Starts/stops the monitor overlay or the VR panels according to the settings and iRacing. */
+function applyOutputs() {
+  const on = Boolean(loadConfig()) && settings.overlay && (!settings.onlyWithIracing || simRunning);
   // One output at a time: the monitor overlay or the VR panels.
-  if (configured && settings.overlay && settings.output === 'monitor') startOverlay(); else stopOverlay();
+  if (on && settings.output === 'monitor') startOverlay(); else stopOverlay();
   // VR panels are separate windows: restart the VR host when the selection changes.
-  const vrPanels = shown;
-  if (configured && settings.overlay && settings.output === 'vr') {
+  const vrPanels = panelsFor(settings);
+  if (on && settings.output === 'vr') {
     if (vrStatus() !== 'off' && vrPanels.join() !== runningVrPanels) stopVr();
     runningVrPanels = vrPanels.join();
     startVr(refresh, vrPanels).catch((e) => console.error('[vr]', e));
   } else {
     stopVr();
   }
-  if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: settings.autostart, args: ['--hidden'] });
-  refresh();
 }
 
 function updateSettings(patch) {
@@ -282,6 +319,10 @@ function buildMenu() {
     updateMenuItem(),
     { type: 'separator' },
     { label: t('menu.show'), type: 'checkbox', checked: settings.overlay, enabled: configured, click: (i) => updateSettings({ overlay: i.checked }) },
+    {
+      label: `${t('menu.onlyWithIracing')}${waitingForSim() ? t('menu.waitingForIracing') : ''}`,
+      type: 'checkbox', checked: settings.onlyWithIracing, enabled: configured && settings.overlay, click: (i) => updateSettings({ onlyWithIracing: i.checked }),
+    },
     { label: t('menu.monitor'), type: 'radio', checked: settings.output === 'monitor', enabled: configured, click: () => updateSettings({ output: 'monitor' }) },
     {
       label: `${t('menu.vr')}${settings.output === 'vr' && vr === 'waiting' ? t('menu.vrWaiting') : ''}`,
@@ -341,7 +382,7 @@ function appState() {
     configured: Boolean(config),
     team: config ? { teamName: config.teamName, memberName: config.memberName, serverUrl: config.serverUrl, inviteCode: config.inviteCode } : null,
     settings,
-    status: { ...status, line: statusLine(), vr: vrStatus(), overlay: overlayRunning(), editing: editing(), editHotkey: editHotkey() },
+    status: { ...status, line: statusLine(), waitingForIracing: waitingForSim(), vr: vrStatus(), overlay: overlayRunning(), editing: editing(), editHotkey: editHotkey() },
     autostartAvailable: app.isPackaged,
     cameraHotkeys: cameraInfo().hotkeys,
     pitImport,
@@ -386,13 +427,14 @@ ipcMain.handle('app:create', async (_e, { serverUrl, teamName, memberName, hostH
 });
 
 ipcMain.handle('app:settings', (_e, patch) => {
-  const allowed = ['language', 'overlay', 'output', 'autostart', 'server', 'panels', 'opacity', 'pitStop', 'messages'];
+  const allowed = ['language', 'overlay', 'onlyWithIracing', 'output', 'autostart', 'server', 'panels', 'opacity', 'pitStop', 'messages'];
   const clean = Object.fromEntries(Object.entries(patch ?? {}).filter(([k]) => allowed.includes(k)));
   if (clean.panels) clean.panels = cleanPanels({ ...settings.panels, ...clean.panels });
   if ('opacity' in clean) clean.opacity = cleanOpacity(clean.opacity);
   if ('output' in clean) clean.output = cleanOutput(clean.output);
   if ('language' in clean) clean.language = cleanLanguage(clean.language);
   if ('overlay' in clean) clean.overlay = Boolean(clean.overlay);
+  if ('onlyWithIracing' in clean) clean.onlyWithIracing = Boolean(clean.onlyWithIracing);
   if (clean.pitStop) clean.pitStop = cleanPitStop({ ...settings.pitStop, ...clean.pitStop });
   // null ("restore defaults") stays null, so the defaults follow the UI language again.
   if ('messages' in clean) clean.messages = Array.isArray(clean.messages) ? cleanMessages(clean.messages) : null;

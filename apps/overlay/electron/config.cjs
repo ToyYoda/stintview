@@ -47,6 +47,7 @@ const DEFAULT_MESSAGES = {
 const DEFAULT_SETTINGS = {
   language: null, // 'de' | 'en'; null = from Windows
   overlay: true, // show the panels at all
+  onlyWithIracing: false, // start the displays only while the iRacing simulator runs
   output: 'monitor', // where: 'monitor' (transparent window over iRacing) or 'vr' (SteamVR panels)
   autostart: true, // start with Windows
   server: false, // run the team relay on this PC
@@ -90,6 +91,7 @@ function loadSettings() {
   return {
     ...DEFAULT_SETTINGS, ...rest,
     overlay: legacy ? (saved.overlay ?? true) || Boolean(saved.vr) : saved.overlay !== false,
+    onlyWithIracing: saved.onlyWithIracing === true,
     output,
     language: cleanLanguage(saved.language),
     panels: cleanPanels(saved.panels, output),

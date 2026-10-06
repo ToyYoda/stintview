@@ -53,6 +53,8 @@ As soon as you are in the car, your team sees your data. When you get out, Stint
 
 Switch **Show displays** on and choose **Output** „Monitor“ (default). In iRacing's graphics options, choose **borderless window** – in exclusive fullscreen the overlay is invisible.
 
+- **Only while iRacing runs:** with this switch (StintView window, **Displays** tab, or the menu) the displays appear only once the iRacing simulator runs – not just the iRacing UI – and go away 15 seconds after it ends. Applies to monitor and VR. Default: off (displays always there).
+
 - **Moving the displays:** click **Move displays** in the StintView window (or menu), drag the displays with the mouse, then click **Done** in the yellow banner at the top.
 - **All keyboard shortcuts:** right-click the StintView icon → **Keyboard shortcuts …** (or the **Shortcuts** tab in the StintView window). It shows which shortcut StintView actually got on your PC – if one is taken by another program (e.g. AMD Radeon Software), StintView automatically uses a fallback.
 - Faster via hotkey: **Ctrl+Shift+O**. If another program already uses it (e.g. AMD Radeon Software), StintView takes **Ctrl+Alt+O** or **Ctrl+Shift+F9** instead – the active one is shown in the StintView window.
