@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { countryCode } from './country.ts';
-import { betweenRows, computeBestStandings, computeStandings, isRaceSession, lappingRows, parseSessionTypes, PitStopTracker, trackGap, type CarInfo, type CarProgress } from './standings.ts';
+import { bestProjection, betweenRows, computeBestStandings, computeStandings, isRaceSession, lappingRows, officialBestLaps, parseSessions, PitStopTracker, trackGap, type CarInfo, type CarProgress } from './standings.ts';
 
 const info = new Map<number, CarInfo>(
   Array.from({ length: 20 }, (_, i) => [i, { number: String(i + 1).padStart(2, '0'), name: `Driver ${i}` }]),
@@ -188,9 +188,59 @@ describe('practice and qualifying: ranking by best lap', () => {
   });
 
   it('session types from the YAML; only races keep the order on track', () => {
-    const types = parseSessionTypes('SessionInfo:\n Sessions:\n - SessionNum: 0\n   SessionType: Practice\n - SessionNum: 1\n   SessionType: Open Qualify\n - SessionNum: 2\n   SessionType: Race\n');
-    expect([...types]).toEqual([[0, 'Practice'], [1, 'Open Qualify'], [2, 'Race']]);
-    expect([0, 1, 2].map((n) => isRaceSession(types.get(n)))).toEqual([false, false, true]);
+    const sessions = parseSessions('SessionInfo:\n Sessions:\n - SessionNum: 0\n   SessionType: Practice\n - SessionNum: 1\n   SessionType: Open Qualify\n - SessionNum: 2\n   SessionType: Race\n');
+    expect([...sessions].map(([n, s]) => [n, s.type])).toEqual([[0, 'Practice'], [1, 'Open Qualify'], [2, 'Race']]);
+    expect([0, 1, 2].map((n) => isRaceSession(sessions.get(n)?.type))).toEqual([false, false, true]);
     expect(isRaceSession(undefined)).toBe(true);
+  });
+
+  it('official results from the YAML decide order and best lap', () => {
+    const sessions = parseSessions([
+      'SessionInfo:', ' Sessions:', ' - SessionNum: 0', '   SessionType: Practice', '   ResultsPositions:',
+      '   - Position: 1', '     CarIdx: 4', '     FastestTime: 100.5',
+      '   - Position: 2', '     CarIdx: 0', '     FastestTime: 101.0',
+      '   - Position: 3', '     CarIdx: 2', '     FastestTime: -1.0000', '',
+    ].join('\n'));
+    const results = sessions.get(0)!.results;
+    expect(results).toEqual([{ carIdx: 4, position: 1, fastest: 100.5 }, { carIdx: 0, position: 2, fastest: 101 }, { carIdx: 2, position: 3, fastest: null }]);
+    // Telemetry best laps include an invalid 99.0 of car 1 that the official results don't count.
+    const field = officialBestLaps([best(0, 100.8), best(1, 99.0), best(2, 102.0), best(4, 100.5)], results);
+    const rows = computeBestStandings(field, 0, info);
+    expect(rows.map((r) => [r.pos, r.carIdx, r.bestLap])).toEqual([[1, 4, 100.5], [2, 0, 101]]);
+  });
+});
+
+describe('practice and qualifying: projection of the lap in progress', () => {
+  const best = (carIdx: number, t: number | null, classId = 0) => ({ carIdx, best: t, lastLap: t, classId });
+  // Us (car 0) P4 with 101.0; ahead 100.0, 100.4, 100.8; behind 101.5.
+  const cars = [best(0, 101.0), best(1, 100.0), best(2, 100.4), best(3, 100.8), best(4, 101.5), best(5, 99.0, 1)];
+
+  it('a faster lap moves us up: new position, next car to beat and the time still to find', () => {
+    const p = bestProjection(cars, 0, info, 100.6)!;
+    expect(p.pos).toBe(3);
+    expect(p.target).toMatchObject({ carIdx: 2, pos: 2, bestLap: 100.4 });
+    expect(p.needed).toBeCloseTo(0.2);
+  });
+
+  it('a slower lap keeps our position; the loss counts towards the car in front', () => {
+    const p = bestProjection(cars, 0, info, 101.3)!;
+    expect(p.pos).toBe(4);
+    expect(p.target?.carIdx).toBe(3);
+    expect(p.needed).toBeCloseTo(0.5);
+  });
+
+  it('without a lap in progress: our best against the car in front', () => {
+    const p = bestProjection(cars, 0, info, null)!;
+    expect([p.pos, p.target?.carIdx]).toEqual([4, 3]);
+    expect(p.needed).toBeCloseTo(0.2);
+  });
+
+  it('fastest of the class: nobody left to beat; a tie does not pass', () => {
+    expect(bestProjection(cars, 0, info, 99.5)).toMatchObject({ pos: 1, target: null, needed: null });
+    expect(bestProjection(cars, 0, info, 100.4)).toMatchObject({ pos: 3, target: { carIdx: 2 } });
+  });
+
+  it('no time at all yet: last, nothing to compare', () => {
+    expect(bestProjection([best(0, null), best(1, 100)], 0, info, null)).toMatchObject({ pos: 2, target: null, needed: null });
   });
 });

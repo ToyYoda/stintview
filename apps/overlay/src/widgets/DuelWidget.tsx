@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import type { StandingRow, Standings } from '@stintview/protocol';
 import { t } from '../i18n.ts';
 import type { DuelOptions } from '../feed.ts';
-import { Flag, bestClass, bestGapText, gapClass, gapText } from './gaps.tsx';
+import { Flag, gapClass, gapText } from './gaps.tsx';
 import { GapTrend, outlook } from './trend.ts';
 
 type Side = 'behind' | 'ahead';
@@ -16,7 +16,7 @@ const BAR_FULL_RANGE = 3;
  * closer and the outlook ("catch in ~3 L"), fitted over the last 90 s. Optionally the cars on
  * another lap physically between us and them as small chips (number only): blue = we are
  * lapping them, red = they are lapping us, outlined = other class.
- * Practice/qualifying: neighbours by best lap, no bar, outlook or chips.
+ * Practice/qualifying: see BestDuel.
  */
 export function DuelWidget({ standings, options }: { standings: Standings | null; options?: DuelOptions | null }) {
   const trends = useRef({ behind: new GapTrend(), ahead: new GapTrend() });
@@ -38,16 +38,53 @@ export function DuelWidget({ standings, options }: { standings: Standings | null
   }
 
   if (!team) return <div className="panel duel-panel"><div className="label">{t('st.noData')}</div></div>;
+  if (best) return <BestDuel team={team} front={front} projection={standings?.projection} />;
   const lapTime = team.lastLap;
   return (
     <div className="panel duel-panel">
       {back ? <Rival car={back} side="behind" /> : <div className="duel-edge">{t('duel.last')}</div>}
-      <Gap side="behind" car={back} best={best} trend={trends.current.behind} lapTime={lapTime}
+      <Gap side="behind" car={back} trend={trends.current.behind} lapTime={lapTime}
         chips={[...(traffic?.behind ?? [])].reverse()} />
       <div className="duel-us">P{team.pos}</div>
-      <Gap side="ahead" car={front} best={best} trend={trends.current.ahead} lapTime={lapTime}
+      <Gap side="ahead" car={front} trend={trends.current.ahead} lapTime={lapTime}
         chips={traffic?.ahead ?? []} />
       {front ? <Rival car={front} side="ahead" /> : <div className="duel-edge">{t('duel.leader')}</div>}
+    </div>
+  );
+}
+
+/**
+ * Practice/qualifying, same size as the race line: our position (large), the position the lap
+ * in progress would give us (only if better), the next car to beat from there and the time
+ * still to find on it – what we gained or lost so far in this lap included.
+ */
+function BestDuel({ team, front, projection }: { team: StandingRow; front: StandingRow | undefined; projection: Standings['projection'] }) {
+  // Older recorders send no projection: our best against the car in front.
+  const p = projection ?? {
+    lapTime: null, pos: team.pos, target: team.bestLap != null ? front ?? null : null,
+    needed: team.bestLap != null && front?.bestLap != null ? team.bestLap - front.bestLap : null,
+  };
+  const needed = p.target && p.needed !== null ? Math.max(0, p.needed) : null;
+  const cls = needed === null ? 'far' : needed < 0.2 ? 'attack' : needed < 1 ? 'near' : 'far';
+  return (
+    <div className="panel duel-panel duel-best">
+      <div className="duel-us big">P{team.pos}</div>
+      {p.pos < team.pos && <div className="duel-new">→ P{p.pos}</div>}
+      {p.target ? (
+        <Rival car={p.target} side="ahead" />
+      ) : (
+        <div className="duel-edge">{team.bestLap == null && p.lapTime === null ? t('duel.noTime') : t('duel.fastest')}</div>
+      )}
+      <div className="duel-gap ahead duel-need">
+        {/* Kept invisible without a target, so the panel keeps its height. */}
+        <span className={`gap-tile big ${cls}${needed === null ? ' spacer' : ''}`}>{needed?.toFixed(3) ?? '–'}</span>
+        <div className="duel-bar spacer" />
+        <div className="duel-info">
+          {needed !== null && (
+            <span className="duel-outlook steady">{t(p.lapTime === null ? 'duel.toFindBest' : 'duel.toFind', { pos: p.target!.pos })}</span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -67,17 +104,10 @@ function Rival({ car, side }: { car: StandingRow; side: Side }) {
 }
 
 /** Between us and a neighbour: gap, closeness bar, outlook and the cars on another lap in that stretch. */
-function Gap({ side, car, best, trend, lapTime, chips }: {
-  side: Side; car: StandingRow | undefined; best: boolean; trend: GapTrend; lapTime: number | null; chips: StandingRow[];
+function Gap({ side, car, trend, lapTime, chips }: {
+  side: Side; car: StandingRow | undefined; trend: GapTrend; lapTime: number | null; chips: StandingRow[];
 }) {
   if (!car) return <div className={`duel-gap ${side}`} />;
-  if (best) {
-    return (
-      <div className={`duel-gap ${side}`}>
-        <span className={`gap-tile big ${car.gap == null ? 'far' : bestClass(car.gap)}`}>{car.gap == null ? '–' : bestGapText(car.gap)}</span>
-      </div>
-    );
-  }
   const cls = gapClass(car.gap, car.lapsGap);
   const sameLap = !car.lapsGap && car.gap != null;
   const fill = sameLap ? Math.max(0.04, 1 - Math.abs(car.gap!) / BAR_FULL_RANGE) : 0;

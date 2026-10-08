@@ -7,7 +7,7 @@ import type { TelemetrySource } from './irsdk/layout.ts';
 import { Recorder } from './recorder.ts';
 import { Spectator, type CameraCommand, type CameraResult, type CameraState } from './spectator.ts';
 import { HazardDetector } from './hazard.ts';
-import { parseSessionTypes, StandingsTracker } from './standings.ts';
+import { parseSessions, StandingsTracker } from './standings.ts';
 import { countryCode } from './country.ts';
 import { parseSessionCars } from './spectator.ts';
 import { PitModelStore, PitPlanner, type PitOverride } from './pitstop.ts';
@@ -106,7 +106,7 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
       const cars = parseSessionCars(yaml);
       const info = new Map([...cars.drivers].map(([idx, d]) => [idx, { number: d.label, name: d.name, country: countryCode(d.flair) }]));
       standings.setDrivers(info, cars.trackLength);
-      standings.setSessionTypes(parseSessionTypes(yaml));
+      standings.setSessions(parseSessions(yaml));
       pit.setSession(yaml, info);
       hazard?.onSessionInfo(yaml);
     },

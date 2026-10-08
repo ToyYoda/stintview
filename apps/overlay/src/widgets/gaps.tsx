@@ -8,7 +8,7 @@ export function Flag({ country }: { country?: string | null }) {
 }
 
 /** Big line: the class neighbour in front (▲) or behind (▼) and the gap to it. */
-export function Duel({ car, arrow, best }: { car: StandingRow | undefined; arrow: string; best: boolean }) {
+export function Duel({ car, arrow }: { car: StandingRow | undefined; arrow: string }) {
   if (!car) return <div className="duel empty" />;
   return (
     <div className="duel">
@@ -17,19 +17,10 @@ export function Duel({ car, arrow, best }: { car: StandingRow | undefined; arrow
         <Flag country={car.country} />
         #{car.number} {car.name}
       </span>
-      {best ? (
-        <span className={`gap-tile big ${car.gap == null ? 'far' : bestClass(car.gap)}`}>{car.gap == null ? '–' : bestGapText(car.gap)}</span>
-      ) : (
-        <span className={`gap-tile big ${gapClass(car.gap, car.lapsGap)}`}>{gapText(car.gap, car.lapsGap)}</span>
-      )}
+      <span className={`gap-tile big ${gapClass(car.gap, car.lapsGap)}`}>{gapText(car.gap, car.lapsGap)}</span>
     </div>
   );
 }
-
-/** Best-lap gap: thousandths, + = slower than us. */
-export const bestGapText = (g: number) => `${g > 0 ? '+' : g < 0 ? '−' : '±'}${Math.abs(g).toFixed(3)}`;
-/** Within 0.3 s of our best: highlighted tile, otherwise dimmed. */
-export const bestClass = (g: number) => (Math.abs(g) < 0.3 ? 'near' : 'far');
 
 /** Within 1 s: attack (ahead, amber) / defend (behind, red); 1–3 s normal; further away dimmed; other lap blue. */
 export function gapClass(gap: number | null | undefined, laps: number | undefined) {

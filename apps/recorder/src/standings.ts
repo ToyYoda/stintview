@@ -219,8 +219,32 @@ export class PitStopTracker {
   }
 }
 
-/** A car's best lap (practice/qualifying ranking); cars in the garage count too. */
-export interface BestLap { carIdx: number; best: number | null; lastLap: number | null; classId: number }
+/**
+ * A car's best lap (practice/qualifying ranking); cars in the garage count too.
+ * `order` = iRacing's official position, if known (then it decides the ranking).
+ */
+export interface BestLap { carIdx: number; best: number | null; lastLap: number | null; classId: number; order?: number }
+
+/** Practice/qualifying ranking within the team car's class: fastest first, cars without a time left out (except us, last). */
+function rankBest(cars: BestLap[], teamIdx: number): BestLap[] {
+  const team = cars.find((c) => c.carIdx === teamIdx);
+  if (!team) return [];
+  const key = (c: BestLap) => (c.best === null ? Infinity : c.order ?? c.best);
+  return cars
+    .filter((c) => c.classId === team.classId && (c.best !== null || c.carIdx === teamIdx))
+    .sort((a, b) => key(a) - key(b) || a.carIdx - b.carIdx);
+}
+
+function bestRow(c: BestLap, pos: number, team: BestLap, info: Map<number, CarInfo>, tyreLaps: (carIdx: number) => number | null): StandingRow {
+  const d = info.get(c.carIdx);
+  const isTeam = c.carIdx === team.carIdx;
+  return {
+    pos, carIdx: c.carIdx, number: d?.number ?? '?', name: d?.name ?? '', country: d?.country ?? null,
+    lastLap: c.lastLap, isTeam, bestLap: c.best,
+    gap: isTeam || c.best === null || team.best === null ? null : c.best - team.best,
+    lapsGap: 0, tyreLaps: tyreLaps(c.carIdx), inPit: false,
+  };
+}
 
 /**
  * Practice and qualifying: ranking by best lap within the team car's class (cars without a
@@ -230,25 +254,50 @@ export function computeBestStandings(
   cars: BestLap[], teamIdx: number, info: Map<number, CarInfo>, top = 3, around = 3,
   tyreLaps: (carIdx: number) => number | null = () => null,
 ): StandingRow[] {
-  const team = cars.find((c) => c.carIdx === teamIdx);
-  if (!team) return [];
-  const field = cars
-    .filter((c) => c.classId === team.classId && (c.best !== null || c.carIdx === teamIdx))
-    .sort((a, b) => (a.best ?? Infinity) - (b.best ?? Infinity) || a.carIdx - b.carIdx);
+  const field = rankBest(cars, teamIdx);
   const at = field.findIndex((c) => c.carIdx === teamIdx);
+  if (at < 0) return [];
   const wanted = new Set<number>();
   for (let i = 0; i < Math.min(top, field.length); i++) wanted.add(i);
   for (let i = Math.max(0, at - around); i <= Math.min(field.length - 1, at + around); i++) wanted.add(i);
-  return [...wanted].sort((a, b) => a - b).map((i) => {
-    const c = field[i]!;
-    const d = info.get(c.carIdx);
-    const isTeam = c.carIdx === teamIdx;
-    return {
-      pos: i + 1, carIdx: c.carIdx, number: d?.number ?? '?', name: d?.name ?? '', country: d?.country ?? null,
-      lastLap: c.lastLap, isTeam, bestLap: c.best,
-      gap: isTeam || c.best === null || team.best === null ? null : c.best - team.best,
-      lapsGap: 0, tyreLaps: tyreLaps(c.carIdx), inPit: false,
-    };
+  return [...wanted].sort((a, b) => a - b).map((i) => bestRow(field[i]!, i + 1, field[at]!, info, tyreLaps));
+}
+
+/**
+ * Practice/qualifying duel: where the lap in progress (`lapTime`, projected; null = none) would
+ * put us in the ranking, and the next car to beat from there with the time still to find on it.
+ * A lap slower than our best keeps our position; the time to find then includes what we lost.
+ */
+export function bestProjection(
+  cars: BestLap[], teamIdx: number, info: Map<number, CarInfo>, lapTime: number | null,
+): NonNullable<Standings['projection']> | null {
+  const field = rankBest(cars, teamIdx);
+  const at = field.findIndex((c) => c.carIdx === teamIdx);
+  if (at < 0) return null;
+  const team = field[at]!;
+  const others = field.filter((c) => c.carIdx !== teamIdx && c.best !== null);
+  const counts = Math.min(team.best ?? Infinity, lapTime ?? Infinity);
+  // A tie doesn't pass: the earlier time stays ahead.
+  const ahead = others.filter((c) => c.best! <= counts);
+  const pos = counts === Infinity ? at + 1 : ahead.length + 1;
+  const target = counts === Infinity ? null : ahead[ahead.length - 1] ?? null;
+  const ours = lapTime ?? team.best;
+  return {
+    lapTime, pos,
+    target: target ? bestRow(target, field.indexOf(target) + 1, team, info, () => null) : null,
+    needed: target && ours !== null ? ours - target.best! : null,
+  };
+}
+
+/** One car in iRacing's official results of a session (session YAML, ResultsPositions). */
+export interface OfficialResult { carIdx: number; position: number; fastest: number | null }
+
+/** Best laps from the official results: their order and fastest (valid) laps replace the telemetry's. */
+export function officialBestLaps(cars: BestLap[], results: OfficialResult[]): BestLap[] {
+  const byCar = new Map(results.map((r) => [r.carIdx, r]));
+  return cars.map((c) => {
+    const r = byCar.get(c.carIdx);
+    return r?.fastest ? { ...c, best: r.fastest, order: r.position } : { ...c, best: null };
   });
 }
 
@@ -267,13 +316,36 @@ export function readBestLaps(f: Frame): BestLap[] {
   return out;
 }
 
-/** SessionNum -> SessionType ("Practice", "Open Qualify", "Race", ...) from the session YAML. */
-export function parseSessionTypes(text: string): Map<number, string> {
-  let y: { SessionInfo?: { Sessions?: { SessionNum?: number; SessionType?: string }[] } } = {};
+/** Per session of the event: its type and iRacing's official results so far (empty if none yet). */
+export interface SessionResults { type: string; results: OfficialResult[] }
+
+/**
+ * SessionNum -> SessionType ("Practice", "Open Qualify", "Race", ...) and the official results
+ * (`ResultsPositions`: overall position, fastest lap; -1 = no time) from the session YAML.
+ */
+export function parseSessions(text: string): Map<number, SessionResults> {
+  type Pos = { Position?: number; CarIdx?: number; FastestTime?: number };
+  let y: { SessionInfo?: { Sessions?: { SessionNum?: number; SessionType?: string; ResultsPositions?: Pos[] | null }[] } } = {};
   try {
     y = parse(text, { strict: false, uniqueKeys: false, maxAliasCount: -1 }) ?? {};
   } catch { /* none */ }
-  return new Map((y.SessionInfo?.Sessions ?? []).filter((s) => s.SessionNum !== undefined).map((s) => [s.SessionNum!, s.SessionType ?? '']));
+  return new Map((y.SessionInfo?.Sessions ?? []).filter((s) => s.SessionNum !== undefined).map((s) => [s.SessionNum!, {
+    type: s.SessionType ?? '',
+    results: (s.ResultsPositions ?? [])
+      .filter((p) => typeof p.CarIdx === 'number' && typeof p.Position === 'number')
+      .map((p) => ({ carIdx: p.CarIdx!, position: p.Position!, fastest: p.FastestTime! > 0 ? p.FastestTime! : null })),
+  }]));
+}
+
+/**
+ * Time the lap in progress will end with: own best lap + iRacing's live delta to it.
+ * null without a best lap, without a valid delta or on pit road.
+ */
+export function projectedLap(f: Frame): number | null {
+  const best = f.num('LapBestLapTime');
+  if (!(best > 0) || !f.bool('LapDeltaToBestLap_OK') || f.bool('OnPitRoad')) return null;
+  const delta = f.num('LapDeltaToBestLap');
+  return Number.isFinite(delta) ? best + delta : null;
 }
 
 /** Races keep the running order on track; everything else ranks by best lap. */
@@ -281,6 +353,8 @@ export const isRaceSession = (type: string | undefined) => type === undefined ||
 const sessionLabel = (type: string) => (/qualify/i.test(type) ? 'Qualifying' : 'Training');
 
 const SEND_EVERY_S = 1;
+/** Practice/qualifying: the projection of the lap in progress changes all the time. */
+const SEND_EVERY_BEST_S = 0.5;
 const WHEELS = ['LF', 'RF', 'LR', 'RR'] as const;
 
 /**
@@ -293,15 +367,15 @@ export class StandingsTracker {
   private pits = new PitStopTracker();
   private sessionNum = -1;
   private trackLength = 0;
-  private sessionTypes = new Map<number, string>();
+  private sessions = new Map<number, SessionResults>();
 
   setDrivers(info: Map<number, CarInfo>, trackLength = 0) {
     this.info = info;
     this.trackLength = trackLength;
   }
 
-  setSessionTypes(types: Map<number, string>) {
-    this.sessionTypes = types;
+  setSessions(sessions: Map<number, SessionResults>) {
+    this.sessions = sessions;
   }
 
   onFrame(f: Frame, driving: boolean): Standings | null {
@@ -315,16 +389,21 @@ export class StandingsTracker {
     if (!driving) return null;
 
     const t = f.num('SessionTime');
-    if (t - this.lastSent < SEND_EVERY_S && t >= this.lastSent) return null;
+    const session = this.sessions.get(sessionNum);
+    const bestMode = !isRaceSession(session?.type) && f.has('CarIdxBestLapTime');
+    if (t - this.lastSent < (bestMode ? SEND_EVERY_BEST_S : SEND_EVERY_S) && t >= this.lastSent) return null;
     this.lastSent = t;
     const teamIdx = f.num('PlayerCarIdx');
     const laps = new Map(cars.map((c) => [c.carIdx, Math.floor(c.progress)]));
     const ownTyres = this.ownTyreLaps(f);
     const tyreLaps = (idx: number) => (idx === teamIdx && ownTyres !== null ? ownTyres : this.pits.laps(idx, laps.get(idx) ?? 0));
-    const type = this.sessionTypes.get(sessionNum);
-    if (!isRaceSession(type) && f.has('CarIdxBestLapTime')) {
-      const best = computeBestStandings(readBestLaps(f), teamIdx, this.info, 3, 3, tyreLaps);
-      return best.length ? { t: 'standings', sessionTime: t, rows: best, mode: 'best', session: sessionLabel(type!) } : null;
+    if (bestMode) {
+      // iRacing's official ranking (valid laps only) once the session has results, telemetry until then.
+      const telemetry = readBestLaps(f);
+      const field = session!.results.length ? officialBestLaps(telemetry, session!.results) : telemetry;
+      const best = computeBestStandings(field, teamIdx, this.info, 3, 3, tyreLaps);
+      const projection = bestProjection(field, teamIdx, this.info, projectedLap(f)) ?? undefined;
+      return best.length ? { t: 'standings', sessionTime: t, rows: best, mode: 'best', session: sessionLabel(session!.type), projection } : null;
     }
     const rows = computeStandings(cars, teamIdx, this.info, 3, 3, { tyreLaps });
     const lapRef = cars.find((c) => c.carIdx === teamIdx)?.lastLap ?? null;

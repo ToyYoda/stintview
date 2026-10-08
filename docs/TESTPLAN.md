@@ -141,7 +141,8 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 | 4b.7 | Z | im Zweikampf von A (< 1 s) auf Duell-Zeile und Kacheln achten | Duell-Zeile oben zeigt Vorder-/Hintermann mit großem Abstand, Kachel gelb/rot; A's Zeile und Nachbarn größer | |
 | 4b.9 | Z | Sprit-Panel im Rennen, unten „Bis zum Ziel“ | Runden bis zum Ziel passen zur Restzeit ÷ Rundenzeit (+ laufende Runde); „Box spätestens Runde N“ passt zu „Runden übrig“; nach dem Stopp „Reicht bis ins Ziel“ bzw. weniger Stopps | |
 | 4b.8 | Z | Sprit-Panel nach einigen Runden | Liter im Balken, darüber ± zur Vorrunde (grün/rot); nach Boxenstopp-Runde keine Veränderung | |
-| 4b.9 | alle | im Training/Qualifying auf das Positions-Panel schauen | Titel „Bestzeiten · …“, Rangliste nach Bestzeit, Abstand zu A's Bestzeit; beim Wechsel ins Rennen wieder Reihenfolge auf der Strecke | |
+| 4b.9 | alle | im Training/Qualifying auf das Positions-Panel schauen | Titel „Bestzeiten · …“, Reihenfolge wie iRacings Wertung (F3/Ergebnisliste), Spalten Bestzeit und Δ Runde (A's Bestzeit − seine), kein Abstand/Reifen/Duell-Zeile; beim Wechsel ins Rennen wieder Reihenfolge auf der Strecke | |
+| 4b.9a | alle | im Training/Qualifying Duell-Panel während A's schneller Runde | eigene Position groß, „→ Pn“ sobald die Runde besser wird, nächstes Auto und fehlende Zeit passen zu iRacings Delta-Anzeige; Boxenstopp-Panel unsichtbar, Sprit ohne „Bis zum Ziel“ | |
 | 4b.3 | alle | Mehrklassen-Rennen (falls vorhanden) | nur Autos der eigenen Klasse | |
 
 ### Block 4d – Überrundungen (Mehrklassen-Rennen)

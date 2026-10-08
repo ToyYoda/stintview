@@ -1,6 +1,6 @@
 import type { StandingRow, Standings } from '@stintview/protocol';
 import { t } from '../i18n.ts';
-import { Duel, Flag, bestClass, bestGapText, gapClass, gapText } from './gaps.tsx';
+import { Duel, Flag, gapClass, gapText } from './gaps.tsx';
 import type { StandingsColumn, StandingsOptions } from '../feed.ts';
 
 
@@ -13,15 +13,17 @@ const HEAD: StandingsColumn[] = ['pos', 'num', 'flag', 'name', 'best', 'gap', 't
  * Δ = our last lap minus theirs: red (+) = we were slower, green (−) = we were faster.
  * Lapping: the car right in front of us if we are about to lap it (blue row above ours),
  * the car right behind if it is about to lap us (red row below ours) – any class.
+ * Practice/qualifying: iRacing's official ranking (best valid lap) with the best lap instead of
+ * gap and tyres, Δ = our best minus theirs; no duel line, no lapping rows.
  * Columns can be switched off in the StintView window.
  */
 export function StandingsWidget({ standings, options }: { standings: Standings | null; options?: StandingsOptions | null }) {
   const rows = standings?.rows ?? [];
-  const ours = rows.find((r) => r.isTeam)?.lastLap ?? null;
-  // Practice/qualifying: ranking by best lap, gap = their best − ours (+ slower than us).
   const best = standings?.mode === 'best';
-  // Best lap only outside races; tyre age and last-lap delta only in races.
-  const col = (c: StandingsColumn) => (best ? c !== 'tyre' && c !== 'delta' : c !== 'best') && (options?.columns[c] ?? true);
+  // Δ compares last laps in the race, best laps in practice/qualifying.
+  const ours = (best ? rows.find((r) => r.isTeam)?.bestLap : rows.find((r) => r.isTeam)?.lastLap) ?? null;
+  // Best lap only outside races; gap and tyre age only in races.
+  const col = (c: StandingsColumn) => (best ? c !== 'gap' && c !== 'tyre' : c !== 'best') && (options?.columns[c] ?? true);
   const lapping = options?.lapping === false || best ? [] : standings?.lapping ?? [];
   const team = rows.find((r) => r.isTeam);
   // Class neighbours: the cars directly in front of and behind us in the running order.
@@ -42,12 +44,12 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
     <div className="panel standings">
       <div className="title">
         {best ? t('st.bestTitle', { session: t(`st.session.${standings?.session ?? 'Training'}`) }) : t('st.title')}
-        {best ? <span className="hint">{t('st.bestHint')}</span> : col('tyre') && <span className="hint">{t('st.tyreHint')}</span>}
+        {best ? col('delta') && <span className="hint">{t('st.bestHint')}</span> : col('tyre') && <span className="hint">{t('st.tyreHint')}</span>}
       </div>
-      {options?.duel !== false && team && (front || back) && (
+      {!best && options?.duel !== false && team && (front || back) && (
         <div className="st-duel">
-          <Duel car={front} arrow="▲" best={best} />
-          <Duel car={back} arrow="▼" best={best} />
+          <Duel car={front} arrow="▲" />
+          <Duel car={back} arrow="▼" />
         </div>
       )}
       {rows.length === 0 ? (
@@ -60,9 +62,11 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
           <tbody>
             {list.map(({ r, gap }) => {
               // Lap times of another class don't compare.
-              const raw = !r.isTeam && !r.otherClass && ours !== null && r.lastLap !== null ? ours - r.lastLap : null;
-              // Same lap time (to the hundredth) is neither slower nor faster.
-              const delta = raw !== null && Math.abs(raw) < 0.005 ? 0 : raw;
+              const theirs = best ? r.bestLap ?? null : r.lastLap;
+              const raw = !r.isTeam && !r.otherClass && ours !== null && theirs !== null ? ours - theirs : null;
+              // Same lap time (to the hundredth / thousandth) is neither slower nor faster.
+              const delta = raw !== null && Math.abs(raw) < (best ? 0.0005 : 0.005) ? 0 : raw;
+              const digits = best ? 3 : 2;
               const cls = [r.isTeam ? 'team' : '', gap ? 'gap' : '', r.lap ? `lap-${r.lap}` : '', near(r) ? 'near' : ''].join(' ');
               return (
                 <tr key={`${r.lap ?? 'row'}-${r.carIdx}`} className={cls}>
@@ -78,19 +82,19 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
                   {col('best') && <td className="st-best">{r.bestLap ? lapTime(r.bestLap) : '–'}</td>}
                   {col('gap') && (
                     <td className="st-gap">
-                      {!r.isTeam && (best ? (
-                        r.gap != null && <span className={`gap-tile ${bestClass(r.gap)}`}>{bestGapText(r.gap)}</span>
-                      ) : (
+                      {!r.isTeam && (
                         <span className={`gap-tile ${r.lap ? '' : gapClass(r.gap, r.lapsGap)}`}>
                           {r.lap ? gapText(r.gap, 0) : gapText(r.gap, r.lapsGap)}
                         </span>
-                      ))}
+                      )}
                     </td>
                   )}
                   {col('tyre') && <td className="st-tyre">{r.inPit ? t('st.box') : r.tyreLaps ?? '–'}</td>}
                   {col('delta') && (
                     <td className={delta === null || delta === 0 || r.lap ? 'st-delta' : delta > 0 ? 'st-delta slower' : 'st-delta faster'}>
-                      {delta === null ? (r.isTeam && ours !== null ? lapTime(ours) : '') : delta === 0 ? '0.00' : `${delta > 0 ? '+' : '−'}${Math.abs(delta).toFixed(2)}`}
+                      {delta === null
+                        ? (r.isTeam && !best && ours !== null ? lapTime(ours) : '')
+                        : delta === 0 ? (0).toFixed(digits) : `${delta > 0 ? '+' : '−'}${Math.abs(delta).toFixed(digits)}`}
                     </td>
                   )}
                 </tr>

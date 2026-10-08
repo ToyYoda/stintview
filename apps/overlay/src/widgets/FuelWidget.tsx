@@ -18,6 +18,7 @@ export function FuelWidget({ fuel, status, session }: { fuel: Fuel | null; statu
   const s = level !== null ? fuelStats(laps, level) : null;
   const recent = laps.slice(-8);
   const max = Math.max(...recent.map((l) => l.used), 0.001);
+  // Only in races; practice/qualifying (and an unknown session) show the upper part only.
   const plan = status && s && /race/i.test(session?.sessionType ?? '') ? planFor(laps, status, s.avg5 ?? s.avg3 ?? s.lastLap) : null;
 
   return (

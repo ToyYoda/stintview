@@ -6,6 +6,7 @@
 import WebSocket from 'ws';
 import { PROTOCOL_VERSION, pack, type ClientMessage, type StandingRow } from '@stintview/protocol';
 import { loadConfig, wsUrl } from '../config.ts';
+import { bestProjection, computeBestStandings, type BestLap, type CarInfo } from '../standings.ts';
 
 const config = loadConfig();
 if (!config) throw new Error('no config');
@@ -27,6 +28,14 @@ const DEMO: [number, string, string | null, string, number, number, number | nul
   [12, '63', 'us', 'Ryan Cole', -9.3, 0, 0, 495.102, true],
 ];
 
+const best = process.argv.includes('--best');
+// Qualifying field: the demo cars plus two more, best laps in order (car 6 = us).
+const QUALI_TIMES = [125.104, 125.388, 125.412, 125.731, 125.802, 125.954, 126.020, 126.117, 126.390, 126.902, 125.55, 125.62];
+const QUALI: BestLap[] = QUALI_TIMES.map((t, carIdx) => ({ carIdx, best: t, lastLap: t, classId: 0 }));
+const QUALI_INFO = new Map<number, CarInfo>(DEMO.map(([, number, country, name], i) => [i, { number, name, country }]));
+QUALI_INFO.set(10, { number: '23', name: 'Anna Lind', country: 'se' });
+QUALI_INFO.set(11, { number: '9', name: 'Pablo Ruiz', country: 'es' });
+
 ws.on('open', async () => {
   ws.send(pack({ t: 'hello', v: PROTOCOL_VERSION, token: config.token, role: 'recorder' }));
   await new Promise((r) => setTimeout(r, 300));
@@ -34,8 +43,8 @@ ws.on('open', async () => {
   const rows: StandingRow[] = DEMO.map(([pos, number, country, name, gap, lapsGap, tyreLaps, lastLap, inPit], i) => ({
     pos, carIdx: i, number, country, name, gap, lapsGap, tyreLaps, lastLap, inPit, isTeam: pos === 9,
   }));
-  // Race session, so the fuel panel shows "to the finish".
-  send({ t: 'session', track: 'Demo', car: 'GT3', driverName: 'Outcast Endurance', teamName: 'Outcast Endurance', sessionType: 'Race', carIdx: 6, carNumber: 42, sessionId: session });
+  // Race session, so the fuel panel shows "to the finish" (qualifying: no fuel plan, no pit stop panel).
+  send({ t: 'session', track: 'Demo', car: 'GT3', driverName: 'Outcast Endurance', teamName: 'Outcast Endurance', sessionType: best ? 'Open Qualify' : 'Race', carIdx: 6, carNumber: 42, sessionId: session });
   // Fuel: laps 8-15 of a GT3 stint (lap 11 with a pit stop), 51 l in the tank.
   const used = [3.48, 3.51, 3.45, 3.02, 3.52, 3.47, 3.47, 3.44];
   send({
@@ -58,13 +67,14 @@ ws.on('open', async () => {
       ],
       behind: [{ ...lapping[1]!, lap: undefined }],
     };
-    if (process.argv.includes('--best')) {
-      // Qualifying view: ranking by best lap.
-      const times = [125.104, 125.388, 125.412, 125.731, 125.802, 125.954, 126.020, 126.117, 126.390, 126.902];
-      const best: StandingRow[] = rows.map((r, k) => ({
-        ...r, pos: k < 3 ? k + 1 : k + 3, bestLap: times[k]!, gap: r.isTeam ? null : times[k]! - 126.020, lapsGap: 0, inPit: false,
-      }));
-      send({ t: 'standings', sessionTime: 5000 + i / 2, rows: best, mode: 'best', session: 'Qualifying' });
+    if (best) {
+      // Qualifying view: official ranking by best lap; the lap in progress goes from 0.3 s down to
+      // 0.9 s up on our best (126.020, P9), so the projected position climbs.
+      const lapTime = 126.020 + 0.3 - i * 0.01;
+      send({
+        t: 'standings', sessionTime: 5000 + i / 2, mode: 'best', session: 'Qualifying',
+        rows: computeBestStandings(QUALI, 6, QUALI_INFO), projection: bestProjection(QUALI, 6, QUALI_INFO, lapTime) ?? undefined,
+      });
     } else {
       // Duel trend: we close in on #19 (about 2 s per lap), #88 drops back.
       const moving = rows.map((r) => (r.pos === 8 ? { ...r, gap: 2.9 - i * 0.002 } : r.pos === 10 ? { ...r, gap: -0.8 - i * 0.001 } : r));

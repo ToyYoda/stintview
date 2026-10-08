@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { useTeamFeed } from './feed.ts';
+import { isPracticeOrQuali, useTeamFeed } from './feed.ts';
 import { FuelWidget } from './widgets/FuelWidget.tsx';
 import { HeaderWidget } from './widgets/HeaderWidget.tsx';
 import { InputsWidget } from './widgets/InputsWidget.tsx';
@@ -79,7 +79,8 @@ export function App() {
     weather: <WeatherWidget weather={state.weather} />,
     standings: <StandingsWidget standings={state.standings} options={config?.standings?.options as StandingsOptions | null | undefined} />,
     duel: <DuelWidget standings={state.standings} options={config?.duel?.options as DuelOptions | null | undefined} />,
-    pitstop: <PitWidget plan={state.pitplan} />,
+    // Not shown in practice/qualifying, except while moving panels (so it can be placed).
+    pitstop: isPracticeOrQuali(state) && !edit ? null : <PitWidget plan={state.pitplan} />,
     // Empty without a current message; a placeholder while moving panels, so it can be placed.
     messages: <MessagesWidget messages={state.messages} placeholder={edit} />,
     // Clickable on the desktop overlay only; VR panels show the hotkeys.

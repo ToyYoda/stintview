@@ -253,6 +253,13 @@ export interface Standings {
    * max 3 per side; gap = physical gap in s, lapsGap = laps ahead (+) / behind (−) in the race.
    */
   between?: { ahead: StandingRow[]; behind: StandingRow[] };
+  /**
+   * Duel panel in mode 'best' (since 0.14): where the lap in progress would put us.
+   * lapTime = projected time of this lap (own best + live delta), null when not on a timed lap;
+   * pos = class position with that lap (our position if it doesn't improve it);
+   * target = the next car to beat from there, needed = seconds still to find on it.
+   */
+  projection?: { lapTime: number | null; pos: number; target: StandingRow | null; needed: number | null };
 }
 
 /** A car around us after the stop (all classes: traffic matters regardless of class). */

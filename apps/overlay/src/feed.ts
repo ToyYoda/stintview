@@ -215,6 +215,15 @@ export interface FeedState {
   lastData: number;
 }
 
+/**
+ * Practice, qualifying, warmup, testing – everything but a race, from iRacing's session type
+ * (as the recorder's standings mode when the session is not known yet).
+ */
+export function isPracticeOrQuali(s: Pick<FeedState, 'session' | 'standings'>): boolean {
+  const type = s.session?.sessionType;
+  return type ? !/race/i.test(type) : s.standings?.mode === 'best';
+}
+
 const initial: FeedState = {
   conn: 'connecting', error: null, teamName: '', active: null,
   session: null, status: null, fuel: null, tyres: null, weather: null, hazard: null, standings: null, pitplan: null, messages: [], lastData: 0,
