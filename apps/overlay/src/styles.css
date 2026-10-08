@@ -174,7 +174,7 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .gap-tile.big { font-size: 20px; padding: 2px 8px; min-width: 64px; }
 .st-best { font-family: var(--mono); text-align: right; padding-right: 8px !important; }
 
-/* Duel panel: one line in driving direction – behind, gap, our position, gap, in front */
+/* Duel panel: one line – in front, gap, our position, gap, behind */
 .duel-panel { display: flex; align-items: center; gap: 10px; padding: 6px 10px; min-width: 560px; }
 .duel-rival { display: flex; align-items: center; gap: 5px; max-width: 150px; min-width: 0; }
 .duel-rival .duel-name { font-size: 14px; }
@@ -190,10 +190,10 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .duel-best .duel-edge { flex: 1; max-width: none; font-size: 14px; }
 .duel-best .duel-need { flex: 0 0 auto; }
 .duel-best .spacer { visibility: hidden; }
-.duel-gap.behind { align-items: flex-end; }
-.duel-gap.ahead { align-items: flex-start; }
+.duel-gap.left { align-items: flex-end; }
+.duel-gap.right { align-items: flex-start; }
 .duel-bar { width: 100%; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); display: flex; }
-.duel-gap.behind .duel-bar { justify-content: flex-end; }
+.duel-gap.left .duel-bar { justify-content: flex-end; }
 .duel-bar-fill { height: 100%; border-radius: 3px; background: rgba(255, 255, 255, 0.35); transition: width 0.9s linear; }
 .duel-bar-fill.attack { background: var(--warn); }
 .duel-bar-fill.defend { background: var(--bad); }
