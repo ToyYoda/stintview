@@ -228,7 +228,7 @@ const de = {
   'set.notInCar': 'Nicht im Auto',
   'set.vrConnected': 'SteamVR verbunden',
   'set.vrWaiting': 'SteamVR – wartet auf SteamVR',
-  'set.relayRunning': 'Team-Server auf diesem PC läuft',
+  'set.relayRunning': 'Team-Server läuft auf diesem PC',
   'set.relayStopped': 'Team-Server auf diesem PC gestoppt',
   'set.displays': 'Anzeigen',
   'set.show': 'Anzeigen einblenden',
