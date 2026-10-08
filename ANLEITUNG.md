@@ -38,7 +38,7 @@ Dann **Team beitreten** klicken. Unter *Status* erscheint **Team-Server: verbund
 
 **Fertig.** Du musst nie wieder etwas einrichten.
 
-**Ohne Team:** Die Anzeigen funktionieren auch ohne Team – oder wenn der Team-Server gerade nicht erreichbar ist. Sie zeigen dann nur deine **eigenen Sessions** auf diesem PC; die Kopfzeile sagt dazu „nur Sessions auf diesem PC“. Sobald die Verbindung zum Team steht, zeigen sie wieder den Teamkollegen im Auto. Ohne Team findest du das Beitreten im StintView-Fenster im Reiter **Team**.
+**Ohne Team:** Die Anzeigen funktionieren auch ohne Team – oder wenn der Team-Server gerade nicht erreichbar ist. Sie zeigen dann nur deine **eigenen Sessions** auf diesem PC; die Kopfzeile sagt dazu „nur Sessions auf diesem PC“. Sobald die Verbindung zum Team steht, zeigen sie wieder den Teamkollegen im Auto. Dasselbe gilt, wenn du in einer **anderen iRacing-Session** fährst als dein Team (z. B. Training, während das Team ein Rennen fährt): Deine Anzeigen zeigen dann deine eigene Session („Das Team fährt eine andere Session – hier deine eigene“), dein Team sieht davon nichts. Ohne Team findest du das Beitreten im StintView-Fenster im Reiter **Team**.
 
 ---
 

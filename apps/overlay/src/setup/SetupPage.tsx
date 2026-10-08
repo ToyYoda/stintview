@@ -213,8 +213,9 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
             <li><Dot kind="idle" />{t('set.noTeam')}</li>
           )}
           {state.configured && (status.server === 'offline' || status.server === 'error') && <li><Dot kind="idle" />{t('set.localFallback')}</li>}
+          {status.otherSession && <li><Dot kind="idle" />{t('set.otherSession')}</li>}
           <li><Dot kind={status.iracing ? 'ok' : 'idle'} />{status.iracing ? t('set.iracingRunning') : t('set.iracingNot')}</li>
-          <li><Dot kind={status.inCar ? (status.server === 'standby' ? 'warn' : 'ok') : 'idle'} />{status.inCar ? (status.server === 'standby' ? t('set.standby') : status.server === 'connected' ? t('set.driving') : t('set.drivingLocal')) : t('set.notInCar')}</li>
+          <li><Dot kind={status.inCar ? (status.server === 'standby' && !status.otherSession ? 'warn' : 'ok') : 'idle'} />{status.inCar ? (status.server === 'standby' && !status.otherSession ? t('set.standby') : status.server === 'connected' ? t('set.driving') : t('set.drivingLocal')) : t('set.notInCar')}</li>
           {status.waitingForIracing && <li><Dot kind="idle" />{t('set.waitingForIracing')}</li>}
           {settings.overlay && settings.output === 'vr' && !status.waitingForIracing && <li><Dot kind={status.vr === 'connected' ? 'ok' : 'warn'} />{status.vr === 'connected' ? t('set.vrConnected') : t('set.vrWaiting')}</li>}
           {settings.server && <li><Dot kind={status.relay === 'running' ? 'ok' : 'bad'} />{status.relay === 'running' ? t('set.relayRunning') : t('set.relayStopped')}</li>}

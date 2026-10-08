@@ -86,6 +86,15 @@ describe('Room: only the driver in the car reaches the overlays', () => {
     expect(room.driving(b, true, 'Ben', RACE)).toBe(true);
   });
 
+  it('says "other session" also while the race driver is streaming', () => {
+    const { room, peer, status } = setup();
+    const a = peer(1, 'Anna'), c = peer(3, 'Chris');
+    room.driving(a, true, 'Anna', RACE);
+    room.telemetry(a, status(1));
+    expect(room.driving(c, true, 'Chris', PRACTICE)).toBe(false);
+    expect(c.got).toEqual([{ t: 'standby', reason: 'other-session' }]);
+  });
+
   it('accepts a new session once the old one has been quiet long enough', () => {
     const { room, peer, advance } = setup();
     const a = peer(1, 'Anna'), c = peer(3, 'Chris');

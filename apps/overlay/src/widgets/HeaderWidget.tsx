@@ -29,9 +29,10 @@ export function HeaderWidget({ state, interactive = false }: { state: FeedState;
   else if (!driver) dot = 'idle';
   else if (age !== null && age > 3) dot = 'warn';
   const why = !state.local ? null
-    : state.conn === 'no-config' ? t('header.localNoTeam')
-      : state.conn === 'error' ? t('header.localError', { error: state.error ?? t('header.error') })
-        : t('header.localOffline');
+    : state.conn === 'connected' && state.otherSession ? t('header.localOtherSession')
+      : state.conn === 'no-config' ? t('header.localNoTeam')
+        : state.conn === 'error' ? t('header.localError', { error: state.error ?? t('header.error') })
+          : t('header.localOffline');
 
   return (
     <div className="panel header">

@@ -37,6 +37,11 @@ export class Recorder {
     return this.driving;
   }
 
+  /** `${SessionID}/${SubSessionID}` of the iRacing session on this PC, null before the first session info. */
+  get sessionId() {
+    return this.meta?.sessionId ?? null;
+  }
+
   onSessionInfo(yaml: string) {
     const prev = this.meta;
     this.meta = parseSession(yaml);

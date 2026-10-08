@@ -52,6 +52,8 @@ ws.on('open', async () => {
     laps: used.map((u, k) => ({ lap: 8 + k, used: u, lapTime: 104 + k / 3, pit: k === 3 })),
   });
   for (let i = 0; i < 120; i++) {
+    // Claim the car every 2 s like the real recorder (the server may hand over otherwise).
+    if (i % 4 === 0) send({ t: 'driving', driving: true, driverName: 'Outcast Endurance', session });
     send({ t: 'status', sessionTime: 5000 + i / 2, lap: 16, lapDistPct: 0.3, fuelLevel: 51.2, onPitRoad: false, odometer: { LF: 30000, RF: 30000, LR: 30000, RR: 30000 }, flags: 0,
       // ~45 laps to go: two stops, or one fewer with a little fuel saving.
       timeRemain: 4700 - i / 2, lapsRemain: null, usableTank: 100 });

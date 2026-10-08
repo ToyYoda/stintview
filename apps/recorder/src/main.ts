@@ -41,6 +41,8 @@ export type RecorderEvent =
   | { t: 'car'; inCar: boolean; driverName: string }
   /** Every message for the team, also straight to the app: its displays use it without a team server. */
   | { t: 'telemetry'; msg: ClientMessage }
+  /** The team streams another iRacing session than this PC's: its displays show their own data. */
+  | { t: 'other-session'; on: boolean }
   | CameraState
   | CameraResult
   | ({ t: 'pit-import'; finished: boolean; error?: string } & Partial<ImportProgress>);
@@ -52,6 +54,9 @@ const parentPort = (process as { parentPort?: ParentPort }).parentPort;
 const report = (e: RecorderEvent) => parentPort?.postMessage(e);
 /** The live source reports iRacing going away before record() has set up the recorder. */
 let recorderRef: Recorder | null = null;
+let onSourceLost: (() => void) | null = null;
+/** Standby replies repeat every 2 s while driving; none for this long = the claim was taken. */
+const STANDBY_GONE_MS = 5000;
 
 async function register(path: string, body: CreateTeamRequest | JoinTeamRequest) {
   if (!values.server) throw new Error('--server is required');
@@ -72,11 +77,33 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
   if (!config && !parentPort) throw new Error(`Not set up yet – run create-team or join first.\n\n${USAGE}`);
   if (!config) console.log('[server] no team – data for the displays on this PC only');
 
+  // The team streams another session than ours: remembered for our session (also in the garage,
+  // so the displays don't flip back on every pit exit) until it changes, iRacing goes away, the
+  // connection drops or the server takes our claim after all.
+  let otherSession: string | null = null;
+  let lastStandby = 0;
+  const setOtherSession = (session: string | null) => {
+    if (session === otherSession) return;
+    if (session !== null || otherSession !== null) console.log(session ? '[server] team in another session – displays show this PC' : '[server] same session as the team again');
+    otherSession = session;
+    report({ t: 'other-session', on: session !== null });
+  };
+  setInterval(() => {
+    if (otherSession === null) return;
+    if (recorder.sessionId !== otherSession || (recorder.isDriving && Date.now() - lastStandby > STANDBY_GONE_MS)) setOtherSession(null);
+  }, 1000);
+  onSourceLost = () => setOtherSession(null);
+
   const conn = config ? new Connection(wsUrl(config.serverUrl), config.token, {
     onOpen: () => recorder.stateMessages(),
     onStatus: (s) => {
       console.log(`[server] ${s}`);
+      if (!s.startsWith('standby')) setOtherSession(null);
       report({ t: 'server', connected: s.startsWith('connected') || s.startsWith('standby'), text: s });
+    },
+    onStandby: (reason) => {
+      lastStandby = Date.now();
+      setOtherSession(reason === 'other-session' ? recorder.sessionId : null);
     },
   }) : null;
   const send = (msg: ClientMessage) => {
@@ -163,7 +190,10 @@ async function main() {
         console.log(c ? '[iracing] connected' : '[iracing] waiting for iRacing session…');
         report({ t: 'iracing', connected: c });
         spectator.setConnected(c);
-        if (!c) recorderRef?.sourceLost();
+        if (!c) {
+          recorderRef?.sourceLost();
+          onSourceLost?.();
+        }
       });
       return record(source, 'live iRacing telemetry', spectator, new HazardDetector((line) => console.log(line)));
     }

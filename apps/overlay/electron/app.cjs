@@ -166,6 +166,16 @@ let runningVrPanels = '';
 
 /** Latest message per type (not inputs), for display pages that open later. */
 const localLatest = new Map();
+/** The team streams another iRacing session: the displays show this PC's own data instead. */
+let otherSession = false;
+
+function setOtherSession(on) {
+  if (on === otherSession) return;
+  otherSession = on;
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (win !== setupWin && !win.isDestroyed()) win.webContents.send('local-prefer', on);
+  }
+}
 
 function onLocalTelemetry(msg) {
   if (msg.t === 'session') {
@@ -180,7 +190,7 @@ function onLocalTelemetry(msg) {
   }
 }
 
-ipcMain.handle('local:snapshot', () => [...localLatest.values()]);
+ipcMain.handle('local:snapshot', () => ({ messages: [...localLatest.values()], prefer: otherSession }));
 
 /** Team joined or left: the display pages connect again with the new access (or none). */
 function reloadDisplays() {
@@ -200,6 +210,7 @@ function startRecorder() {
     : ['run'];
   recorder = supervise('recorder', 'recorder.cjs', args, { STINTVIEW_CONFIG: configPath() }, (m) => {
     if (m.t === 'telemetry') return onLocalTelemetry(m.msg); // many per second: no refresh
+    if (m.t === 'other-session') setOtherSession(m.on);
     // (Re)started process: hand it the manual pit stop values with its first message.
     if (m.t === 'exit') needsPitSettings = true;
     else if (needsPitSettings && recorder?.post({ t: 'pit-settings', pit: settings.pitStop })) needsPitSettings = false;
@@ -218,6 +229,7 @@ function startRecorder() {
           : m.text.startsWith('server error') ? 'error' : 'offline';
     }
     if (m.t === 'exit') {
+      setOtherSession(false);
       Object.assign(status, { iracing: false, inCar: false, server: 'offline' });
       setDriving(false);
       setSimRunning(false);
@@ -334,6 +346,7 @@ function statusLine() {
   if (status.server === 'error') return t('status.server', { text: status.serverText.replace(/^server error: /, '') });
   if (status.server === 'offline') return t('status.offline');
   const team = config.teamName;
+  if (otherSession) return t('status.otherSession', { team });
   if (!status.iracing) return t('status.noIracing', { team });
   if (status.inCar) return status.server === 'standby' ? t('status.standby', { team }) : t('status.driving', { team });
   return t('status.ready', { team });
@@ -417,7 +430,7 @@ function appState() {
     configured: Boolean(config),
     team: config ? { teamName: config.teamName, memberName: config.memberName, serverUrl: config.serverUrl, inviteCode: config.inviteCode } : null,
     settings,
-    status: { ...status, line: statusLine(), waitingForIracing: waitingForSim(), vr: vrStatus(), overlay: overlayRunning(), editing: editing(), editHotkey: editHotkey() },
+    status: { ...status, otherSession, line: statusLine(), waitingForIracing: waitingForSim(), vr: vrStatus(), overlay: overlayRunning(), editing: editing(), editHotkey: editHotkey() },
     autostartAvailable: app.isPackaged,
     cameraHotkeys: cameraInfo().hotkeys,
     pitImport,

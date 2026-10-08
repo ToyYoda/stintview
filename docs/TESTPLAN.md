@@ -207,6 +207,7 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 |---|---|---|---|---|
 | 7.1 | A (fährt) | WLAN/Netzwerk 20 s trennen, dann wieder verbinden | bei Z: „Daten … s alt“ (gelber Punkt); bei A laufen die Anzeigen mit eigenen Daten weiter („Team-Server nicht erreichbar – nur Sessions auf diesem PC“); danach läuft es von selbst weiter | |
 | 7.2 | H | StintView beenden und neu starten (Server kurz weg) | alle: *keine Verbindung*; A's Anzeigen zeigen solange A's eigene Daten, bei Z „Nicht im Auto – Team-Server nicht erreichbar“ → nach Neustart automatisch *verbunden*; Overlay zeigt A wieder | |
+| 7.2c | Z | während A im Rennen fährt, selbst in einer anderen Session fahren (z. B. Test Drive) | Z's Anzeigen zeigen Z's eigene Session („Das Team fährt eine andere Session – hier deine eigene“), die anderen sehen weiter A; nach Verlassen der Test-Session wieder A | |
 | 7.2b | Z | auf einem PC ohne Team (Team verlassen oder frische Installation) selbst fahren | Anzeigen zeigen die eigene Session („Ohne Team – nur Sessions auf diesem PC“), Einrichtungsfenster startet im Reiter Team | |
 | 7.3 | A | iRacing während der Fahrt beenden | Overlay: nach ~10 s niemand/idle, keine Fehlermeldungen | |
 | 7.4 | alle | Task-Manager: CPU/RAM von StintView während der Fahrt | CPU gering (einstelliger %-Bereich), keine wachsenden Speicherwerte | |

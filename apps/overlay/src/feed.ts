@@ -71,6 +71,8 @@ export interface AppState {
     relay: 'off' | 'running' | 'error';
     /** Displays switched on, but held back until iRacing runs. */
     waitingForIracing: boolean;
+    /** The team streams another iRacing session than this PC's: the displays show this PC's own. */
+    otherSession: boolean;
     vr: 'off' | 'waiting' | 'connected';
     overlay: boolean;
     editing: boolean;
@@ -108,7 +110,9 @@ declare global {
       setTeamCar(team: { carIdx: number; carNumber: number; sessionId: string }): void;
       /** This PC's own recorder (no team server needed): live messages and the latest per type. */
       onLocal?(cb: (m: ClientMessage) => void): void;
-      getLocalSnapshot?(): Promise<ClientMessage[]>;
+      getLocalSnapshot?(): Promise<{ messages: ClientMessage[]; prefer: boolean }>;
+      /** true while the team streams another iRacing session: show this PC's own data. */
+      onLocalPrefer?(cb: (on: boolean) => void): void;
       setHazard?(carIdx: number | null): void;
       camera(action: 'incident' | 'back', targetCarIdx?: number): Promise<void>;
       getCameraInfo(): Promise<{ state: unknown; hotkeys: { incident: string | null; back: string | null } }>;
@@ -205,10 +209,12 @@ export interface FeedState {
   error: string | null;
   teamName: string;
   /**
-   * Showing this PC's own sessions, straight from its recorder: without a team, or while the
-   * team server can't be reached (desktop app only).
+   * Showing this PC's own sessions, straight from its recorder: without a team, while the
+   * team server can't be reached, or while the team is in another session (desktop app only).
    */
   local: boolean;
+  /** Showing our own data because the team streams another iRacing session. */
+  otherSession: boolean;
   active: ActiveDriver | null;
   session: SessionInfo | null;
   status: Status | null;
@@ -234,7 +240,7 @@ export function isPracticeOrQuali(s: Pick<FeedState, 'session' | 'standings'>): 
 }
 
 const initial: FeedState = {
-  conn: 'connecting', error: null, teamName: '', local: false, active: null,
+  conn: 'connecting', error: null, teamName: '', local: false, otherSession: false, active: null,
   session: null, status: null, fuel: null, tyres: null, weather: null, hazard: null, standings: null, pitplan: null, messages: [], lastData: 0,
 };
 
@@ -273,13 +279,15 @@ function applyLocal(s: FeedState, m: ClientMessage): FeedState {
 
 /**
  * Connects to the team relay and exposes the latest telemetry. In the desktop app this PC's own
- * recorder data comes along too; it is shown while the team server isn't connected.
+ * recorder data comes along too; it is shown while the team server isn't connected or the team
+ * streams another iRacing session than this PC.
  */
 export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
   const [team, setTeam] = useState<FeedState>(initial);
   const [own, setOwn] = useState<FeedState>(initial);
+  const [otherSession, setOtherSession] = useState(false);
   const inputs = useRef(new InputBuffer()).current;
-  const local = Boolean(window.stintview?.onLocal) && team.conn !== 'connected';
+  const local = Boolean(window.stintview?.onLocal) && (team.conn !== 'connected' || otherSession);
   // Read by the message handlers: input samples only from the source on display.
   const showLocal = useRef(local);
   showLocal.current = local;
@@ -299,7 +307,11 @@ export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
       if (m.t === 'driving' && !m.driving && showLocal.current) inputs.clear();
       setOwn((s) => applyLocal(s, m));
     });
-    api.getLocalSnapshot?.().then((list) => setOwn((s) => list.reduce(applyLocal, s))).catch(() => {});
+    api.onLocalPrefer?.(setOtherSession);
+    api.getLocalSnapshot?.().then((snap) => {
+      setOwn((s) => snap.messages.reduce(applyLocal, s));
+      setOtherSession(snap.prefer);
+    }).catch(() => {});
   }, [inputs]);
 
   useEffect(() => {
@@ -358,7 +370,7 @@ export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
 
   // Own data with the team connection's state (for the header) and the team messages.
   const state = local
-    ? { ...own, conn: team.conn, error: team.error, teamName: team.teamName, messages: team.messages, local: true }
+    ? { ...own, conn: team.conn, error: team.error, teamName: team.teamName, messages: team.messages, local: true, otherSession }
     : team;
   return { state, inputs };
 }

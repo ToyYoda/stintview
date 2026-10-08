@@ -6,6 +6,8 @@ import {
 export interface ConnectionEvents {
   onOpen(): ClientMessage[];
   onStatus(status: string): void;
+  /** Every standby reply to a driving claim (they repeat every 2 s while it lasts). */
+  onStandby?(reason: 'other-driver' | 'other-session'): void;
 }
 
 /**
@@ -42,6 +44,7 @@ export class Connection {
         this.events.onStatus(`connected to team "${msg.teamName}" as ${msg.memberName}`);
         for (const m of this.events.onOpen()) this.send(m);
       } else if (msg.t === 'standby') {
+        this.events.onStandby?.(msg.reason);
         // Claims repeat every 2 s; report each reason once.
         if (msg.reason === this.lastStandby) return;
         this.lastStandby = msg.reason;

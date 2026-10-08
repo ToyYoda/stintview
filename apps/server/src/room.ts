@@ -94,7 +94,8 @@ export class Room {
     const now = this.now();
     const dataStale = now - this.lastDataAt > ACTIVE_STALE_MS;
     if (this.activeId !== null && !dataStale) {
-      p.send({ t: 'standby', reason: 'other-driver' });
+      // Another session counts first: that recorder's displays then show their own data.
+      p.send({ t: 'standby', reason: session !== this.raceSession ? 'other-session' : 'other-driver' });
       return false;
     }
     if (this.raceSession !== null && session !== this.raceSession && now - this.lastDataAt <= SESSION_STALE_MS) {
