@@ -69,7 +69,8 @@ function BestDuel({ team, front, projection }: { team: StandingRow; front: Stand
   return (
     <div className="panel duel-panel duel-best">
       <div className="duel-us big">P{team.pos}</div>
-      {p.pos < team.pos && <div className="duel-new">→ P{p.pos}</div>}
+      {/* Always there (fixed width), so the name doesn't move when the projection changes. */}
+      <div className="duel-new">{p.pos < team.pos ? `→ P${p.pos}` : ''}</div>
       {p.target ? (
         <Rival car={p.target} side="ahead" />
       ) : (
