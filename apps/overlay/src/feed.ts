@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   PROTOCOL_VERSION, pack, unpack,
-  type ActiveDriver, type Fuel, type InputSample, type Inputs, type ServerMessage,
+  type ActiveDriver, type ClientMessage, type Fuel, type InputSample, type Inputs, type ServerMessage,
   type Hazard, type MessageColor, type Pitplan, type SessionInfo, type Standings, type Status, type TeamMessage, type Telemetry, type Tyres, type Weather,
 } from '@stintview/protocol';
 
@@ -106,6 +106,9 @@ declare global {
       onPanelConfig?(cb: (cfg: PanelConfig) => void): void;
       onLanguage?(cb: (lang: 'de' | 'en') => void): void;
       setTeamCar(team: { carIdx: number; carNumber: number; sessionId: string }): void;
+      /** This PC's own recorder (no team server needed): live messages and the latest per type. */
+      onLocal?(cb: (m: ClientMessage) => void): void;
+      getLocalSnapshot?(): Promise<ClientMessage[]>;
       setHazard?(carIdx: number | null): void;
       camera(action: 'incident' | 'back', targetCarIdx?: number): Promise<void>;
       getCameraInfo(): Promise<{ state: unknown; hotkeys: { incident: string | null; back: string | null } }>;
@@ -197,9 +200,15 @@ export class InputBuffer {
 export type ConnState = 'no-config' | 'connecting' | 'connected' | 'error';
 
 export interface FeedState {
+  /** Connection to the team server (also while showing this PC's own data). */
   conn: ConnState;
   error: string | null;
   teamName: string;
+  /**
+   * Showing this PC's own sessions, straight from its recorder: without a team, or while the
+   * team server can't be reached (desktop app only).
+   */
+  local: boolean;
   active: ActiveDriver | null;
   session: SessionInfo | null;
   status: Status | null;
@@ -225,14 +234,73 @@ export function isPracticeOrQuali(s: Pick<FeedState, 'session' | 'standings'>): 
 }
 
 const initial: FeedState = {
-  conn: 'connecting', error: null, teamName: '', active: null,
+  conn: 'connecting', error: null, teamName: '', local: false, active: null,
   session: null, status: null, fuel: null, tyres: null, weather: null, hazard: null, standings: null, pitplan: null, messages: [], lastData: 0,
 };
 
-/** Connects to the team relay and exposes the latest telemetry. */
+/** Latest telemetry into the state (inputs go to the InputBuffer instead). */
+function applyTelemetry(s: FeedState, m: Telemetry): FeedState {
+  const now = Date.now();
+  switch (m.t) {
+    case 'inputs': return s;
+    case 'status': return { ...s, status: m, lastData: now };
+    case 'fuel': return { ...s, fuel: m, lastData: now };
+    case 'tyres': return { ...s, tyres: m, lastData: now };
+    case 'weather': return { ...s, weather: m, lastData: now };
+    case 'hazard': return { ...s, hazard: m, lastData: now };
+    case 'standings': return { ...s, standings: m, lastData: now };
+    case 'pitplan': return { ...s, pitplan: m, lastData: now };
+    case 'session': return { ...s, session: m, lastData: now };
+    default: return s; // newer telemetry this version doesn't know
+  }
+}
+
+/** This PC's own recorder: what it would send the team, and its driving state as the active driver. */
+function applyLocal(s: FeedState, m: ClientMessage): FeedState {
+  switch (m.t) {
+    case 'driving':
+      return { ...s, active: { t: 'active', driverName: m.driving ? m.driverName || null : null, memberName: null, since: Date.now() } };
+    case 'session': {
+      // Another session (the server does the same for the team): laps, standings etc. start over.
+      const fresh = s.session && (s.session.sessionId !== m.sessionId || s.session.sessionType !== m.sessionType);
+      const base = fresh ? { ...s, status: null, fuel: null, tyres: null, weather: null, hazard: null, standings: null, pitplan: null } : s;
+      return applyTelemetry(base, m);
+    }
+    case 'hello': case 'send-message': return s;
+    default: return applyTelemetry(s, m);
+  }
+}
+
+/**
+ * Connects to the team relay and exposes the latest telemetry. In the desktop app this PC's own
+ * recorder data comes along too; it is shown while the team server isn't connected.
+ */
 export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
-  const [state, setState] = useState<FeedState>(initial);
+  const [team, setTeam] = useState<FeedState>(initial);
+  const [own, setOwn] = useState<FeedState>(initial);
   const inputs = useRef(new InputBuffer()).current;
+  const local = Boolean(window.stintview?.onLocal) && team.conn !== 'connected';
+  // Read by the message handlers: input samples only from the source on display.
+  const showLocal = useRef(local);
+  showLocal.current = local;
+
+  useEffect(() => {
+    inputs.clear(); // switched between team and own data
+  }, [local, inputs]);
+
+  useEffect(() => {
+    const api = window.stintview;
+    if (!api?.onLocal) return;
+    api.onLocal((m) => {
+      if (m.t === 'inputs') {
+        if (showLocal.current) inputs.push(m);
+        return;
+      }
+      if (m.t === 'driving' && !m.driving && showLocal.current) inputs.clear();
+      setOwn((s) => applyLocal(s, m));
+    });
+    api.getLocalSnapshot?.().then((list) => setOwn((s) => list.reduce(applyLocal, s))).catch(() => {});
+  }, [inputs]);
 
   useEffect(() => {
     let ws: WebSocket | null = null;
@@ -240,29 +308,10 @@ export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
     let retry = 1000;
     let timer: ReturnType<typeof setTimeout>;
 
-    const applyTelemetry = (s: FeedState, m: Telemetry): FeedState => {
-      const now = Date.now();
-      switch (m.t) {
-        case 'inputs': inputs.push(m); return s; // high rate: no React re-render
-        case 'status': return { ...s, status: m, lastData: now };
-        case 'fuel': return { ...s, fuel: m, lastData: now };
-        case 'tyres': return { ...s, tyres: m, lastData: now };
-        case 'weather': return { ...s, weather: m, lastData: now };
-        case 'hazard': return { ...s, hazard: m, lastData: now };
-        case 'standings': return { ...s, standings: m, lastData: now };
-        case 'pitplan': return { ...s, pitplan: m, lastData: now };
-        case 'session':
-          // Lets the desktop app (hotkeys) know which car to jump back to.
-          window.stintview?.setTeamCar?.({ carIdx: m.carIdx, carNumber: m.carNumber, sessionId: m.sessionId });
-          return { ...s, session: m, lastData: now };
-        default: return s; // newer telemetry this version doesn't know
-      }
-    };
-
     const connect = async () => {
       const config = await loadLocalConfig().catch(() => null);
       if (!config) {
-        setState((s) => ({ ...s, conn: 'no-config' }));
+        setTeam((s) => ({ ...s, conn: 'no-config' }));
         return;
       }
       const url = new URL(config.serverUrl);
@@ -273,8 +322,12 @@ export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
       ws.onopen = () => ws!.send(pack({ t: 'hello', v: PROTOCOL_VERSION, token: config.token, role: 'overlay', features: ['messages'] }));
       ws.onmessage = (ev) => {
         const m = unpack<ServerMessage>(ev.data as ArrayBuffer);
-        if (m.t === 'inputs') return inputs.push(m);
-        setState((s) => {
+        if (m.t === 'inputs') return showLocal.current ? undefined : inputs.push(m);
+        // Lets the desktop app (hotkeys) know which car to jump back to.
+        const teamCar = (x: SessionInfo) => window.stintview?.setTeamCar?.({ carIdx: x.carIdx, carNumber: x.carNumber, sessionId: x.sessionId });
+        if (m.t === 'session') teamCar(m);
+        if (m.t === 'snapshot') m.telemetry.forEach((x) => x.t === 'session' && teamCar(x));
+        setTeam((s) => {
           switch (m.t) {
             case 'welcome': retry = 1000; return { ...s, conn: 'connected', error: null, teamName: m.teamName };
             case 'error': return { ...s, conn: 'error', error: m.message };
@@ -290,7 +343,7 @@ export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
       };
       ws.onclose = () => {
         if (stopped) return;
-        setState((s) => (s.conn === 'error' ? s : { ...s, conn: 'connecting' }));
+        setTeam((s) => (s.conn === 'error' ? s : { ...s, conn: 'connecting' }));
         timer = setTimeout(connect, retry);
         retry = Math.min(retry * 2, 30_000);
       };
@@ -303,5 +356,9 @@ export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
     };
   }, [inputs]);
 
+  // Own data with the team connection's state (for the header) and the team messages.
+  const state = local
+    ? { ...own, conn: team.conn, error: team.error, teamName: team.teamName, messages: team.messages, local: true }
+    : team;
   return { state, inputs };
 }

@@ -1,5 +1,5 @@
 import { parseArgs } from 'node:util';
-import type { CreateTeamRequest, JoinTeamRequest, SendMessage, TeamCredentials } from '@stintview/protocol';
+import type { ClientMessage, CreateTeamRequest, JoinTeamRequest, SendMessage, TeamCredentials } from '@stintview/protocol';
 import { configPath, loadConfig, saveConfig, wsUrl } from './config.ts';
 import { Connection } from './connection.ts';
 import { IbtSource } from './irsdk/ibt.ts';
@@ -39,6 +39,8 @@ export type RecorderEvent =
   | { t: 'iracing'; connected: boolean }
   | { t: 'server'; connected: boolean; text: string }
   | { t: 'car'; inCar: boolean; driverName: string }
+  /** Every message for the team, also straight to the app: its displays use it without a team server. */
+  | { t: 'telemetry'; msg: ClientMessage }
   | CameraState
   | CameraResult
   | ({ t: 'pit-import'; finished: boolean; error?: string } & Partial<ImportProgress>);
@@ -65,16 +67,22 @@ async function register(path: string, body: CreateTeamRequest | JoinTeamRequest)
 }
 
 async function record(source: TelemetrySource, label: string, spectator?: Spectator, hazard?: HazardDetector) {
+  // Without a team the app's displays still show this PC's own sessions (see `send`).
   const config = loadConfig();
-  if (!config) throw new Error(`Not set up yet – run create-team or join first.\n\n${USAGE}`);
+  if (!config && !parentPort) throw new Error(`Not set up yet – run create-team or join first.\n\n${USAGE}`);
+  if (!config) console.log('[server] no team – data for the displays on this PC only');
 
-  const conn = new Connection(wsUrl(config.serverUrl), config.token, {
+  const conn = config ? new Connection(wsUrl(config.serverUrl), config.token, {
     onOpen: () => recorder.stateMessages(),
     onStatus: (s) => {
       console.log(`[server] ${s}`);
       report({ t: 'server', connected: s.startsWith('connected') || s.startsWith('standby'), text: s });
     },
-  });
+  }) : null;
+  const send = (msg: ClientMessage) => {
+    conn?.send(msg);
+    report({ t: 'telemetry', msg });
+  };
   let inCar = false;
   const recorder = new Recorder((msg) => {
     if (msg.t === 'driving' && msg.driving !== inCar) {
@@ -82,23 +90,23 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
       console.log(inCar ? `[car] ${msg.driverName || 'you'} in the car – streaming` : '[car] left the car – idle');
       report({ t: 'car', inCar, driverName: msg.driverName });
     }
-    conn.send(msg);
+    send(msg);
   });
 
   console.log(`[source] ${label}`);
-  conn.connect();
+  conn?.connect();
   const standings = new StandingsTracker();
   const pit = new PitPlanner(undefined, (line) => console.log(line));
   source.start(
     (f) => {
       recorder.onFrame(f);
       const table = standings.onFrame(f, recorder.isDriving); // also tracks pit stops while not driving
-      if (table) conn.send(table);
+      if (table) send(table);
       const plan = pit.onFrame(f, recorder.isDriving); // learns from stops also while not driving
-      if (plan) conn.send(plan);
+      if (plan) send(plan);
       spectator?.onFrame(f, recorder.isDriving);
       const warning = hazard?.onFrame(f, recorder.isDriving);
-      if (warning) conn.send(warning);
+      if (warning) send(warning);
     },
     (yaml) => {
       recorder.onSessionInfo(yaml);
@@ -121,7 +129,7 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
     if (e.data?.t === 'send-message') {
       // Team message from the spotter (StintView window, overlay button or hotkey).
       console.log(`[message] ${e.data.color}: ${e.data.text}`);
-      return conn.send({ t: 'send-message', text: e.data.text, color: e.data.color });
+      return conn?.send({ t: 'send-message', text: e.data.text, color: e.data.color });
     }
     if (e.data?.t === 'pit-settings') {
       console.log(`[pit] crew values from the app: ${JSON.stringify(e.data.pit)}`);
@@ -134,7 +142,7 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
 
   const shutdown = () => {
     source.stop();
-    conn.close();
+    conn?.close();
     process.exit(0);
   };
   process.on('SIGINT', shutdown);

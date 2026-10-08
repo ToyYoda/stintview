@@ -14,6 +14,9 @@ contextBridge.exposeInMainWorld('stintview', {
   onPanelConfig: (cb) => ipcRenderer.on('panel-config', (_e, cfg) => cb(cfg)),
   // UI language ('de' | 'en')
   onLanguage: (cb) => ipcRenderer.on('language', (_e, l) => cb(l)),
+  // This PC's own telemetry (displays without a team server): live messages, latest per type
+  onLocal: (cb) => ipcRenderer.on('local', (_e, m) => cb(m)),
+  getLocalSnapshot: () => ipcRenderer.invoke('local:snapshot'),
   // Spectator camera
   setTeamCar: (team) => ipcRenderer.send('app:team-car', team),
   setHazard: (carIdx) => ipcRenderer.send('app:hazard', carIdx),

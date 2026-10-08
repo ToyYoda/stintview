@@ -38,6 +38,8 @@ Then click **Join team**. Under *Status*, **Team server: connected** appears.
 
 **Done.** You never need to set anything up again.
 
+**Without a team:** the displays also work without a team – or while the team server can't be reached. They then show your **own sessions** on this PC only; the header says "sessions on this PC only". As soon as the team connection is up, they show the teammate in the car again. Without a team, joining is in the StintView window under the **Team** tab.
+
 ---
 
 ## In every team race

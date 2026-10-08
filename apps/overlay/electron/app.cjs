@@ -160,11 +160,46 @@ async function startPitImport(choose) {
 }
 let runningVrPanels = '';
 
+// ---------------------------------------------------------------------------
+// Own telemetry for the displays on this PC (used there without a team server)
+// ---------------------------------------------------------------------------
+
+/** Latest message per type (not inputs), for display pages that open later. */
+const localLatest = new Map();
+
+function onLocalTelemetry(msg) {
+  if (msg.t === 'session') {
+    // Another session: the old laps, standings etc. don't belong to it.
+    const prev = localLatest.get('session');
+    if (prev && (prev.sessionId !== msg.sessionId || prev.sessionType !== msg.sessionType)) localLatest.clear();
+  }
+  if (msg.t !== 'inputs' && msg.t !== 'send-message') localLatest.set(msg.t, msg);
+  // Monitor overlay and VR panel pages; not the StintView window.
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (win !== setupWin && !win.isDestroyed()) win.webContents.send('local', msg);
+  }
+}
+
+ipcMain.handle('local:snapshot', () => [...localLatest.values()]);
+
+/** Team joined or left: the display pages connect again with the new access (or none). */
+function reloadDisplays() {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (win !== setupWin && !win.isDestroyed()) win.webContents.reload();
+  }
+}
+
 function startRecorder() {
   recorder?.stop();
-  if (!loadConfig()) return;
+  localLatest.clear();
+  // Also without a team: the displays then show this PC's own sessions.
   let needsPitSettings = true;
-  recorder = supervise('recorder', 'recorder.cjs', ['run'], { STINTVIEW_CONFIG: configPath() }, (m) => {
+  // Tests without iRacing: STINTVIEW_REPLAY=<file.ibt>, STINTVIEW_REPLAY_OPTS="--speed 10 --start 60".
+  const args = process.env.STINTVIEW_REPLAY
+    ? ['replay', process.env.STINTVIEW_REPLAY, ...(process.env.STINTVIEW_REPLAY_OPTS ?? '').split(' ').filter(Boolean)]
+    : ['run'];
+  recorder = supervise('recorder', 'recorder.cjs', args, { STINTVIEW_CONFIG: configPath() }, (m) => {
+    if (m.t === 'telemetry') return onLocalTelemetry(m.msg); // many per second: no refresh
     // (Re)started process: hand it the manual pit stop values with its first message.
     if (m.t === 'exit') needsPitSettings = true;
     else if (needsPitSettings && recorder?.post({ t: 'pit-settings', pit: settings.pitStop })) needsPitSettings = false;
@@ -264,11 +299,12 @@ function setSimRunning(running) {
 }
 
 /** Displays wanted, but held back until iRacing runs ("only while iRacing runs"). */
-const waitingForSim = () => Boolean(loadConfig()) && settings.overlay && settings.onlyWithIracing && !simRunning;
+const waitingForSim = () => settings.overlay && settings.onlyWithIracing && !simRunning;
 
 /** Starts/stops the monitor overlay or the VR panels according to the settings and iRacing. */
 function applyOutputs() {
-  const on = Boolean(loadConfig()) && settings.overlay && (!settings.onlyWithIracing || simRunning);
+  // Also without a team: the displays then show this PC's own sessions.
+  const on = settings.overlay && (!settings.onlyWithIracing || simRunning);
   // One output at a time: the monitor overlay or the VR panels.
   if (on && settings.output === 'monitor') startOverlay(); else stopOverlay();
   // VR panels are separate windows: restart the VR host when the selection changes.
@@ -294,7 +330,7 @@ function updateSettings(patch) {
 
 function statusLine() {
   const config = loadConfig();
-  if (!config) return t('status.notSetUp');
+  if (!config) return !status.iracing ? t('status.noTeamNoIracing') : status.inCar ? t('status.noTeamDriving') : t('status.noTeam');
   if (status.server === 'error') return t('status.server', { text: status.serverText.replace(/^server error: /, '') });
   if (status.server === 'offline') return t('status.offline');
   const team = config.teamName;
@@ -312,21 +348,20 @@ function refresh() {
 }
 
 function buildMenu() {
-  const configured = Boolean(loadConfig());
   const vr = vrStatus();
   return Menu.buildFromTemplate([
     { label: statusLine(), enabled: false },
     updateMenuItem(),
     { type: 'separator' },
-    { label: t('menu.show'), type: 'checkbox', checked: settings.overlay, enabled: configured, click: (i) => updateSettings({ overlay: i.checked }) },
+    { label: t('menu.show'), type: 'checkbox', checked: settings.overlay, click: (i) => updateSettings({ overlay: i.checked }) },
     {
       label: `${t('menu.onlyWithIracing')}${waitingForSim() ? t('menu.waitingForIracing') : ''}`,
-      type: 'checkbox', checked: settings.onlyWithIracing, enabled: configured && settings.overlay, click: (i) => updateSettings({ onlyWithIracing: i.checked }),
+      type: 'checkbox', checked: settings.onlyWithIracing, enabled: settings.overlay, click: (i) => updateSettings({ onlyWithIracing: i.checked }),
     },
-    { label: t('menu.monitor'), type: 'radio', checked: settings.output === 'monitor', enabled: configured, click: () => updateSettings({ output: 'monitor' }) },
+    { label: t('menu.monitor'), type: 'radio', checked: settings.output === 'monitor', click: () => updateSettings({ output: 'monitor' }) },
     {
       label: `${t('menu.vr')}${settings.output === 'vr' && vr === 'waiting' ? t('menu.vrWaiting') : ''}`,
-      type: 'radio', checked: settings.output === 'vr', enabled: configured, click: () => updateSettings({ output: 'vr' }),
+      type: 'radio', checked: settings.output === 'vr', click: () => updateSettings({ output: 'vr' }),
     },
     {
       label: `${t('menu.move')}${editHotkey() ? ` (${editHotkey()})` : ''}`,
@@ -411,6 +446,7 @@ ipcMain.handle('app:join', async (_e, { serverUrl, inviteCode, memberName }) => 
   await register(serverUrl, 'join', { inviteCode: String(inviteCode ?? '').trim(), memberName: String(memberName ?? '').trim() });
   startRecorder();
   applySettings();
+  reloadDisplays();
   return appState();
 });
 
@@ -423,6 +459,7 @@ ipcMain.handle('app:create', async (_e, { serverUrl, teamName, memberName, hostH
   await register(url, 'create', { teamName: String(teamName ?? '').trim(), memberName: String(memberName ?? '').trim() });
   startRecorder();
   applySettings();
+  reloadDisplays();
   return appState();
 });
 
@@ -470,11 +507,11 @@ ipcMain.handle('app:leave', async () => {
     detail: t('leave.detail'),
   });
   if (response !== 1) return appState();
-  recorder?.stop();
-  recorder = null;
   clearConfig();
+  startRecorder(); // without a team now
   Object.assign(status, { iracing: false, inCar: false, server: 'offline', serverText: '' });
   applySettings();
+  reloadDisplays();
   return appState();
 });
 

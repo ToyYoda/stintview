@@ -4,9 +4,11 @@ const { app } = require('electron');
 const { brandText } = require('./brand.cjs');
 
 const de = {
-  'status.notSetUp': 'Nicht eingerichtet',
-  'status.server': 'Server: {text}',
-  'status.offline': 'Keine Verbindung zum Team-Server',
+  'status.noTeam': 'Ohne Team · Anzeigen nur für diesen PC',
+  'status.noTeamNoIracing': 'Ohne Team · iRacing nicht aktiv',
+  'status.noTeamDriving': 'Ohne Team · du fährst – Anzeigen nur hier',
+  'status.server': 'Server: {text} – Anzeigen nur für diesen PC',
+  'status.offline': 'Keine Verbindung zum Team-Server – Anzeigen nur für diesen PC',
   'status.noIracing': '{team} · iRacing nicht aktiv',
   'status.standby': '{team} · im Auto, Standby',
   'status.driving': '{team} · du fährst – sendet',
@@ -72,9 +74,11 @@ const de = {
 };
 
 const en = {
-  'status.notSetUp': 'Not set up',
-  'status.server': 'Server: {text}',
-  'status.offline': 'No connection to the team server',
+  'status.noTeam': 'No team · displays for this PC only',
+  'status.noTeamNoIracing': 'No team · iRacing not running',
+  'status.noTeamDriving': "No team · you're driving – displays here only",
+  'status.server': 'Server: {text} – displays for this PC only',
+  'status.offline': 'No connection to the team server – displays for this PC only',
   'status.noIracing': '{team} · iRacing not running',
   'status.standby': '{team} · in the car, standby',
   'status.driving': "{team} · you're driving – sending",

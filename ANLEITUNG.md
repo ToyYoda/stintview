@@ -38,6 +38,8 @@ Dann **Team beitreten** klicken. Unter *Status* erscheint **Team-Server: verbund
 
 **Fertig.** Du musst nie wieder etwas einrichten.
 
+**Ohne Team:** Die Anzeigen funktionieren auch ohne Team – oder wenn der Team-Server gerade nicht erreichbar ist. Sie zeigen dann nur deine **eigenen Sessions** auf diesem PC; die Kopfzeile sagt dazu „nur Sessions auf diesem PC“. Sobald die Verbindung zum Team steht, zeigen sie wieder den Teamkollegen im Auto. Ohne Team findest du das Beitreten im StintView-Fenster im Reiter **Team**.
+
 ---
 
 ## Bei jedem Teamrennen

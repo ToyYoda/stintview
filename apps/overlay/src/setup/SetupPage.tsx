@@ -53,13 +53,14 @@ export function SetupPage() {
           ))}
         </div>
       </header>
-      {state.configured ? <Dashboard state={state} onState={setState} /> : <Onboarding onState={setState} serverPort={state.settings.serverPort} />}
+      {/* Also without a team: the displays then show this PC's own sessions; joining is in the Team tab. */}
+      <Dashboard state={state} onState={setState} />
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// First run: join or create a team
+// No team yet: join or create one (Team tab)
 // ---------------------------------------------------------------------------
 
 function Onboarding({ onState, serverPort }: { onState(s: AppState): void; serverPort: number }) {
@@ -155,9 +156,13 @@ type Tab = 'status' | 'displays' | 'pit' | 'radio' | 'team' | 'keys';
 const TABS: Tab[] = ['status', 'displays', 'pit', 'radio', 'team', 'keys'];
 const TAB_KEY = 'stintview.setupTab';
 
-/** Last tab, or the hotkey overview when opened via "Tastaturkürzel …" in the tray menu. */
-function initialTab(): Tab {
+/**
+ * Last tab, or the hotkey overview when opened via "Tastaturkürzel …" in the tray menu;
+ * without a team the Team tab (join or create).
+ */
+function initialTab(configured: boolean): Tab {
   if (location.hash.endsWith('/keys')) return 'keys';
+  if (!configured) return 'team';
   try {
     const saved = localStorage.getItem(TAB_KEY) as Tab | null;
     if (saved && TABS.includes(saved)) return saved;
@@ -169,7 +174,7 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
   const { team, settings, status } = state;
   const set = async (patch: Partial<AppState['settings']>) => onState(await api().updateSettings(patch));
   const serverDot = status.server === 'connected' || status.server === 'standby' ? 'ok' : status.server === 'error' ? 'bad' : 'warn';
-  const [tab, setTabState] = useState<Tab>(initialTab);
+  const [tab, setTabState] = useState<Tab>(() => initialTab(state.configured));
   const setTab = (next: Tab) => {
     setTabState(next);
     try { localStorage.setItem(TAB_KEY, next); } catch { /* not remembered */ }
@@ -202,9 +207,14 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
       <section className="card">
         <h2>{t('set.status')}</h2>
         <ul className="status">
-          <li><Dot kind={serverDot} />{t('set.teamServer')}{status.server === 'error' ? `: ${status.serverText.replace(/^server error: /, '')}` : status.server === 'offline' ? t('set.noConnection') : t('set.connected')}</li>
+          {state.configured ? (
+            <li><Dot kind={serverDot} />{t('set.teamServer')}{status.server === 'error' ? `: ${status.serverText.replace(/^server error: /, '')}` : status.server === 'offline' ? t('set.noConnection') : t('set.connected')}</li>
+          ) : (
+            <li><Dot kind="idle" />{t('set.noTeam')}</li>
+          )}
+          {state.configured && (status.server === 'offline' || status.server === 'error') && <li><Dot kind="idle" />{t('set.localFallback')}</li>}
           <li><Dot kind={status.iracing ? 'ok' : 'idle'} />{status.iracing ? t('set.iracingRunning') : t('set.iracingNot')}</li>
-          <li><Dot kind={status.inCar ? (status.server === 'standby' ? 'warn' : 'ok') : 'idle'} />{status.inCar ? (status.server === 'standby' ? t('set.standby') : t('set.driving')) : t('set.notInCar')}</li>
+          <li><Dot kind={status.inCar ? (status.server === 'standby' ? 'warn' : 'ok') : 'idle'} />{status.inCar ? (status.server === 'standby' ? t('set.standby') : status.server === 'connected' ? t('set.driving') : t('set.drivingLocal')) : t('set.notInCar')}</li>
           {status.waitingForIracing && <li><Dot kind="idle" />{t('set.waitingForIracing')}</li>}
           {settings.overlay && settings.output === 'vr' && !status.waitingForIracing && <li><Dot kind={status.vr === 'connected' ? 'ok' : 'warn'} />{status.vr === 'connected' ? t('set.vrConnected') : t('set.vrWaiting')}</li>}
           {settings.server && <li><Dot kind={status.relay === 'running' ? 'ok' : 'bad'} />{status.relay === 'running' ? t('set.relayRunning') : t('set.relayStopped')}</li>}
@@ -252,11 +262,20 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
           onImport={async (choose) => onState(await api().pitImport(choose))} />
       )}
 
+      {tab === 'radio' && !state.configured && <p className="hint">{t('set.radioNoTeam')}</p>}
       {tab === 'radio' && (
         <RadioCard radio={state.radio} onChange={(messages) => set({ messages })} />
       )}
 
-      {tab === 'team' && (
+      {tab === 'team' && !state.configured && (
+        <>
+          <Onboarding onState={onState} serverPort={settings.serverPort} />
+          <section className="card">
+            <Toggle checked={settings.autostart} disabled={!state.autostartAvailable} onChange={(v) => set({ autostart: v })} label={t('set.autostart')} hint={t('set.autostartHint')} />
+          </section>
+        </>
+      )}
+      {tab === 'team' && state.configured && (
       <section className="card">
         <h2>{t('set.team')}</h2>
         <dl className="team">
