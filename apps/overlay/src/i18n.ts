@@ -515,7 +515,7 @@ const en: Record<Key, string> = {
   'set.notInCar': 'Not in the car',
   'set.vrConnected': 'SteamVR connected',
   'set.vrWaiting': 'SteamVR – waiting for SteamVR',
-  'set.relayRunning': 'Team server on this PC running',
+  'set.relayRunning': 'Team server running on this PC',
   'set.relayStopped': 'Team server on this PC stopped',
   'set.displays': 'Displays',
   'set.show': 'Show displays',
