@@ -37,6 +37,7 @@
 
 ## Release
 
+- `CHANGELOG.md`: Abschnitt `## x.y.z – TT.MM.JJJJ` oben ergänzen (deutsch, aus Nutzersicht) – wird zum Text des GitHub-Releases; fehlt er, bricht der Workflow vor dem Veröffentlichen ab.
 - SPEC.md: Kopfzeile „Stand: …, Version x.y.z.“ und Release-Liste ergänzen, committen, `git push origin main`, `git tag vX.Y.Z && git push origin vX.Y.Z`. Der Workflow baut Installer + `latest.yml`; die App aktualisiert sich selbst.
 - `gh` ist nicht installiert: Status über `https://api.github.com/repos/ToyYoda/stintview/actions/runs` und `/releases/tags/vX.Y.Z` prüfen. Pages baut bei jedem Push auf main.
 

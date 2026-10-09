@@ -1,0 +1,31 @@
+# Copies CHANGELOG.md into the text of every existing GitHub release (the release workflow does
+# it for new ones). Runs when CHANGELOG.md changes on main, or by hand from the Actions tab.
+name: Release notes
+
+on:
+  push:
+    branches: [main]
+    paths: [CHANGELOG.md]
+  workflow_dispatch:
+
+permissions:
+  contents: write # edit release texts
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update release texts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for v in $(node .github/scripts/release-notes.mjs --list); do
+            if gh release view "v$v" > /dev/null 2>&1; then
+              node .github/scripts/release-notes.mjs "$v" > notes.md
+              gh release edit "v$v" --notes-file notes.md
+              echo "v$v updated"
+            else
+              echo "v$v: no release, skipped"
+            fi
+          done

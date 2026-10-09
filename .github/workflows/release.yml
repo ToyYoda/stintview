@@ -1,6 +1,7 @@
 # Builds StintView-Setup.exe on Windows and publishes it as a GitHub release.
 # Trigger: push a version tag, e.g.  git tag v0.2.0 && git push origin v0.2.0
 # Installed apps pick up the release automatically (electron-updater reads latest.yml).
+# The release text is this version's section of CHANGELOG.md (must exist, see release-notes.mjs).
 name: Release
 
 on:
@@ -21,6 +22,10 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      # Fails before anything is published if CHANGELOG.md lacks this version's section.
+      - name: Release notes from CHANGELOG.md
+        shell: bash
+        run: node .github/scripts/release-notes.mjs "$GITHUB_REF_NAME" > "$RUNNER_TEMP/notes.md"
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
       - name: Set app version from tag
@@ -39,5 +44,10 @@ jobs:
           pnpm --filter @stintview/overlay dist:backseat
           cd apps/overlay/release-backseat
           gh release upload "$GITHUB_REF_NAME" BackseatRacer-Setup.exe BackseatRacer-Setup.exe.blockmap backseat.yml --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Release notes on the GitHub release
+        shell: bash
+        run: gh release edit "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/notes.md"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
