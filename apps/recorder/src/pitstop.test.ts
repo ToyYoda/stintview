@@ -201,6 +201,20 @@ describe('rejoin', () => {
     expect(r.behind[0]!.gap).toBeCloseTo(-2, 5);
     // class position: cars 1 and 2 ahead in the race after the stop -> P3
     expect(r.classPos).toBe(3);
+    // current positions in their own class; both on our lap after the stop
+    expect(r.ahead[0]).toMatchObject({ pos: 3, laps: 0 });
+    expect(r.behind[0]).toMatchObject({ pos: 1, laps: 0 });
+  });
+
+  it('marks cars on other laps: backmarkers negative, cars lapping us positive', () => {
+    const cars = [
+      car(0, 5.5, 50),
+      car(1, 3.92, 92), // 158 s behind: 2 s ahead on track after the stop, but 98 s behind in the race
+      car(2, 5.45, 45), // 5 s behind: 55 s ahead in the race after the stop = 45 s behind on track, coming to lap us
+    ];
+    const r = computeRejoin(cars, 0, 60, 100, info);
+    expect(r.ahead.find((c) => c.carIdx === 1)).toMatchObject({ laps: -1 });
+    expect(r.behind.find((c) => c.carIdx === 2)).toMatchObject({ laps: 1 });
   });
 });
 

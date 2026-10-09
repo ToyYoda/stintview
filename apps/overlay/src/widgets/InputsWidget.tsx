@@ -19,8 +19,13 @@ export function InputsWidget({ inputs }: { inputs: InputBuffer }) {
     canvas.current!.height = HEIGHT * dpr;
     ctx.scale(dpr, dpr);
     let raf = 0;
+    let drawn = '';
     const draw = () => {
       raf = requestAnimationFrame(draw);
+      // Only when something changed: every drawn frame is a texture upload in VR.
+      const key = `${inputs.playhead() ?? t('inputs.none')}|${inputs.times.length}`;
+      if (key === drawn) return;
+      drawn = key;
       render(ctx, inputs);
     };
     draw();

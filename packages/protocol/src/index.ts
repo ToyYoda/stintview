@@ -273,6 +273,10 @@ export interface RejoinCar {
   gap: number;
   /** On pit road right now (will probably not be where predicted). */
   inPit: boolean;
+  /** Current position in its own class (running order on track); missing from recorders before 0.17. */
+  pos?: number | null;
+  /** Laps between that car and us in the race after the stop: + = laps ahead (lapping us), − = backmarker. */
+  laps?: number;
 }
 
 /** "If we pit now": stop duration from the pit settings in the car, and where we rejoin. */

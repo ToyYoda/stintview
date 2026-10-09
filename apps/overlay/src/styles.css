@@ -139,7 +139,11 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .pit-cars td { padding: 2px 4px; white-space: nowrap; }
 .pit-cars tr.us td { color: var(--accent); font-weight: 700; border-top: 1px dashed var(--border); border-bottom: 1px dashed var(--border); }
 .pit-cars tr.other-class td { color: var(--muted); }
+.pit-cars tr.lap-down td { background: rgba(77, 163, 255, 0.28); color: #d6e9ff; }
+.pit-cars tr.lap-up td { background: rgba(255, 77, 77, 0.32); color: #ffd9d9; }
+.pc-pos { font-family: var(--mono); font-weight: 700; width: 30px; }
 .pc-num { font-family: var(--mono); color: var(--muted); width: 36px; }
+.pit-cars tr.lap-down .pc-num, .pit-cars tr.lap-up .pc-num { color: inherit; }
 .pc-name { max-width: 190px; overflow: hidden; text-overflow: ellipsis; }
 .pc-tag { margin-left: 6px; font-size: 10px; padding: 0 4px; border: 1px solid var(--border); border-radius: 3px; color: var(--muted); }
 .pc-gap { font-family: var(--mono); text-align: right; width: 50px; }
@@ -203,6 +207,9 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .duel-outlook.good { color: var(--ok); }
 .duel-outlook.bad { color: var(--bad); }
 .duel-outlook.steady { color: var(--muted); }
+/* Large gaps stay white in the duel line: grey was hard to read in VR (09.10.2026). */
+.duel-panel .gap-tile.far, .duel-panel .duel-outlook.steady { color: var(--text); }
+.duel-panel .gap-tile.far { font-weight: 700; }
 .duel-chips { display: flex; gap: 3px; }
 .duel-chip { font-size: 10.5px; font-family: var(--mono); padding: 0 4px; border-radius: 3px; border: 1px solid transparent; }
 .duel-chip.down { background: rgba(77, 163, 255, 0.35); color: #d6e9ff; }

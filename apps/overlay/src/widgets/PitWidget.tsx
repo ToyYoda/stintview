@@ -2,7 +2,6 @@ import type { Pitplan, RejoinCar } from '@stintview/protocol';
 import { t } from '../i18n.ts';
 import 'flag-icons/css/flag-icons.min.css';
 
-
 /** Closer than this to a car when we rejoin: traffic. */
 const TRAFFIC_S = 1.5;
 const TIGHT_S = 3;
@@ -65,7 +64,7 @@ export function PitWidget({ plan }: { plan: Pitplan | null }) {
           <table className="pit-cars">
             <tbody>
               {[...ahead].reverse().map((c) => <Row key={c.carIdx} car={c} />)}
-              <tr className="us"><td colSpan={3}>{t('pit.us')}</td></tr>
+              <tr className="us"><td colSpan={4}>{t('pit.us')}</td></tr>
               {behind.map((c) => <Row key={c.carIdx} car={c} />)}
             </tbody>
           </table>
@@ -75,10 +74,13 @@ export function PitWidget({ plan }: { plan: Pitplan | null }) {
   );
 }
 
+/** Current position in front; cars on another lap after the stop: blue = backmarker, red = lapping us. */
 function Row({ car }: { car: RejoinCar }) {
   const near = Math.abs(car.gap) < TRAFFIC_S ? 'traffic' : Math.abs(car.gap) < TIGHT_S ? 'tight' : '';
+  const lap = !car.laps ? '' : car.laps < 0 ? ' lap-down' : ' lap-up';
   return (
-    <tr className={car.sameClass ? '' : 'other-class'}>
+    <tr className={`${car.sameClass ? '' : 'other-class'}${lap}`}>
+      <td className="pc-pos">{car.pos ? `P${car.pos}` : ''}</td>
       <td className="pc-num">#{car.number}</td>
       <td className="pc-name">
         {car.country && /^[a-z]{2}(-[a-z]{3})?$/.test(car.country) && <span className={`fi fi-${car.country} st-flag`} />}

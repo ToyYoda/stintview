@@ -1,6 +1,6 @@
 // VR host: renders each widget offscreen and shows it as a SteamVR overlay panel.
 // Works with any SteamVR game regardless of whether iRacing runs in OpenVR or OpenXR mode.
-const { BrowserWindow, globalShortcut } = require('electron');
+const { app, BrowserWindow, globalShortcut } = require('electron');
 const { t } = require('./i18n.cjs');
 const { mkdirSync, readFileSync, writeFileSync } = require('node:fs');
 const path = require('node:path');
@@ -11,6 +11,12 @@ const { PRELOAD, loadRoute } = require('./renderer.cjs');
 const { brand } = require('./brand.cjs');
 
 const FPS = Number(process.env.STINTVIEW_VR_FPS ?? 30);
+// Every painted frame is a texture upload to SteamVR. Only the inputs trace needs to be
+// fluid; the other panels change a few times per second at most.
+const SLOW_FPS = Math.min(FPS, 10);
+const panelFps = (id) => (id === 'inputs' ? FPS : SLOW_FPS);
+// CSS transitions (e.g. the duel closeness bar) would repaint at full rate all the time.
+const VR_CSS = '*, *::before, *::after { transition: none !important; }';
 const ZOOM = 2; // render at 2x for sharp text in the headset
 const RETRY_MS = 5000;
 const layoutPath = path.join(dataDir, 'vr.json');
@@ -110,12 +116,13 @@ async function createPanelWindow(id) {
       sandbox: true,
     },
   });
-  win.webContents.setFrameRate(FPS);
+  win.webContents.setFrameRate(panelFps(id));
   const panel = { win, handle: null, width: 0, height: 0, fitTimer: null };
   panels.set(id, panel);
 
   win.webContents.on('paint', (_e, _dirty, image) => pushFrame(id, image));
   win.webContents.on('did-finish-load', () => {
+    win.webContents.insertCSS(VR_CSS).catch(() => {});
     win.webContents.send('opacity', vrOpacity);
     win.webContents.send('panel-config', vrPanelConfig);
     win.webContents.send('language', vrLanguage);
@@ -177,8 +184,30 @@ function dumpFrame(id, image) {
   writeFileSync(path.join(dir, `${id}.png`), image.toPNG());
 }
 
+/** Debug: STINTVIEW_VR_STATS=1 logs paints per second per panel and the app's CPU every 10 s. */
+const STATS_MS = 10000;
+let statsTimer = null;
+function countPaint(panel, image) {
+  if (!statsTimer) return;
+  const { width, height } = image.getSize();
+  panel.paints = (panel.paints ?? 0) + 1;
+  panel.bytes = (panel.bytes ?? 0) + width * height * 4;
+}
+function logStats() {
+  const parts = [];
+  for (const [id, panel] of panels) {
+    parts.push(`${id} ${((panel.paints ?? 0) / (STATS_MS / 1000)).toFixed(1)}/s`);
+    panel.paints = 0;
+  }
+  const mb = [...panels.values()].reduce((sum, p) => sum + (p.bytes ?? 0), 0) / 1e6 / (STATS_MS / 1000);
+  for (const p of panels.values()) p.bytes = 0;
+  const cpu = app.getAppMetrics().reduce((sum, m) => sum + m.cpu.percentCPUUsage, 0);
+  log(`stats: ${parts.join(', ')} | ${mb.toFixed(1)} MB/s | CPU ${cpu.toFixed(1)} %`);
+}
+
 function pushFrame(id, image) {
   dumpFrame(id, image);
+  countPaint(panels.get(id), image);
   const panel = panels.get(id);
   if (!vr || !panel?.handle || !layout.visible) return;
   const { width, height } = image.getSize();
@@ -211,6 +240,22 @@ function pushFrame(id, image) {
 // SteamVR connection
 // ---------------------------------------------------------------------------
 
+/** Panels only paint while SteamVR shows them (or for the debug dump): no uploads for nothing. */
+function updatePainting() {
+  for (const panel of panels.values()) {
+    if (panel.win.isDestroyed()) continue;
+    const wc = panel.win.webContents;
+    const paint = Boolean(process.env.STINTVIEW_VR_DUMP) || Boolean(vr && panel.handle && layout.visible);
+    if (paint === wc.isPainting()) continue;
+    if (paint) {
+      wc.startPainting();
+      wc.invalidate();
+    } else {
+      wc.stopPainting();
+    }
+  }
+}
+
 function placePanel(id) {
   const p = layout.panels[id];
   const panel = panels.get(id);
@@ -232,6 +277,7 @@ function connectVr() {
   }
   connectVr.warned = false;
   for (const id of ids) openPanel(id);
+  updatePainting();
   log(`connected to SteamVR, ${ids.length} panels`);
   onChange();
 }
@@ -257,6 +303,7 @@ function disconnectVr() {
   }
   try { vr.shutdown(); } catch { /* runtime gone */ }
   vr = null;
+  updatePainting();
   onChange();
 }
 
@@ -315,6 +362,7 @@ const HOTKEYS = {
       if (!vr || !panel.handle) continue;
       if (layout.visible) vr.show(panel.handle); else vr.hide(panel.handle);
     }
+    updatePainting();
   },
   'Control+Shift+R': () => recenterVr(),
 };
@@ -353,7 +401,9 @@ async function startVr(changed = () => {}, panelIds = null) {
       log(`hotkey ${key} unavailable`);
     }
   }
+  if (process.env.STINTVIEW_VR_STATS) statsTimer = setInterval(logStats, STATS_MS);
   connectVr();
+  updatePainting(); // also while still waiting for SteamVR
   retryTimer = setInterval(connectVr, RETRY_MS);
   log(`started, layout: ${layoutPath}`);
 }
@@ -363,6 +413,8 @@ function stopVr() {
   running = false;
   clearInterval(retryTimer);
   retryTimer = null;
+  clearInterval(statsTimer);
+  statsTimer = null;
   for (const key of Object.keys(HOTKEYS)) globalShortcut.unregister(key);
   disconnectVr();
   for (const panel of panels.values()) {

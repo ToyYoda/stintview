@@ -89,12 +89,12 @@ ws.on('open', async () => {
       rejoin: {
         classPos: 11,
         ahead: [
-          { carIdx: 21, number: '3', name: 'Tom Becker', country: 'de', sameClass: true, gap: 2.4, inPit: false },
-          { carIdx: 22, number: '910', name: 'Paul Laurent', country: 'fr', sameClass: false, gap: 5.9, inPit: false },
+          { carIdx: 21, number: '3', name: 'Tom Becker', country: 'de', sameClass: true, gap: 2.4, inPit: false, pos: 10, laps: 0 },
+          { carIdx: 22, number: '910', name: 'Paul Laurent', country: 'fr', sameClass: false, gap: 5.9, inPit: false, pos: 6, laps: 1 },
         ],
         behind: [
-          { carIdx: 23, number: '14', name: 'Erik Lindqvist', country: 'se', sameClass: true, gap: -1.1, inPit: false },
-          { carIdx: 24, number: '27', name: 'Luca Moretti', country: 'it', sameClass: true, gap: -4.8, inPit: true },
+          { carIdx: 23, number: '14', name: 'Erik Lindqvist', country: 'se', sameClass: true, gap: -1.1, inPit: false, pos: 23, laps: -1 },
+          { carIdx: 24, number: '27', name: 'Luca Moretti', country: 'it', sameClass: true, gap: -4.8, inPit: true, pos: 12, laps: 0 },
         ],
       },
     });

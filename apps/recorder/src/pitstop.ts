@@ -247,9 +247,12 @@ export function computeRejoin(
     const g = trackGap(c, team, lapRef);
     if (g === null) continue;
     const d = info.get(c.carIdx);
+    const gap = wrapGap(g + loss, lapRef);
     rows.push({
       carIdx: c.carIdx, number: d?.number ?? '?', name: d?.name ?? '', country: d?.country ?? null,
-      sameClass: c.classId === team.classId, gap: wrapGap(g + loss, lapRef), inPit: c.onPitRoad ?? false,
+      sameClass: c.classId === team.classId, gap, inPit: c.onPitRoad ?? false,
+      pos: 1 + cars.filter((o) => o.classId === c.classId && o.progress > c.progress).length,
+      laps: Math.round((g + loss - gap) / lapRef),
       raceGap: g + loss,
     });
   }
