@@ -116,10 +116,10 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 | # | Wer | Schritt | Erwartet | Ergebnis |
 |---|---|---|---|---|
 | 4.1 | B | Auto vor A neben die Strecke stellen und dort **langsam** fahren oder stehen | – | |
-| 4.2 | Z | Overlay-Kopfzeile | **UNFALL VORAUS · #.. B · … m · neben der Strecke/steht** blinkt, Knopf **Zum Unfall**; bleibt nach Ende noch ~20 s stehen | |
+| 4.2 | Z | Overlay-Kopfzeile | **UNFALL VORAUS · #.. B · … m · neben der Strecke/steht** blinkt, Knopf **Zum Unfall**; verschwindet mit dem Ende der Warnung (kein Nachlauf) | |
 | 4.3 | Z | **Zum Unfall** klicken | iRacing-Kamera springt auf **B** in **Far Chase**; Meldung „#.. B“; iRacing behält den Fokus (Tastatur/Maus in iRacing gehen weiter) | |
 | 4.3a | B | nur kurz mit Tempo über die Tracklimits fahren | **keine** Meldung | |
-| 4.3c | B | erst steht B (Meldung), dann fährt B weiter; A bleibt im Auto | Meldung verschwindet spätestens ~25 s danach (5 s + 20 s Nachlauf, dann nicht mehr „live“); im `recorder.log` steht `[hazard] clear` | |
+| 4.3c | B | erst steht B (Meldung), dann fährt B weiter; A bleibt im Auto | Meldung verschwindet ~5 s danach (spätestens nach 6 s ohne Wiederholung); im `recorder.log` steht `[hazard] clear` | |
 | 4.3b | A | nach dem Test: `recorder.log` (Protokolle öffnen) an H | Zeilen `[hazard] …` passend zu den Unfällen | |
 | 4.4 | Z | Knopf **Zurück zu A** | Kamera wieder bei A, in der vorherigen Kamera | |
 | 4.5 | Z | Wiederholen mit **Strg+Umschalt+J** / **Strg+Umschalt+K** (bzw. Kürzel aus dem StintView-Fenster) | gleiches Verhalten wie 4.3/4.4 | |
