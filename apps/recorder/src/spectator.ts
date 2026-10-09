@@ -101,7 +101,7 @@ export class CarTracker {
 
 export interface SessionCars {
   /** number = CarNumberRaw (camera commands), label = CarNumber as displayed ("07"). */
-  drivers: Map<number, { number: number; label: string; name: string; flair?: string; irating?: number | null; license?: { text: string; color: string } | null }>;
+  drivers: Map<number, { number: number; label: string; name: string; flair?: string; car?: string | null; irating?: number | null; license?: { text: string; color: string } | null }>;
   /** Tyre compound names by TireIndex (CarIdxTireCompound), e.g. ["Hard", "Wet"]. */
   tires: string[];
   farChaseGroup: number;
@@ -121,6 +121,7 @@ export function parseSessionCars(text: string): SessionCars {
     const number = d.CarNumberRaw ?? -1;
     drivers.set(d.CarIdx, {
       number, label: String(d.CarNumber ?? number), name: d.UserName ?? d.TeamName ?? '', flair: d.FlairName,
+      car: d.CarScreenName ? String(d.CarScreenName) : null,
       irating: typeof d.IRating === 'number' && d.IRating > 0 ? d.IRating : null,
       license: d.LicString ? { text: String(d.LicString), color: licenseColor(d.LicColor) } : null,
     });
@@ -154,7 +155,7 @@ export interface CameraResult { t: 'camera-result'; ok: boolean; text: string; c
 
 interface DriverRow {
   CarIdx?: number; CarNumberRaw?: number; CarNumber?: string | number; UserName?: string; TeamName?: string; FlairName?: string;
-  IRating?: number; LicString?: string; LicColor?: string | number;
+  IRating?: number; LicString?: string; LicColor?: string | number; CarScreenName?: string;
 }
 
 /** iRacing's LicColor ("0xfc0706", or a number after YAML parsing) -> "#fc0706". */

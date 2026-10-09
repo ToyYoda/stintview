@@ -34,7 +34,9 @@ const best = process.argv.includes('--best');
 const IR = [4812, 3950, 3620, 2870, 2410, 2655, 2390, 1985, 3105, 1720, 2240, 1890];
 const LIC: [string, string][] = [['A 4.21', '#0153db'], ['A 3.12', '#0153db'], ['B 3.88', '#00c702'], ['A 2.67', '#0153db'], ['B 2.95', '#00c702'],
   ['C 3.40', '#feec04'], ['A 3.45', '#0153db'], ['B 1.98', '#00c702'], ['D 2.50', '#fc8a27'], ['B 4.02', '#00c702'], ['C 2.11', '#feec04'], ['A 1.87', '#0153db']];
-const extra = (i: number) => ({ irating: IR[i % IR.length]!, license: { text: LIC[i % LIC.length]![0], color: LIC[i % LIC.length]![1] }, compound: i === 4 || i === 9 ? 'Wet' : 'Hard' });
+const CARS = ['Ferrari 296 GT3', 'BMW M4 GT3 EVO', 'Mercedes-AMG GT3 2020', 'Audi R8 LMS EVO II GT3', 'Lamborghini Huracan GT3 EVO', 'McLaren 720S GT3 EVO',
+  'Porsche 911 GT3 R (992)', 'Aston Martin Vantage GT3 EVO', 'Ford Mustang GT3', 'Chevrolet Corvette Z06 GT3.R', 'Acura NSX GT3 EVO 22', 'Porsche 911 GT3 R (992)'];
+const extra = (i: number) => ({ car: CARS[i % CARS.length]!, irating: IR[i % IR.length]!, license: { text: LIC[i % LIC.length]![0], color: LIC[i % LIC.length]![1] }, compound: i === 4 || i === 9 ? 'Wet' : 'Hard' });
 // Qualifying field: the demo cars plus two more, best laps in order (car 6 = us).
 const QUALI_TIMES = [125.104, 125.388, 125.412, 125.731, 125.802, 125.954, 126.020, 126.117, 126.390, 126.902, 125.55, 125.62];
 const QUALI: BestLap[] = QUALI_TIMES.map((t, carIdx) => ({ carIdx, best: t, lastLap: t, classId: 0 }));
@@ -64,8 +66,8 @@ ws.on('open', async () => {
       // ~45 laps to go: two stops, or one fewer with a little fuel saving.
       timeRemain: 4700 - i / 2, lapsRemain: null, usableTank: 100 });
     const lapping: StandingRow[] = [
-      { pos: 0, carIdx: 30, number: '211', name: 'Jonas Weber', country: 'de', lastLap: 512.4, isTeam: false, gap: 0.6, lapsGap: -1, tyreLaps: 9, inPit: false, lap: 'backmarker', otherClass: true, irating: 1340, license: { text: 'D 3.10', color: '#fc8a27' }, compound: 'Hard' },
-      { pos: 0, carIdx: 31, number: '5', name: 'Henri Dubois', country: 'fr', lastLap: 452.2, isTeam: false, gap: -0.5, lapsGap: 1, tyreLaps: 4, inPit: false, lap: 'lapper', otherClass: true, irating: 5120, license: { text: 'P 4.99', color: '#828287' }, compound: 'Soft' },
+      { pos: 0, carIdx: 30, number: '211', name: 'Jonas Weber', country: 'de', lastLap: 512.4, isTeam: false, gap: 0.6, lapsGap: -1, tyreLaps: 9, inPit: false, lap: 'backmarker', otherClass: true, car: 'Toyota GR86', irating: 1340, license: { text: 'D 3.10', color: '#fc8a27' }, compound: 'Hard' },
+      { pos: 0, carIdx: 31, number: '5', name: 'Henri Dubois', country: 'fr', lastLap: 452.2, isTeam: false, gap: -0.5, lapsGap: 1, tyreLaps: 4, inPit: false, lap: 'lapper', otherClass: true, car: 'Dallara P217 LMP2', irating: 5120, license: { text: 'P 4.99', color: '#828287' }, compound: 'Soft' },
     ];
     // Duel panel: cars on other laps between us and our class neighbours, nearest first.
     const between = {

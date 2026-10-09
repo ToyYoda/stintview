@@ -2,11 +2,12 @@ import type { ReactNode } from 'react';
 import type { StandingRow, Standings } from '@stintview/protocol';
 import { t } from '../i18n.ts';
 import { Duel, Flag, gapClass, gapText } from './gaps.tsx';
+import { CarMake } from './carMake.tsx';
 import type { StandingsColumn, StandingsOptions } from '../feed.ts';
 
 
 /** Default column order; the StintView window can change it (options.order). */
-export const STANDINGS_COLUMNS: StandingsColumn[] = ['pos', 'num', 'flag', 'name', 'irating', 'sr', 'best', 'gap', 'tyre', 'compound', 'delta'];
+export const STANDINGS_COLUMNS: StandingsColumn[] = ['pos', 'num', 'flag', 'make', 'name', 'irating', 'sr', 'best', 'gap', 'tyre', 'compound', 'delta'];
 
 /**
  * Running order on track: P1–P3 and three cars ahead of / behind the team car.
@@ -76,6 +77,7 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
                 pos: <td key="pos" className="st-pos">{r.lap ? '' : r.pos}</td>,
                 num: <td key="num" className="st-num">#{r.number}</td>,
                 flag: <td key="flag" className="st-flag-cell"><Flag country={r.country} /></td>,
+                make: <td key="make" className="st-make">{r.car ? <CarMake car={r.car} /> : ''}</td>,
                 name: (
                   <td key="name" className="st-name">
                     {r.name}

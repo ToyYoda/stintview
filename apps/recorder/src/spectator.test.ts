@@ -156,10 +156,11 @@ describe('session cars: rating, licence, tyres', () => {
       '   IRating: 2431',
       '   LicString: A 3.45',
       '   LicColor: 0x0153db',
+      '   CarScreenName: Ferrari 296 GT3',
     ].join('\n');
     const cars = parseSessionCars(yaml);
     expect(cars.tires).toEqual(['Hard', 'Wet']);
-    expect(cars.drivers.get(3)).toMatchObject({ irating: 2431, license: { text: 'A 3.45', color: '#0153db' } });
+    expect(cars.drivers.get(3)).toMatchObject({ irating: 2431, license: { text: 'A 3.45', color: '#0153db' }, car: 'Ferrari 296 GT3' });
     expect(cars.drivers.get(0)).toMatchObject({ irating: null });
   });
 });

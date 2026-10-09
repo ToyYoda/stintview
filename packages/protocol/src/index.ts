@@ -228,6 +228,8 @@ export interface StandingRow {
   otherClass?: boolean;
   /** Practice/qualifying (mode 'best'): best lap time in seconds, null if none yet. */
   bestLap?: number | null;
+  /** Car as iRacing names it ("Porsche 911 GT3 R (992)"); the overlay shows the make's emblem. Since 0.19. */
+  car?: string | null;
   /** Tyre compound fitted now, as iRacing names it ("Hard", "Soft", "Wet"); null = unknown. Since 0.19. */
   compound?: string | null;
   /** Current driver's iRating (null = unknown, e.g. AI). Since 0.19. */

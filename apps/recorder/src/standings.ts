@@ -16,7 +16,7 @@ export interface CarProgress {
 
 export interface CarInfo {
   number: string; name: string; /** ISO code for the flag, e.g. "de". */ country?: string | null;
-  irating?: number | null; license?: { text: string; color: string } | null;
+  car?: string | null; irating?: number | null; license?: { text: string; color: string } | null;
 }
 
 export interface StandingsExtras {
@@ -380,13 +380,13 @@ export class StandingsTracker {
     this.tires = tires;
   }
 
-  /** Tyre compound, iRating and licence on every row (also lapping/between rows). */
+  /** Car, tyre compound, iRating and licence on every row (also lapping rows). */
   private decorate(f: Frame, rows: StandingRow[]): StandingRow[] {
     const hasCompound = f.has('CarIdxTireCompound');
     return rows.map((r) => {
       const d = this.info.get(r.carIdx);
       const idx = hasCompound ? f.num('CarIdxTireCompound', r.carIdx) : -1;
-      return { ...r, compound: idx >= 0 ? this.tires[idx] ?? null : null, irating: d?.irating ?? null, license: d?.license ?? null };
+      return { ...r, car: d?.car ?? null, compound: idx >= 0 ? this.tires[idx] ?? null : null, irating: d?.irating ?? null, license: d?.license ?? null };
     });
   }
 
