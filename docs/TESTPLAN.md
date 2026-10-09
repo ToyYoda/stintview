@@ -280,4 +280,4 @@ Anhang: screenshot.png, recorder.log
 - **Kamera-Sprung** nur beim Zuschauer, der dieselbe Session in iRacing schaut; nie beim Fahrer.
 - **VR-Panels** sind nicht anklickbar (nur Tastenkürzel).
 - **SmartScreen-Warnung** bei der Installation (Programm noch nicht signiert).
-- App-Oberfläche nur auf Deutsch; Verbindung unverschlüsselt.
+- Verbindung unverschlüsselt.

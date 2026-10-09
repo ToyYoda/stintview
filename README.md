@@ -80,5 +80,4 @@ App fernsteuern (Tests): mit `--remote-debugging-port=9333` starten, dann `node 
 
 - Reifen: iRacing liefert Karkasstemperatur und Verschleiß nur beim Stopp in der Box; Oberflächentemperatur und Druck gar nicht live. Das Widget zeigt die letzte Messung und schätzt den aktuellen Verschleiß aus den gefahrenen km.
 - VR nur über SteamVR. Headsets ohne SteamVR (z. B. Quest per Link/Air Link): OpenKneeboard mit den Einzel-Widget-URLs.
-- Die App-Oberfläche ist nur auf Deutsch.
 - Verbindung zum Relay ist unverschlüsselt (`ws://`).
