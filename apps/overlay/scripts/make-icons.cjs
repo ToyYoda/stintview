@@ -1,4 +1,4 @@
-// Renders the Outcast "O" emblem to the app icons. Run once with: npx electron scripts/make-icons.cjs
+// Renders the Outcast logo to the app icons. Run once with: npx electron scripts/make-icons.cjs
 //   electron/icons/tray.png (32 px, tray + window), build/icon.ico (16–256 px, installer + exe)
 // Alternative app: npx electron scripts/make-icons.cjs backseat -> yellow "BR" race plate in
 //   electron/icons/backseat/ and build/backseat/.
@@ -9,14 +9,13 @@ const path = require('node:path');
 
 const BACKSEAT = process.argv.includes('backseat');
 
-const SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="256" height="256">
-  <circle cx="32" cy="32" r="30" fill="#0a0a0a"/>
-  <circle cx="32" cy="32" r="29" fill="none" stroke="#e5e5e5" stroke-opacity="0.45" stroke-width="2.5"/>
-  <g transform="skewX(-14) translate(8 0)">
-    <rect x="18" y="15" width="28" height="34" rx="9" fill="none" stroke="#e5e5e5" stroke-width="7"/>
-  </g>
-  <polygon points="9,47 55,17 58,20.5 13,50.5" fill="#d10f0f"/>
-</svg>`;
+// Light Outcast logo (brand/outcast/logo-light.png) on a dark round badge, so it shows on light and dark taskbars.
+const LOGO = path.join(__dirname, '..', '..', '..', 'brand', 'outcast', 'logo-light.png');
+const OUTCAST_HTML = `<style>html, body { margin: 0; background: transparent; overflow: hidden; }
+  .b { position: absolute; left: 4px; top: 4px; width: 240px; height: 240px; border-radius: 50%; background: #0a0a0a;
+       border: 4px solid rgba(229, 229, 229, 0.45); display: grid; place-items: center; }
+  .b img { width: 206px; margin: 0 0 4px 6px; }
+</style><div class="b"><img src="${'file:///' + LOGO.replace(/\\/g, '/')}"></div>`;
 
 // Signal-yellow plate, slightly slanted, with "BR" in Barlow Condensed Black Italic.
 const FONT = path.join(__dirname, '..', 'node_modules', '@fontsource', 'barlow-condensed', 'files', 'barlow-condensed-latin-900-italic.woff2');
@@ -51,15 +50,11 @@ app.disableHardwareAcceleration();
 app.whenReady().then(async () => {
   const win = new BrowserWindow({ show: false, width: 256, height: 256, transparent: true, frame: false, webPreferences: { offscreen: true } });
   win.webContents.setZoomFactor(1);
-  if (BACKSEAT) {
-    // A file page, so the font can be loaded from node_modules.
-    const page = path.join(tmpdir(), 'backseat-icon.html');
-    writeFileSync(page, BACKSEAT_HTML);
-    await win.loadFile(page);
-    await win.webContents.executeJavaScript('document.fonts.ready.then(() => true)');
-  } else {
-    await win.loadURL(`data:text/html,<body style="margin:0;background:transparent">${encodeURIComponent(SVG)}</body>`);
-  }
+  // A file page, so the font (backseat) or the logo can be loaded from disk.
+  const page = path.join(tmpdir(), BACKSEAT ? 'backseat-icon.html' : 'outcast-icon.html');
+  writeFileSync(page, BACKSEAT ? BACKSEAT_HTML : OUTCAST_HTML);
+  await win.loadFile(page);
+  await win.webContents.executeJavaScript(BACKSEAT ? 'document.fonts.ready.then(() => true)' : 'document.images[0].decode().then(() => true)');
   await new Promise((r) => setTimeout(r, 300));
   const full = await win.webContents.capturePage({ x: 0, y: 0, width: 256, height: 256 });
   const at = (size) => nativeImage.createFromBuffer(full.toPNG()).resize({ width: size, height: size, quality: 'best' }).toPNG();

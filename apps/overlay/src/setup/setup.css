@@ -17,7 +17,8 @@ body.setup-body #root { height: auto; }
 
 .setup { max-width: 520px; margin: 0 auto; padding: 24px 22px 32px; }
 .setup-head { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
-.setup .emblem { width: 48px; height: 48px; flex: none; }
+.setup .oe-logo { height: 44px; width: auto; flex: none; }
+.setup .oe-wordmark { height: 28px; width: auto; display: block; }
 .setup .wordmark { display: flex; flex-direction: column; line-height: 1; }
 .setup .wordmark b { font-style: italic; font-weight: 900; font-size: 22px; }
 .setup .wordmark span { font-style: italic; font-size: 9.5px; letter-spacing: 0.42em; color: var(--o-red); margin-top: 3px; }

@@ -3,6 +3,8 @@ import { MESSAGE_COLORS, MESSAGE_MAX_LENGTH, type MessageColor } from '@stintvie
 import type { AppState, HotkeyGroup, PanelSetting, DuelOptions, RadioState, StandingsColumn, StandingsOptions } from '../feed.ts';
 import { setLang, t, useLang, type Lang } from '../i18n.ts';
 import { brand } from '../brand.ts';
+import logoUrl from '../assets/logo-light.webp';
+import wordmarkUrl from '../assets/wordmark-light.webp';
 import './setup.css';
 
 const api = () => window.stintview!;
@@ -37,9 +39,9 @@ export function SetupPage() {
           </>
         ) : (
           <>
-            <Emblem />
+            <img className="oe-logo" src={logoUrl} alt="" />
             <div>
-              <div className="wordmark"><b>OUTCAST</b><span>ENDURANCE</span></div>
+              <img className="oe-wordmark" src={wordmarkUrl} alt="Outcast Endurance" />
               <div className="product">StintView <small>v{state.version}</small></div>
             </div>
           </>
@@ -591,14 +593,3 @@ function Dot({ kind }: { kind: 'ok' | 'warn' | 'bad' | 'idle' }) {
   return <span className={`sdot ${kind}`} aria-hidden="true" />;
 }
 
-function Emblem() {
-  return (
-    <svg className="emblem" viewBox="0 0 64 64" aria-hidden="true">
-      <circle cx="32" cy="32" r="29" fill="none" stroke="#e5e5e5" strokeOpacity="0.35" strokeWidth="2.5" />
-      <g transform="skewX(-14) translate(8 0)">
-        <rect x="18" y="15" width="28" height="34" rx="9" fill="none" stroke="#e5e5e5" strokeWidth="7" />
-      </g>
-      <polygon points="9,47 55,17 58,20.5 13,50.5" fill="#d10f0f" />
-    </svg>
-  );
-}
