@@ -35,7 +35,8 @@ export function PitWidget({ plan }: { plan: Pitplan | null }) {
       <div className="pit-total">
         <span className="big">{plan.total !== null ? `${plan.total.toFixed(0)} s` : '–'}</span>
         <span className="pit-parts">
-          {t('pit.parts', { lane: plan.laneLoss !== null ? `${plan.laneLoss.toFixed(0)} s${plan.laneFrom === 'archive' ? t('pit.archive') : ''}` : '?', stand: plan.stationary.toFixed(0) })}
+          <span>{t('pit.parts', { lane: plan.laneLoss !== null ? `${plan.laneLoss.toFixed(0)} s${plan.laneFrom === 'archive' ? t('pit.archive') : ''}` : '?', stand: plan.stationary.toFixed(0) })}</span>
+          <span className="pit-note">{t('pit.partsNote')}</span>
         </span>
       </div>
 
