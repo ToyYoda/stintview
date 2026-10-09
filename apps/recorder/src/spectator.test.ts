@@ -163,4 +163,17 @@ describe('session cars: rating, licence, tyres', () => {
     expect(cars.drivers.get(3)).toMatchObject({ irating: 2431, license: { text: 'A 3.45', color: '#0153db' }, car: 'Ferrari 296 GT3' });
     expect(cars.drivers.get(0)).toMatchObject({ irating: null });
   });
+
+  it('team name only in team races', () => {
+    const driver = (racing: number) => `WeekendInfo:
+ TeamRacing: ${racing}
+DriverInfo:
+ Drivers:
+ - CarIdx: 3
+   UserName: Marco Rossi
+   TeamName: ${racing ? 'MSG Racing' : 'Marco Rossi'}
+`;
+    expect(parseSessionCars(driver(1)).drivers.get(3)?.team).toBe('MSG Racing');
+    expect(parseSessionCars(driver(0)).drivers.get(3)?.team).toBeNull();
+  });
 });

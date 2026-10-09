@@ -101,7 +101,7 @@ export class CarTracker {
 
 export interface SessionCars {
   /** number = CarNumberRaw (camera commands), label = CarNumber as displayed ("07"). */
-  drivers: Map<number, { number: number; label: string; name: string; flair?: string; car?: string | null; irating?: number | null; license?: { text: string; color: string } | null }>;
+  drivers: Map<number, { number: number; label: string; name: string; flair?: string; team?: string | null; car?: string | null; irating?: number | null; license?: { text: string; color: string } | null }>;
   /** Tyre compound names by TireIndex (CarIdxTireCompound), e.g. ["Hard", "Wet"]. */
   tires: string[];
   farChaseGroup: number;
@@ -122,6 +122,8 @@ export function parseSessionCars(text: string): SessionCars {
     drivers.set(d.CarIdx, {
       number, label: String(d.CarNumber ?? number), name: d.UserName ?? d.TeamName ?? '', flair: d.FlairName,
       car: d.CarScreenName ? String(d.CarScreenName) : null,
+      // Outside team races iRacing puts the driver's name here: only team races have a team.
+      team: y.WeekendInfo?.TeamRacing === 1 && d.TeamName ? String(d.TeamName) : null,
       irating: typeof d.IRating === 'number' && d.IRating > 0 ? d.IRating : null,
       license: d.LicString ? { text: String(d.LicString), color: licenseColor(d.LicColor) } : null,
     });
@@ -164,7 +166,7 @@ export function licenseColor(c: string | number | undefined): string {
   return Number.isFinite(n) ? `#${(n & 0xffffff).toString(16).padStart(6, '0')}` : '#888888';
 }
 interface Yaml {
-  WeekendInfo?: { TrackLength?: string; SessionID?: number; SubSessionID?: number };
+  WeekendInfo?: { TrackLength?: string; SessionID?: number; SubSessionID?: number; TeamRacing?: number };
   DriverInfo?: { Drivers?: DriverRow[]; DriverTires?: { TireIndex?: number; TireCompoundType?: string }[] };
   CameraInfo?: { Groups?: { GroupNum?: number; GroupName?: string }[] };
 }

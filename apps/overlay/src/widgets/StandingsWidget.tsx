@@ -7,7 +7,7 @@ import type { StandingsColumn, StandingsOptions } from '../feed.ts';
 
 
 /** Default column order; the StintView window can change it (options.order). */
-export const STANDINGS_COLUMNS: StandingsColumn[] = ['pos', 'num', 'flag', 'make', 'name', 'irating', 'sr', 'best', 'gap', 'tyre', 'compound', 'delta'];
+export const STANDINGS_COLUMNS: StandingsColumn[] = ['pos', 'num', 'flag', 'make', 'name', 'team', 'irating', 'sr', 'best', 'gap', 'tyre', 'compound', 'delta'];
 
 /**
  * Running order on track: P1–P3 and three cars ahead of / behind the team car.
@@ -28,7 +28,9 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
   // Chosen order; columns missing from it (newer versions) keep their default place at the end.
   const order = [...(options?.order ?? []), ...STANDINGS_COLUMNS].filter((c, i, a) => STANDINGS_COLUMNS.includes(c) && a.indexOf(c) === i);
   // Best lap only outside races; gap and tyre age only in races.
-  const col = (c: StandingsColumn) => (best ? c !== 'gap' && c !== 'tyre' : c !== 'best') && (options?.columns[c] ?? true);
+  // Team only in team races: no row has a team otherwise (and older recorders send none).
+  const teamRace = rows.some((r) => r.team);
+  const col = (c: StandingsColumn) => (best ? c !== 'gap' && c !== 'tyre' : c !== 'best') && (c !== 'team' || teamRace) && (options?.columns[c] ?? true);
   const lapping = options?.lapping === false || best ? [] : standings?.lapping ?? [];
   const team = rows.find((r) => r.isTeam);
   // Class neighbours: the cars directly in front of and behind us in the running order.
@@ -84,6 +86,7 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
                     {r.lap && <span className="st-lap-tag">{r.lap === 'backmarker' ? t('st.backmarker') : t('st.lapper')}</span>}
                   </td>
                 ),
+                team: <td key="team" className="st-team">{r.team ?? ''}</td>,
                 irating: <td key="irating" className="st-ir">{rating(r.irating)}</td>,
                 sr: <td key="sr" className="st-sr">{r.license ? <License {...r.license} /> : '–'}</td>,
                 best: <td key="best" className="st-best">{r.bestLap ? lapTime(r.bestLap) : '–'}</td>,

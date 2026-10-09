@@ -25,7 +25,7 @@ export interface HotkeyGroup {
   items: { label: string; key: string | null; taken: string[]; alternatives: string[]; active: boolean }[];
 }
 
-export type StandingsColumn = 'pos' | 'num' | 'flag' | 'make' | 'name' | 'irating' | 'sr' | 'best' | 'gap' | 'tyre' | 'compound' | 'delta';
+export type StandingsColumn = 'pos' | 'num' | 'flag' | 'make' | 'name' | 'team' | 'irating' | 'sr' | 'best' | 'gap' | 'tyre' | 'compound' | 'delta';
 /** Position panel: which columns, and whether lapping cars are shown. */
 export interface StandingsOptions {
   columns: Record<StandingsColumn, boolean>;

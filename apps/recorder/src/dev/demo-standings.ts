@@ -1,7 +1,7 @@
 /**
  * Dev tool: sends a realistic-looking Position, Duel and Boxenstopp panel (fictitious names) for ~60 s,
  * e.g. for website screenshots. Pretends to be the driving recorder.
- * Usage: tsx src/dev/demo-standings.ts [--best]   (--best: qualifying view; uses the normal config / STINTVIEW_CONFIG)
+ * Usage: tsx src/dev/demo-standings.ts [--best] [--no-team]   (--best: qualifying view; uses the normal config / STINTVIEW_CONFIG)
  */
 import WebSocket from 'ws';
 import { PROTOCOL_VERSION, pack, type ClientMessage, type StandingRow } from '@stintview/protocol';
@@ -36,7 +36,11 @@ const LIC: [string, string][] = [['A 4.21', '#0153db'], ['A 3.12', '#0153db'], [
   ['C 3.40', '#feec04'], ['A 3.45', '#0153db'], ['B 1.98', '#00c702'], ['D 2.50', '#fc8a27'], ['B 4.02', '#00c702'], ['C 2.11', '#feec04'], ['A 1.87', '#0153db']];
 const CARS = ['Ferrari 296 GT3', 'BMW M4 GT3 EVO', 'Mercedes-AMG GT3 2020', 'Audi R8 LMS EVO II GT3', 'Lamborghini Huracan GT3 EVO', 'McLaren 720S GT3 EVO',
   'Porsche 911 GT3 R (992)', 'Aston Martin Vantage GT3 EVO', 'Ford Mustang GT3', 'Chevrolet Corvette Z06 GT3.R', 'Acura NSX GT3 EVO 22', 'Porsche 911 GT3 R (992)'];
-const extra = (i: number) => ({ car: CARS[i % CARS.length]!, irating: IR[i % IR.length]!, license: { text: LIC[i % LIC.length]![0], color: LIC[i % LIC.length]![1] }, compound: i === 4 || i === 9 ? 'Wet' : 'Hard' });
+// Teams: the demo is a team race (team 'Outcast Endurance' is us, car index 6).
+const TEAMS = ['Orange Rookies', 'Grant Motorsport', 'Brandt Racing', 'Team Martin', 'Gruber Sim', 'Scuderia Rossi', 'Outcast Endurance', 'Porter Racing', 'Keller GT', 'Cole Speed', 'Lind Motorsport', 'Ruiz Racing'];
+// --no-team: a race without teams (iRacing sends no team names then).
+const teams = !process.argv.includes('--no-team');
+const extra = (i: number) => ({ team: teams ? TEAMS[i % TEAMS.length]! : null, car: CARS[i % CARS.length]!, irating: IR[i % IR.length]!, license: { text: LIC[i % LIC.length]![0], color: LIC[i % LIC.length]![1] }, compound: i === 4 || i === 9 ? 'Wet' : 'Hard' });
 // Qualifying field: the demo cars plus two more, best laps in order (car 6 = us).
 const QUALI_TIMES = [125.104, 125.388, 125.412, 125.731, 125.802, 125.954, 126.020, 126.117, 126.390, 126.902, 125.55, 125.62];
 const QUALI: BestLap[] = QUALI_TIMES.map((t, carIdx) => ({ carIdx, best: t, lastLap: t, classId: 0 }));

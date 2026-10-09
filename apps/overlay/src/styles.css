@@ -125,6 +125,7 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .st-sr { text-align: center; width: 58px; }
 .st-lic { display: inline-block; font-family: var(--mono); font-size: 11px; font-weight: 700; padding: 0 4px; border-radius: 3px; white-space: nowrap; }
 .st-compound { text-align: center; width: 30px; }
+.st-team { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 0.9em; }
 .st-make { width: 28px; text-align: center; color: #e8e8e8; }
 .car-make { width: 22px; height: 22px; vertical-align: middle; display: inline-block; }
 .car-make-text { font-size: 9.5px; font-weight: 700; letter-spacing: 0.02em; color: var(--muted); }
@@ -167,7 +168,7 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 /* Position: flag in its own column, lapping rows */
 .st-flag-cell { width: 20px; padding-right: 0 !important; }
 .st-flag-cell .st-flag { margin-right: 0; }
-.standings th.th-name { text-align: left; }
+.standings th.th-name, .standings th.th-team { text-align: left; }
 .standings th.th-sr, .standings th.th-compound { text-align: center; }
 .standings tr.lap-backmarker td { background: rgba(77, 163, 255, 0.28); color: #d6e9ff; }
 .standings tr.lap-lapper td { background: rgba(255, 77, 77, 0.30); color: #ffd9d9; }
