@@ -222,6 +222,8 @@ export interface FeedState {
   tyres: Tyres | null;
   weather: Weather | null;
   hazard: Hazard | null;
+  /** Local time (ms) the hazard message arrived; an active one is repeated every 2 s. */
+  hazardAt: number;
   standings: Standings | null;
   pitplan: Pitplan | null;
   /** Recent team messages, oldest first. */
@@ -241,7 +243,7 @@ export function isPracticeOrQuali(s: Pick<FeedState, 'session' | 'standings'>): 
 
 const initial: FeedState = {
   conn: 'connecting', error: null, teamName: '', local: false, otherSession: false, active: null,
-  session: null, status: null, fuel: null, tyres: null, weather: null, hazard: null, standings: null, pitplan: null, messages: [], lastData: 0,
+  session: null, status: null, fuel: null, tyres: null, weather: null, hazard: null, hazardAt: 0, standings: null, pitplan: null, messages: [], lastData: 0,
 };
 
 /** Latest telemetry into the state (inputs go to the InputBuffer instead). */
@@ -253,7 +255,7 @@ function applyTelemetry(s: FeedState, m: Telemetry): FeedState {
     case 'fuel': return { ...s, fuel: m, lastData: now };
     case 'tyres': return { ...s, tyres: m, lastData: now };
     case 'weather': return { ...s, weather: m, lastData: now };
-    case 'hazard': return { ...s, hazard: m, lastData: now };
+    case 'hazard': return { ...s, hazard: m, hazardAt: now, lastData: now };
     case 'standings': return { ...s, standings: m, lastData: now };
     case 'pitplan': return { ...s, pitplan: m, lastData: now };
     case 'session': return { ...s, session: m, lastData: now };

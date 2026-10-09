@@ -119,11 +119,12 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 | 4.2 | Z | Overlay-Kopfzeile | **UNFALL VORAUS · #.. B · … m · neben der Strecke/steht** blinkt, Knopf **Zum Unfall**; bleibt nach Ende noch ~20 s stehen | |
 | 4.3 | Z | **Zum Unfall** klicken | iRacing-Kamera springt auf **B** in **Far Chase**; Meldung „#.. B“; iRacing behält den Fokus (Tastatur/Maus in iRacing gehen weiter) | |
 | 4.3a | B | nur kurz mit Tempo über die Tracklimits fahren | **keine** Meldung | |
+| 4.3c | B | erst steht B (Meldung), dann fährt B weiter; A bleibt im Auto | Meldung verschwindet spätestens ~25 s danach (5 s + 20 s Nachlauf, dann nicht mehr „live“); im `recorder.log` steht `[hazard] clear` | |
 | 4.3b | A | nach dem Test: `recorder.log` (Protokolle öffnen) an H | Zeilen `[hazard] …` passend zu den Unfällen | |
 | 4.4 | Z | Knopf **Zurück zu A** | Kamera wieder bei A, in der vorherigen Kamera | |
 | 4.5 | Z | Wiederholen mit **Strg+Umschalt+J** / **Strg+Umschalt+K** (bzw. Kürzel aus dem StintView-Fenster) | gleiches Verhalten wie 4.3/4.4 | |
 | 4.6 | B | diesmal **auf der Strecke stehen bleiben** (Warnblinker, sicherer Abschnitt) | 4.3 findet B mit „steht/langsam“ | |
-| 4.7 | B | Auto **weit** (> 1,5 km) vor A abstellen | **keine** „Unfall voraus“-Meldung; J-Kürzel sucht bis 3 km bzw. zeigt iRacings letzten Unfall | |
+| 4.7 | B | Auto **weit** (> 700 m) vor A abstellen | **keine** „Unfall voraus“-Meldung; J-Kürzel sucht bis 3 km bzw. zeigt iRacings letzten Unfall | |
 | 4.8 | A | während der Fahrt selbst Strg+Umschalt+J drücken | **nichts** passiert an A's Kamera; Meldung „Du fährst gerade …“ | |
 | 4.9 | B | Status in B's StintView-Fenster, während A fährt | *Im Auto – Standby*; Overlay aller zeigt weiter nur A (kein Hin- und Herspringen) | |
 | 4.10 | Z | Z schaut eine **andere** Session (z. B. offizielles Rennen) und drückt J | Meldung „Du schaust … nicht dieselbe Session wie dein Team“ | |

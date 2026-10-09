@@ -64,7 +64,7 @@ Switch **Show displays** on and choose **Output** „Monitor“ (default). In iR
 
 ### Jumping to an incident as a spectator
 
-When a car up to about 1.5 km ahead of your driver is stopped or crawling off track, the overlay header shows **INCIDENT AHEAD** with car, distance and state (e.g. "#44 Name · 800 m · stopped") and the button **To incident**. StintView detects this itself on your driver's PC (similar to the iRacing spotter); a yellow flag also triggers **YELLOW AHEAD**. Clicking points the camera in *your* iRacing (chase camera "Far Chase") straight at that car – so you can tell your driver on Discord what's going on. **Back** returns to your driver.
+When a car up to about 700 m ahead of your driver is stopped or crawling off track, the overlay header shows **INCIDENT AHEAD** with car, distance and state (e.g. "#44 Name · 500 m · stopped") and the button **To incident**. StintView detects this itself on your driver's PC (similar to the iRacing spotter); a yellow flag also triggers **YELLOW AHEAD**. Clicking points the camera in *your* iRacing (chase camera "Far Chase") straight at that car – so you can tell your driver on Discord what's going on. **Back** returns to your driver.
 
 - Requirement: you are watching the team session in iRacing (not driving yourself). Nothing is ever changed for the driver.
 - Hotkeys (also in VR): **Ctrl+Shift+J** = to the incident, **Ctrl+Shift+K** = back (fallback hotkeys are shown in the StintView window).

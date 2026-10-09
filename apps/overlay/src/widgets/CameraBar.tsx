@@ -6,6 +6,8 @@ import type { FeedState } from '../feed.ts';
 /** Keep the banner up this long after the warning clears (local yellows last ~10 s). */
 const HOLD_MS = 20_000;
 const RESULT_MS = 7000;
+/** An active hazard is repeated every 2 s; without that it is over (recorder gone, older version). */
+const HAZARD_STALE_MS = 6000;
 /** A click shows "…" until iRacing confirms (the recorder checks for 1.5 s). */
 const PENDING_MS = 2500;
 const RESULT_FAILED_MS = 15_000; // failures carry longer hints (e.g. iRacing running as administrator)
@@ -64,7 +66,7 @@ export function CameraBar({ state, interactive }: { state: FeedState; interactiv
   const driving = Boolean(state.active?.driverName);
   const yellowNow = driving && Boolean((state.status?.flags ?? 0) & YELLOW_FLAGS);
   // The driver's recorder watches the cars ahead (iRacing's spotter call isn't in the SDK).
-  const hazard = driving && state.hazard?.active ? state.hazard : null;
+  const hazard = driving && state.hazard?.active && now - state.hazardAt < HAZARD_STALE_MS ? state.hazard : null;
   const warningNow = yellowNow || hazard !== null;
   useEffect(() => {
     if (warningNow) setHoldUntil(Date.now() + HOLD_MS);

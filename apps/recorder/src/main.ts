@@ -143,7 +143,8 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
       standings.setDrivers(info, cars.trackLength);
       standings.setSessions(parseSessions(yaml));
       pit.setSession(yaml, info);
-      hazard?.onSessionInfo(yaml);
+      const cleared = hazard?.onSessionInfo(yaml);
+      if (cleared) send(cleared);
     },
   );
   recorderRef = recorder;

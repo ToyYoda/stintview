@@ -7,9 +7,9 @@ import { CarTracker, parseSessionCars, type IncidentCandidate, type IncidentOpti
  * ordinary track-limit excursions must not trigger it.
  */
 export const HAZARD_OPTIONS: Required<IncidentOptions> = {
-  maxAhead: 1500, // roughly the spotter's range
+  maxAhead: 700, // ~10 s at racing speed; 1500 m warned far too early (race 08.10.2026)
   slowMps: 30 / 3.6, // stopped or crawling
-  offtrackMaxMps: 80 / 3.6, // off track *and* slow
+  offtrackMaxMps: 50 / 3.6, // off track *and* slow; at 80 km/h wide runs in slow corners counted
 };
 /** Must be seen in this many consecutive checks (~4/s) before it is reported. */
 export const CONFIRM_CHECKS = 2;
@@ -27,12 +27,25 @@ export class HazardDetector {
   private streak: { carIdx: number; count: number } | null = null;
   private current: (IncidentCandidate & { lastSeen: number }) | null = null;
   private lastSent = -Infinity;
+  private lastSentTime = 0;
 
   constructor(private readonly log: (line: string) => void = () => {}) {}
 
-  onSessionInfo(text: string) {
-    this.session = parseSessionCars(text);
+  /**
+   * iRacing re-sends the session info all the time in a race (results, drivers), so only a new
+   * session or track starts over. Returns the "clear" to send if a warning was active – before,
+   * every update dropped the warning silently and the displays kept it for minutes.
+   */
+  onSessionInfo(text: string): Hazard | null {
+    const next = parseSessionCars(text);
+    const changed = next.sessionId !== this.session.sessionId || next.trackLength !== this.session.trackLength;
+    this.session = next;
+    if (!changed) return null;
+    const wasActive = this.current !== null;
     this.reset();
+    if (!wasActive) return null;
+    this.log('[hazard] clear (new session)');
+    return this.message(this.lastSentTime, false);
   }
 
   reset() {
@@ -85,6 +98,7 @@ export class HazardDetector {
 
   private message(t: number, active: boolean): Hazard {
     this.lastSent = t;
+    this.lastSentTime = t;
     const c = this.current;
     const d = c ? this.session.drivers.get(c.carIdx) : undefined;
     return {

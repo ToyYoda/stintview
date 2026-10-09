@@ -53,12 +53,12 @@ describe('HazardDetector', () => {
   it('reports a car stopped ahead once, then keeps it alive, then clears', () => {
     const d = new HazardDetector();
     d.onSessionInfo(YAML);
-    const stopped = () => ({ pct: 0.1 + 900 / L }); // ~900 m ahead at start
+    const stopped = () => ({ pct: 0.1 + 600 / L }); // ~600 m ahead at start
     const first = run(d, 0, 3, stopped);
     expect(first[0]).toMatchObject({ t: 'hazard', active: true, carIdx: 1, carNumber: 12, driverName: 'Crash Test', reason: 'slow' });
-    expect(first[0]!.distance).toBeGreaterThan(700);
+    expect(first[0]!.distance).toBeGreaterThan(400);
     // it drives off at racing speed: cleared after CLEAR_AFTER_S
-    const later = run(d, 3, 8, (t) => ({ pct: (0.1 + 900 / L + ((t - 3) * 70) / L) % 1 }));
+    const later = run(d, 3, 8, (t) => ({ pct: (0.1 + 600 / L + ((t - 3) * 70) / L) % 1 }));
     expect(later.at(-1)).toMatchObject({ active: false });
   });
 
@@ -72,7 +72,7 @@ describe('HazardDetector', () => {
   it('reports a slow car crawling off track', () => {
     const d = new HazardDetector();
     d.onSessionInfo(YAML);
-    const crawling = (t: number) => ({ pct: (0.1 + 1200 / L + (t * 5) / L) % 1, surface: 0 });
+    const crawling = (t: number) => ({ pct: (0.1 + 500 / L + (t * 5) / L) % 1, surface: 0 });
     expect(run(d, 0, 3, crawling)[0]).toMatchObject({ active: true, reason: 'offtrack' });
   });
 
@@ -80,6 +80,33 @@ describe('HazardDetector', () => {
     const d = new HazardDetector();
     d.onSessionInfo(YAML);
     expect(run(d, 0, 3, () => ({ pct: 0.1 + 3000 / L }))).toEqual([]);
+    expect(run(d, 0, 3, () => ({ pct: 0.1 + 1000 / L }))).toEqual([]); // the spotter's range, not a sector ahead
     expect(run(d, 3, 3, () => ({ pct: 0.1 + 400 / L }), true)).toEqual([]);
+  });
+
+  it('ignores a car running wide at 70 km/h in a slow corner', () => {
+    const d = new HazardDetector();
+    d.onSessionInfo(YAML);
+    const wide = (t: number) => ({ pct: (0.1 + 400 / L + (t * 19) / L) % 1, surface: 0 });
+    expect(run(d, 0, 3, wide).filter((m) => m.active)).toEqual([]);
+  });
+
+  it('keeps the warning through session info updates of the same session', () => {
+    const d = new HazardDetector();
+    d.onSessionInfo(YAML);
+    const stopped = () => ({ pct: 0.1 + 600 / L });
+    expect(run(d, 0, 2, stopped)[0]).toMatchObject({ active: true });
+    expect(d.onSessionInfo(`${YAML}SessionInfo:\n Sessions: []\n`)).toBeNull();
+    // it drives off: the displays must get the clear (race 08.10.: dropped, banner stuck for minutes)
+    const later = run(d, 2, 8, (t) => ({ pct: (0.1 + 600 / L + ((t - 2) * 70) / L) % 1 }));
+    expect(later.at(-1)).toMatchObject({ active: false });
+  });
+
+  it('sends a clear when a new session starts during a warning', () => {
+    const d = new HazardDetector();
+    d.onSessionInfo(YAML);
+    expect(run(d, 0, 2, () => ({ pct: 0.1 + 600 / L }))[0]).toMatchObject({ active: true });
+    expect(d.onSessionInfo(YAML.replace('SessionID: 1', 'SessionID: 3'))).toMatchObject({ t: 'hazard', active: false });
+    expect(d.onSessionInfo(YAML.replace('SessionID: 1', 'SessionID: 3'))).toBeNull();
   });
 });
