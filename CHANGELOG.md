@@ -2,6 +2,13 @@
 
 Alle veröffentlichten Versionen, neueste zuerst. Installer und Updates: [GitHub Releases](https://github.com/ToyYoda/stintview/releases) – die App aktualisiert sich selbst.
 
+## 0.17.0 – 09.10.2026
+
+- **Neu: Stintplaner** – im StintView-Fenster, Reiter **Planer** → **Stintplaner öffnen**: Rennen anlegen, Teammitglieder einladen, Verfügbarkeiten eintragen und die Stints mit Fahrer und Spotter automatisch planen lassen. Die Rundenzeiten kommen aus StintView (auch ältere Runden einlesbar); geht der Plan nicht auf, steht dort, woran es liegt.
+- **VR:** deutlich weniger Last für das Spiel – die Panels werden nur noch neu gezeichnet und an SteamVR geschickt, wenn sich etwas ändert (vorher bis zu 60 Bilder pro Sekunde, auch ohne neue Daten).
+- **Duell:** große Abstände stehen in weißer, fetter Schrift statt grau – in VR besser lesbar.
+- **Boxenstopp:** vor jedem Auto steht seine aktuelle Position in der Klasse; Autos auf einer anderen Runde sind farbig hinterlegt – **blau** = Nachzügler, die ihr überrundet, **rot** = Autos, die euch überrunden. (Position und Farben erscheinen, sobald der fahrende PC 0.17 hat.)
+
 ## 0.16.0 – 09.10.2026
 
 - Neues Outcast-Endurance-Logo und neuer Schriftzug im Einrichtungsfenster, als App-, Tray- und Installer-Symbol und auf der Website (Kopf, Fuß, Browser-Symbol).
