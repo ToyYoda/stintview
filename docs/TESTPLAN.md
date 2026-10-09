@@ -195,6 +195,7 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 
 | # | Wer | Schritt | Erwartet | Ergebnis |
 |---|---|---|---|---|
+| 5.1b | alle | mit Triple-Screens (oder zweitem Monitor): Anzeigen verschieben, ein Panel auf den linken und eins auf den rechten Monitor ziehen, Fertig, StintView neu starten | Panels lassen sich auf alle Monitore ziehen und bleiben dort; Panels auf dem Hauptmonitor bleiben, wo sie waren | |
 | 5.1 | alle | StintView-Fenster → **Anzeigen verschieben** | gelbes Banner im Overlay, Anzeigen lassen sich ziehen, **Fertig** beendet | |
 | 5.2 | alle | Tastenkürzel zum Verschieben (steht im Fenster, z. B. Strg+Umschalt+O oder Strg+Alt+O bei AMD) | wie 5.1 | |
 | 5.2b | alle | Tray-Symbol → **Tastaturkürzel …** | Fenster öffnet mit der Übersicht oben; die Kürzel dort funktionieren (z. B. Verschieben); VR-Gruppe grau, solange VR aus | |

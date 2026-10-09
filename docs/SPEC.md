@@ -72,7 +72,7 @@ Eine einzige Electron-App auf jedem PC. Recorder läuft immer (auch ohne Team); 
 |---|---|
 | `app.cjs` | Einstieg: Einzelinstanz, Tray-Menü, Einrichtungsfenster `#/setup`, Hintergrundprozesse überwachen/neu starten (5 s), Autostart (`--hidden`), Auto-Update, IPC |
 | `config.cjs` | `%APPDATA%\StintView`: `config.json` (Team-Zugang), `app.json` (Einstellungen), `logs/`; Beitreten/Anlegen per HTTP |
-| `overlay-window.cjs` | Monitor-Overlay: transparentes Vollbildfenster, `alwaysOnTop('screen-saver')`, click-through; Bearbeiten-Modus |
+| `overlay-window.cjs` | Monitor-Overlay: transparentes Fenster über **alle Monitore** (seit 0.18.1), `alwaysOnTop('screen-saver')`, click-through; Bearbeiten-Modus |
 | `hotkeys.cjs` | Übersicht der globalen Tastaturkürzel (`hotkeyGroups`) aus `editHotkeyInfo` (overlay-window), `cameraHotkeyInfo` (camera), `vrHotkeyInfo` (vr); Anzeige „Strg/Umschalt/Bild↑“ |
 | `vr.cjs` | VR-Host: Widgets offscreen rendern → D3D11-Texturen → SteamVR-Overlays; Platzierungs-Tastenkürzel; **Strg+Umschalt+R** = SteamVR-Ausrichtung zurücksetzen (`IVRChaperone_004::ResetZeroPose(Seated)`, auch Tray-Menü, nur wenn mit SteamVR verbunden) |
 | `openvr.cjs`, `d3d11.cjs` | FFI-Bindings per **koffi** (kein nativer Build) |
@@ -162,6 +162,7 @@ Sonstiges: Der Shared-Memory-Bereich existiert auch, wenn nur die iRacing-UI lä
 ## 7. Bedienung Monitor-Overlay
 
 - iRacing muss im **randlosen Fenster** laufen.
+- **Mehrere Monitore (seit 0.18.1, Wunsch 09.10.2026 – Triple-Screens):** das Overlay-Fenster überspannt das Rechteck aller Monitore (`overlayArea` in `overlay-window.cjs`, neu angepasst bei `display-added/-removed/-metrics-changed`); vorher nur der Hauptmonitor. Panel-Positionen (localStorage) bleiben **relativ zum Hauptmonitor** (IPC `overlay-area` = Lage des Hauptmonitors im Fenster), damit nichts verrutscht, wenn Monitore dazukommen oder wegfallen; Panels außerhalb des Fensters (Monitor weg) werden zur Anzeige ins Bild geholt. Banner im Verschiebe-Modus mittig auf dem Hauptmonitor. Nicht getestet: echte Mehrmonitor-Anordnung (Entwicklungs-PC hat einen Monitor) und Monitore mit unterschiedlicher Windows-Skalierung (ein Fenster über verschiedene DPI kann in Electron verzerren). NVIDIA Surround/AMD Eyefinity melden ohnehin einen einzigen Monitor.
 - Bearbeiten-Modus (Widgets ziehen): Knopf „Anzeigen verschieben“ im Fenster/Menü, Knopf „Fertig“ im Overlay-Banner, oder Tastenkürzel = **erstes freies** aus Strg+Umschalt+O, Strg+Alt+O, Strg+Umschalt+F9 (AMD Radeon Software belegt Strg+Umschalt+O). Positionen im localStorage des Overlays.
 
 ## 7a. Zuschauer-Kamera („Zum Unfall“)

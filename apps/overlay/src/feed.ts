@@ -110,6 +110,8 @@ declare global {
     stintview?: {
       getConfig(): Promise<LocalConfig | null>;
       onEditMode(cb: (edit: boolean, hotkey: string | null) => void): void;
+      /** Main monitor inside the overlay window (CSS px); the window spans all monitors. */
+      onOverlayArea?(cb: (main: { x: number; y: number; width: number; height: number }) => void): void;
       setEditMode(on?: boolean): Promise<AppState>;
       setInteractive(on: boolean): void;
       onPanels?(cb: (ids: string[]) => void): void;

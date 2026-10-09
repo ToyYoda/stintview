@@ -53,7 +53,7 @@ Sobald du im Auto sitzt, sieht dein Team deine Daten. Steigst du aus, hört Stin
 
 ### Overlay am Monitor
 
-Schalter **Anzeigen einblenden** an und bei **Ausgabe** „Monitor“ wählen (Standard). In iRacing unter Grafikoptionen **randloses Fenster (Borderless)** einstellen – im Exklusiv-Vollbild ist das Overlay unsichtbar.
+Schalter **Anzeigen einblenden** an und bei **Ausgabe** „Monitor“ wählen (Standard). In iRacing unter Grafikoptionen **randloses Fenster (Borderless)** einstellen – im Exklusiv-Vollbild ist das Overlay unsichtbar. Mit **mehreren Monitoren** (z. B. Triple-Screens) lassen sich die Anzeigen auf jeden davon ziehen.
 
 - **Nur wenn iRacing läuft:** Mit diesem Schalter (StintView-Fenster, Reiter **Anzeigen**, oder im Menü) erscheinen die Anzeigen erst, wenn der iRacing-Simulator läuft – nicht schon in der iRacing-Oberfläche – und verschwinden 15 Sekunden nach dem Beenden wieder. Gilt für Monitor und VR. Standard: aus (Anzeigen immer da).
 

@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld('stintview', {
   // Clickable buttons in the otherwise click-through overlay
   setInteractive: (on) => ipcRenderer.send('overlay:interactive', on),
   onPanels: (cb) => ipcRenderer.on('panels', (_e, ids) => cb(ids)),
+  // Where the main monitor lies in the overlay window, which covers all monitors
+  onOverlayArea: (cb) => ipcRenderer.on('overlay-area', (_e, main) => cb(main)),
   // Panel background opacity 0–1 (monitor overlay and VR panels have their own value)
   onOpacity: (cb) => ipcRenderer.on('opacity', (_e, v) => cb(v)),
   // Size factor and options per panel

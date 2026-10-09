@@ -47,9 +47,40 @@ function registerHotkey() {
   else if (hotkey !== EDIT_HOTKEYS[0]) console.warn(`[overlay] ${EDIT_HOTKEYS[0]} is taken, using ${hotkey}`);
 }
 
+/**
+ * The overlay covers all monitors (triple screens: panels on the side monitors too, since 0.18.1;
+ * before, only the main monitor). Returns the window bounds and where the main monitor lies in
+ * it – panel positions stay relative to the main monitor, so they don't move when monitors are
+ * added or removed.
+ */
+function overlayArea() {
+  const all = screen.getAllDisplays().map((d) => d.bounds);
+  const x = Math.min(...all.map((b) => b.x)), y = Math.min(...all.map((b) => b.y));
+  const right = Math.max(...all.map((b) => b.x + b.width)), bottom = Math.max(...all.map((b) => b.y + b.height));
+  const main = screen.getPrimaryDisplay().bounds;
+  return {
+    bounds: { x, y, width: right - x, height: bottom - y },
+    main: { x: main.x - x, y: main.y - y, width: main.width, height: main.height },
+  };
+}
+
+/** Monitors changed: cover them all again and tell the page where the main monitor is now. */
+function fitToScreens() {
+  if (!win) return;
+  const { bounds, main } = overlayArea();
+  win.setBounds(bounds);
+  win.webContents.send('overlay-area', main);
+}
+
+let watchingScreens = false;
+
 function startOverlay() {
   if (win) return;
-  const { bounds } = screen.getPrimaryDisplay();
+  if (!watchingScreens) {
+    watchingScreens = true; // screen events only after app 'ready' – i.e. here, once
+    for (const event of ['display-added', 'display-removed', 'display-metrics-changed']) screen.on(event, fitToScreens);
+  }
+  const { bounds } = overlayArea();
   win = new BrowserWindow({
     ...bounds,
     transparent: true,
@@ -66,6 +97,8 @@ function startOverlay() {
   win.setAlwaysOnTop(true, 'screen-saver');
   win.setVisibleOnAllWorkspaces(true);
   win.on('closed', () => { win = null; });
+  // Windows may shrink a new window to one monitor: set the full size once more.
+  win.setBounds(bounds);
   // Re-send the mode and the chosen widgets once the page can receive them.
   win.webContents.on('did-finish-load', () => {
     setEdit(edit);
@@ -73,6 +106,7 @@ function startOverlay() {
     win.webContents.send('opacity', opacity);
     if (panelConfig) win.webContents.send('panel-config', panelConfig);
     win.webContents.send('language', language);
+    win.webContents.send('overlay-area', overlayArea().main);
   });
   setEdit(false);
   loadRoute(win, '/');

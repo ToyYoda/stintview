@@ -53,7 +53,7 @@ As soon as you are in the car, your team sees your data. When you get out, Stint
 
 ### Overlay on your monitor
 
-Switch **Show displays** on and choose **Output** „Monitor“ (default). In iRacing's graphics options, choose **borderless window** – in exclusive fullscreen the overlay is invisible.
+Switch **Show displays** on and choose **Output** „Monitor“ (default). In iRacing's graphics options, choose **borderless window** – in exclusive fullscreen the overlay is invisible. With **several monitors** (e.g. triple screens) you can drag the displays onto any of them.
 
 - **Only while iRacing runs:** with this switch (StintView window, **Displays** tab, or the menu) the displays appear only once the iRacing simulator runs – not just the iRacing UI – and go away 15 seconds after it ends. Applies to monitor and VR. Default: off (displays always there).
 

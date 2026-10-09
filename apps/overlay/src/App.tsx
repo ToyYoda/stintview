@@ -55,6 +55,8 @@ export function App() {
   const [shown, setShown] = useState<string[] | null>(null);
   // Size factor and options per panel from the StintView window.
   const [config, setConfig] = useState<PanelConfig | null>(null);
+  // The overlay window spans all monitors; positions are stored relative to the main monitor.
+  const [main, setMain] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
 
   useEffect(() => {
     const onHash = () => setRoute(location.hash);
@@ -64,6 +66,7 @@ export function App() {
       setHotkey(key);
     });
     window.stintview?.onPanels?.(setShown);
+    window.stintview?.onOverlayArea?.(setMain);
     window.stintview?.onPanelConfig?.(setConfig);
     window.stintview?.onLanguage?.(setLang);
     window.stintview?.onOpacity?.((v) => document.documentElement.style.setProperty('--panel-alpha', String(v)));
@@ -90,9 +93,16 @@ export function App() {
   const single = /^#\/widget\/(\w+)/.exec(route)?.[1] as WidgetId | undefined;
   if (single && single in widgets) return <div className={edit ? 'single selected' : 'single'}>{widgets[single]}</div>;
 
+  const ox = main?.x ?? 0, oy = main?.y ?? 0;
+  // A panel left on a monitor that is gone (or a smaller one) is pulled back into view.
+  const onScreen = (p: { x: number; y: number }) => ({
+    x: Math.min(Math.max(0, p.x + ox), Math.max(0, innerWidth - 120)),
+    y: Math.min(Math.max(0, p.y + oy), Math.max(0, innerHeight - 60)),
+  });
+  // Window coordinates from dragging -> relative to the main monitor.
   const move = (id: WidgetId, x: number, y: number) =>
     setPositions((p) => {
-      const next = { ...p, [id]: { x, y } };
+      const next = { ...p, [id]: { x: x - ox, y: y - oy } };
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* not persisted */ }
       return next;
     });
@@ -100,13 +110,13 @@ export function App() {
   return (
     <div className={edit ? 'overlay edit' : 'overlay'}>
       {edit && window.stintview && (
-        <div className="edit-banner">
+        <div className="edit-banner" style={main ? { left: main.x + main.width / 2, top: main.y + 8 } : undefined}>
           {t('edit.banner')}{hotkey ? ` · ${t('edit.endsWith', { key: hotkey })}` : ''}
           <button type="button" onClick={() => window.stintview?.setEditMode(false)}>{t('edit.done')}</button>
         </div>
       )}
       {(Object.keys(widgets) as WidgetId[]).filter((id) => !shown || shown.includes(id)).map((id) => (
-        <Draggable key={id} pos={positions[id]} enabled={edit} onMove={(x, y) => move(id, x, y)}>
+        <Draggable key={id} pos={onScreen(positions[id])} enabled={edit} onMove={(x, y) => move(id, x, y)}>
           {/* Size from the StintView window; VR panels are sized in the headset instead. */}
           <div style={{ zoom: config?.[id]?.scale ?? 1 }}>{widgets[id]}</div>
         </Draggable>
