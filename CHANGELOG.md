@@ -2,6 +2,12 @@
 
 Alle veröffentlichten Versionen, neueste zuerst. Installer und Updates: [GitHub Releases](https://github.com/ToyYoda/stintview/releases) – die App aktualisiert sich selbst.
 
+## 0.17.1 – 09.10.2026
+
+- **Duell:** unter den Abständen steht jetzt **Δ Runde** – eure letzte Runde minus die des Gegners, derselbe Wert wie im Positions-Panel (**grün** = ihr wart schneller, **rot** = langsamer). Die bisherige Aussicht („dran in ~2 R“, „zieht weg“ …) wechselte im Rennen zu oft und ist entfallen.
+- **Position:** die Spalte „Reifen“ heißt jetzt **Stint** (Runden seit dem Boxenstopp).
+- **Boxenstopp:** Abbremsen zum Stellplatz und Anfahren (etwa 2–3 s) zählen jetzt auch bei Durchfahrten ohne Stopp mit, die StintView zur Messung der Boxengasse nutzt (z. B. Durchfahrtsstrafen anderer Autos) – vorher fiel die Boxengassen-Zeit dadurch etwas zu kurz aus. Korrigierte Startwerte für Oschersleben und Imola. Im Panel steht „Boxengasse inkl. Anhalten/Anfahren“.
+
 ## 0.17.0 – 09.10.2026
 
 - **Neu: Stintplaner** – im StintView-Fenster, Reiter **Planer** → **Stintplaner öffnen**: Rennen anlegen, Teammitglieder einladen, Verfügbarkeiten eintragen und die Stints mit Fahrer und Spotter automatisch planen lassen. Die Rundenzeiten kommen aus StintView (auch ältere Runden einlesbar); geht der Plan nicht auf, steht dort, woran es liegt.
