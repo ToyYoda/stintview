@@ -203,7 +203,8 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .duel-bar-fill.defend { background: var(--bad); }
 .duel-bar-fill.far { background: rgba(255, 255, 255, 0.2); }
 .duel-info { width: 100%; min-height: 15px; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-.duel-outlook { font-size: 11px; white-space: nowrap; }
+.duel-outlook { font-size: 12px; white-space: nowrap; }
+.duel-delta { font-family: var(--mono); }
 .duel-outlook.good { color: var(--ok); }
 .duel-outlook.bad { color: var(--bad); }
 .duel-outlook.steady { color: var(--muted); }

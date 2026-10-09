@@ -9,7 +9,7 @@ const HEAD: StandingsColumn[] = ['pos', 'num', 'flag', 'name', 'best', 'gap', 't
 /**
  * Running order on track: P1–P3 and three cars ahead of / behind the team car.
  * Abstand = gap on track in seconds (+ ahead of us, − behind; whole laps as "R").
- * Reifen = tyre age in laps (ours exact, others: laps since their last pit stop).
+ * Stint = tyre age in laps (ours exact, others: laps since their last pit stop).
  * Δ = our last lap minus theirs: red (+) = we were slower, green (−) = we were faster.
  * Lapping: the car right in front of us if we are about to lap it (blue row above ours),
  * the car right behind if it is about to lap us (red row below ours) – any class.

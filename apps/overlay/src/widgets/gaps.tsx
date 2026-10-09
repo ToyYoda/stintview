@@ -36,3 +36,14 @@ export function gapText(gap: number | null | undefined, laps: number | undefined
   if (gap == null) return '–';
   return `${gap >= 0 ? '+' : '−'}${Math.abs(gap).toFixed(1)}`;
 }
+
+/**
+ * "Δ lap" in the race: our last lap minus theirs (+ = we were slower). Same lap time to the
+ * hundredth counts as 0; other classes don't compare (null).
+ */
+export function lapDelta(team: StandingRow, car: StandingRow): { delta: number; text: string } | null {
+  if (car.isTeam || car.otherClass || team.lastLap == null || car.lastLap == null) return null;
+  const raw = team.lastLap - car.lastLap;
+  const delta = Math.abs(raw) < 0.005 ? 0 : raw;
+  return { delta, text: delta === 0 ? (0).toFixed(2) : `${delta > 0 ? '+' : '−'}${Math.abs(delta).toFixed(2)}` };
+}

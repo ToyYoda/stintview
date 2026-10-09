@@ -142,7 +142,7 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 | 4b.7 | Z | im Zweikampf von A (< 1 s) auf Duell-Zeile und Kacheln achten | Duell-Zeile oben zeigt Vorder-/Hintermann mit großem Abstand, Kachel gelb/rot; A's Zeile und Nachbarn größer | |
 | 4b.9 | Z | Sprit-Panel im Rennen, unten „Bis zum Ziel“ | Runden bis zum Ziel passen zur Restzeit ÷ Rundenzeit (+ laufende Runde); „Box spätestens Runde N“ passt zu „Runden übrig“; nach dem Stopp „Reicht bis ins Ziel“ bzw. weniger Stopps | |
 | 4b.8 | Z | Sprit-Panel nach einigen Runden | Liter im Balken, darüber ± zur Vorrunde (grün/rot); nach Boxenstopp-Runde keine Veränderung | |
-| 4b.9 | alle | im Training/Qualifying auf das Positions-Panel schauen | Titel „Bestzeiten · …“, Reihenfolge wie iRacings Wertung (F3/Ergebnisliste), Spalten Bestzeit und Δ Runde (A's Bestzeit − seine), kein Abstand/Reifen/Duell-Zeile; beim Wechsel ins Rennen wieder Reihenfolge auf der Strecke | |
+| 4b.9 | alle | im Training/Qualifying auf das Positions-Panel schauen | Titel „Bestzeiten · …“, Reihenfolge wie iRacings Wertung (F3/Ergebnisliste), Spalten Bestzeit und Δ Runde (A's Bestzeit − seine), kein Abstand/Stint/Duell-Zeile; beim Wechsel ins Rennen wieder Reihenfolge auf der Strecke | |
 | 4b.9a | alle | im Training/Qualifying Duell-Panel während A's schneller Runde | eigene Position groß, „→ Pn“ sobald die Runde besser wird, nächstes Auto und fehlende Zeit passen zu iRacings Delta-Anzeige; Boxenstopp-Panel unsichtbar, Sprit ohne „Bis zum Ziel“ | |
 | 4b.3 | alle | Mehrklassen-Rennen (falls vorhanden) | nur Autos der eigenen Klasse | |
 
@@ -153,8 +153,8 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 | 4d.1 | Z | A fährt auf ein langsameres, überrundetes Auto auf | blaue Zeile „Nachzügler“ direkt über A's Zeile, Abstand wird kleiner, verschwindet nach dem Überholen | |
 | 4d.2 | Z | ein schnelleres Auto (andere Klasse oder Führende) nähert sich A von hinten, eine Runde voraus | rote Zeile „Überrunder“ direkt unter A's Zeile | |
 | 4d.3 | Z | Duell-Panel einschalten (StintView-Fenster → Anzeigen → Duell); A hat Vorder- und Hintermann in der Klasse | eine Zeile: links Hintermann (▼), Abstand, Position von A, Abstand, rechts Vordermann (▲); Abstände wie in der Duell-Zeile des Positions-Panels | |
-| 4d.3b | Z | A holt über einige Runden auf den Vordermann auf (oder verliert) | Balken füllt sich beim Annähern; nach ca. 15 s Aussicht „dran in ~N R“ (grün) bzw. „zieht weg“ (rot), N passt grob zum Abstand ÷ Zeitgewinn pro Runde | |
-| 4d.4 | Z | ein überrundetes Auto fährt zwischen A und seinem Vordermann (bzw. ein Überrunder zwischen A und Hintermann) | blaues (bzw. rotes) Kärtchen mit der Startnummer unter der Abstandskachel (neben der Aussicht) zum Vorder- (bzw. Hinter-)mann, umrandet bei anderer Klasse; verschwindet, sobald es nicht mehr dazwischen ist | |
+| 4d.3b | Z | A holt über einige Runden auf den Vordermann auf (oder verliert) | Balken füllt sich beim Annähern; unter dem Abstand „Δ Runde“ mit demselben Wert wie in der Spalte Δ Runde des Positions-Panels (grün = A schneller, rot = langsamer) | |
+| 4d.4 | Z | ein überrundetes Auto fährt zwischen A und seinem Vordermann (bzw. ein Überrunder zwischen A und Hintermann) | blaues (bzw. rotes) Kärtchen mit der Startnummer unter der Abstandskachel (neben „Δ Runde“) zum Vorder- (bzw. Hinter-)mann, umrandet bei anderer Klasse; verschwindet, sobald es nicht mehr dazwischen ist | |
 | 4d.5 | Z | Option „Autos auf anderen Runden dazwischen“ ausschalten | keine Kärtchen mehr | |
 
 ### Block 4c – Boxenstopp-Planer (während des Rennens)
@@ -199,7 +199,7 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 | 5.2 | alle | Tastenkürzel zum Verschieben (steht im Fenster, z. B. Strg+Umschalt+O oder Strg+Alt+O bei AMD) | wie 5.1 | |
 | 5.2b | alle | Tray-Symbol → **Tastaturkürzel …** | Fenster öffnet mit der Übersicht oben; die Kürzel dort funktionieren (z. B. Verschieben); VR-Gruppe grau, solange VR aus | |
 | 5.2c | alle | StintView-Fenster → Anzeigen → **Hintergrund** auf 0 %, dann 100 %; in VR ca. 40 % (Brille auf) | Hintergrund verschwindet/wird deckend, sofort; VR: Panels halbdurchsichtig, Schrift gut lesbar | |
-| 5.2d | alle | Panel „Position“ aufklappen: Größe 150 %, Spalten Reifen/Flagge abwählen | Panel größer, Spalten verschwinden sofort; auch in VR | |
+| 5.2d | alle | Panel „Position“ aufklappen: Größe 150 %, Spalten Stint/Flagge abwählen | Panel größer, Spalten verschwinden sofort; auch in VR | |
 | 5.2e | alle | Ausgabe von Monitor auf VR umschalten und zurück | Panels wandern vom Monitor in die Brille und zurück, nie an beiden Orten | |
 | 5.2f | alle | Anzeigen → **Nur wenn iRacing läuft** an, iRacing (Simulator) beenden, später wieder in eine Session gehen; Monitor und VR | ohne Simulator keine Anzeigen, Status „Anzeigen warten auf iRacing“; mit Simulator erscheinen sie binnen Sekunden; 15 s nach Beenden weg; kurze Ladepausen lassen sie stehen | |
 | 5.3 | alle | außerhalb des Verschiebe-Modus in iRacing klicken, wo das Overlay liegt | Klicks gehen durch zu iRacing | |
