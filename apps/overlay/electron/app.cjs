@@ -291,6 +291,8 @@ function startRecorder() {
     }
     if (m.t === 'exit') {
       setOtherSession(false);
+      // Displays fall back to the team's data (they show our own while we drive).
+      if (localLatest.get('driving')?.driving) onLocalTelemetry({ t: 'driving', driving: false, driverName: '', session: '' });
       Object.assign(status, { iracing: false, inCar: false, server: 'offline' });
       setDriving(false);
       setSimRunning(false);

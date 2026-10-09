@@ -12,7 +12,8 @@ const config = loadConfig();
 if (!config) throw new Error('no config');
 const ws = new WebSocket(wsUrl(config.serverUrl));
 const send = (m: ClientMessage) => ws.send(pack(m));
-const session = '999/998';
+// STINTVIEW_DEMO_SESSION=<SessionID/SubSessionID>: same session as another recorder (two drivers, one session).
+const session = process.env.STINTVIEW_DEMO_SESSION ?? '999/998';
 
 // pos, number, country, name, gap (s), lapsGap, tyre laps, last lap, in pit
 const DEMO: [number, string, string | null, string, number, number, number | null, number, boolean][] = [

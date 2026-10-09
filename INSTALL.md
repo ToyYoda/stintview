@@ -38,7 +38,7 @@ Then click **Join team**. Under *Status*, **Team server: connected** appears.
 
 **Done.** You never need to set anything up again.
 
-**Without a team:** the displays also work without a team – or while the team server can't be reached. They then show your **own sessions** on this PC only; the header says "sessions on this PC only". As soon as the team connection is up, they show the teammate in the car again. The same applies when you drive in **another iRacing session** than your team (e.g. practice while the team races): your displays then show your own session ("The team is in another session – showing yours"); your team doesn't see it. Without a team, joining is in the StintView window under the **Team** tab.
+**Without a team:** the displays also work without a team – or while the team server can't be reached. They then show your **own sessions** on this PC only; the header says "sessions on this PC only". As soon as the team connection is up, they show the teammate in the car again. The same applies when you drive in **another iRacing session** than your team (e.g. practice while the team races): your displays then show your own session ("The team is in another session – showing yours"); your team doesn't see it. **While you drive yourself, your displays always show your own car** – even when a teammate is out in the same session at the same time and streams to the team (e.g. two drivers in the same open practice). The header then says "… is driving for the team – showing your own car". Without a team, joining is in the StintView window under the **Team** tab.
 
 ---
 

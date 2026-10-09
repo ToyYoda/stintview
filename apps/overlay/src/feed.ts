@@ -226,6 +226,11 @@ export interface FeedState {
   local: boolean;
   /** Showing our own data because the team streams another iRacing session. */
   otherSession: boolean;
+  /**
+   * Showing our own data while we drive: the team's active driver, if it is someone else
+   * (two team members driving independently in the same session).
+   */
+  teamDriver?: string | null;
   active: ActiveDriver | null;
   session: SessionInfo | null;
   status: Status | null;
@@ -292,15 +297,18 @@ function applyLocal(s: FeedState, m: ClientMessage): FeedState {
 
 /**
  * Connects to the team relay and exposes the latest telemetry. In the desktop app this PC's own
- * recorder data comes along too; it is shown while the team server isn't connected or the team
- * streams another iRacing session than this PC.
+ * recorder data comes along too; it is shown while this PC drives (always our own car, also when a
+ * teammate streams to the team from the same session), while the team server isn't connected or
+ * the team streams another iRacing session than this PC.
  */
 export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
   const [team, setTeam] = useState<FeedState>(initial);
   const [own, setOwn] = useState<FeedState>(initial);
   const [otherSession, setOtherSession] = useState(false);
   const inputs = useRef(new InputBuffer()).current;
-  const local = Boolean(window.stintview?.onLocal) && (team.conn !== 'connected' || otherSession);
+  // Our recorder's last "driving" message: this PC's user is in the car.
+  const ownDriver = own.active?.driverName ?? null;
+  const local = Boolean(window.stintview?.onLocal) && (team.conn !== 'connected' || otherSession || ownDriver !== null);
   // Read by the message handlers: input samples only from the source on display.
   const showLocal = useRef(local);
   showLocal.current = local;
@@ -383,7 +391,10 @@ export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
 
   // Own data with the team connection's state (for the header) and the team messages.
   const state = local
-    ? { ...own, conn: team.conn, error: team.error, teamName: team.teamName, messages: team.messages, local: true, otherSession }
+    ? {
+      ...own, conn: team.conn, error: team.error, teamName: team.teamName, messages: team.messages, local: true, otherSession,
+      teamDriver: team.active?.driverName && team.active.driverName !== ownDriver ? team.active.driverName : null,
+    }
     : team;
   return { state, inputs };
 }

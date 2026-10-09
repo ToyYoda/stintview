@@ -30,9 +30,11 @@ export function HeaderWidget({ state, interactive = false }: { state: FeedState;
   else if (age !== null && age > 3) dot = 'warn';
   const why = !state.local ? null
     : state.conn === 'connected' && state.otherSession ? t('header.localOtherSession')
-      : state.conn === 'no-config' ? t('header.localNoTeam')
-        : state.conn === 'error' ? t('header.localError', { error: state.error ?? t('header.error') })
-          : t('header.localOffline');
+      // We drive: always our own car. Only worth a word if the team shows someone else.
+      : state.conn === 'connected' ? (state.teamDriver ? t('header.localOwnCar', { name: state.teamDriver }) : null)
+        : state.conn === 'no-config' ? t('header.localNoTeam')
+          : state.conn === 'error' ? t('header.localError', { error: state.error ?? t('header.error') })
+            : t('header.localOffline');
 
   return (
     <div className="panel header">
