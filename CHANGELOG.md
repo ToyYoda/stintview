@@ -2,6 +2,16 @@
 
 Alle veröffentlichten Versionen, neueste zuerst. Installer und Updates: [GitHub Releases](https://github.com/ToyYoda/stintview/releases) – die App aktualisiert sich selbst.
 
+## 0.19.0 – 09.10.2026
+
+- **Positions-Panel – neue Spalten:**
+  - **Automarke** als Emblem vor dem Namen (Marken ohne Emblem als Kürzel, z. B. „DAL“ für Dallara).
+  - **iR** – iRating des aktuellen Fahrers (2.4k = 2400).
+  - **SR** – Lizenzklasse und Safety Rating in iRacings Lizenzfarbe (z. B. „A 3.45“).
+  - **Reifen** – aufgezogene Mischung: H Hard, M Medium, S Soft (rot), W Regen (blau).
+- **Reihenfolge der Spalten** frei wählbar: im StintView-Fenster unter Anzeigen → Position die Spalten am Griff ⠿ an die gewünschte Stelle ziehen. Jede Spalte lässt sich weiterhin abwählen.
+- Die neuen Werte kommen vom PC des Fahrers – sie erscheinen, sobald dessen StintView 0.19 hat.
+
 ## 0.18.1 – 09.10.2026
 
 - **Mehrere Monitore / Triple-Screens:** Die Anzeigen am Monitor lassen sich jetzt auf jeden Monitor ziehen, nicht mehr nur auf den Hauptmonitor. Bisherige Positionen bleiben, wo sie waren; liegt ein Panel auf einem Monitor, der nicht mehr angeschlossen ist, wird es ins Bild geholt.
