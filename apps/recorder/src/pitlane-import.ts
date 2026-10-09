@@ -1,6 +1,7 @@
 /**
  * Pit lane loss from old .ibt files: for every drive of our own car through the pit lane,
- * time between the cones − standing still − the same stretch on a clean lap of that file.
+ * time between the cones − standing still − the same stretch on a clean lap of that file
+ * (+ STOP_START_S for a pass without stopping).
  * Used by the "Boxengassen-Zeiten einlesen" button (recorder command import-pitlane) and
  * the dev tool src/dev/pitloss-from-ibt.ts.
  */
@@ -8,7 +9,7 @@ import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse } from 'yaml';
 import { IbtSource } from './irsdk/ibt.ts';
-import type { PitModelStore } from './pitstop.ts';
+import { STOP_START_S, type PitModelStore } from './pitstop.ts';
 
 interface Sample { t: number; prog: number; onPit: boolean; speed: number; onTrack: boolean }
 export interface PitPass { track: string; trackName: string; carClass: string; car: string; event: string; file: string; loss: number; lane: number; stationary: number; normal: number }
@@ -108,7 +109,8 @@ export function passesInFile(path: string): PitPass[] {
     let stationary = 0;
     for (let i = a + 1; i <= b; i++) if (s[i]!.speed < 0.5) stationary += s[i]!.t - s[i - 1]!.t;
     const lane = exit.t - entry.t;
-    const loss = lane - stationary - normal;
+    // Without a stop, braking into the box and pulling away are missing.
+    const loss = lane - stationary - normal + (stationary < 0.5 ? STOP_START_S : 0);
     if (loss < 3 || loss > 120) return [];
     return [{ ...m, file: path.split(/[\\/]/).pop()!, loss: round(loss), lane: round(lane), stationary: round(stationary), normal: round(normal) }];
   });

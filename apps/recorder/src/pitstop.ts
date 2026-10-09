@@ -179,9 +179,18 @@ function learnFromStop(s: { t0: number; fuel0: number; fuelStart: number | null;
 export interface LaneSample { carIdx: number; loss: number }
 
 /**
+ * Braking into the pit box and accelerating back to the pit speed limit, compared with driving
+ * through at the limit. Part of every measured stop; a pass without stopping (drive-through
+ * penalty) gets it added. Measured on 35 own GT3 stops (09.10.2026, src/dev/stopstart-from-ibt.ts):
+ * braking 0.7–1.0 s, accelerating 1.2–1.6 s.
+ */
+export const STOP_START_S = 2.5;
+
+/**
  * For each car on pit road: time between the cones minus standing still minus the time the
  * same stretch takes on track (iRacing's per-car time estimate). What is left is the pit
- * lane loss – the same for every stop at this track.
+ * lane loss – the same for every stop at this track, braking into the box and pulling away
+ * included (STOP_START_S added for cars that drove through without stopping).
  */
 export class LaneLossLearner {
   private cars = new Map<number, { t0: number; est0: number; stationary: number; lastT: number; lastPct: number }>();
@@ -209,7 +218,7 @@ export class LaneLossLearner {
         if (c.estTime == null || !lap) continue;
         let normal = c.estTime - s.est0;
         if (normal < 0) normal += lap;
-        const loss = t - s.t0 - s.stationary - normal;
+        const loss = t - s.t0 - s.stationary - normal + (s.stationary < 0.5 ? STOP_START_S : 0);
         // Towed cars, garage visits, session changes: implausible values are dropped.
         if (t - s.t0 < 400 && loss > 3 && loss < 90) done.push({ carIdx: c.carIdx, loss });
       }
@@ -286,10 +295,10 @@ export const KNOWN_LANE_LOSS: Record<string, number> = {
   168: 14.1, // Suzuka – Grand Prix (15)
   262: 18.8, // Nürburgring Gesamtstrecke VLN (5)
   264: 18.8, // Nürburgring Gesamtstrecke Long (7)
-  266: 17.4, // Imola (1, GTP)
+  266: 19.9, // Imola (1, GTP; drive-through 17.4 + STOP_START_S)
   403: 12.6, // Red Bull Ring – Grand Prix (1)
   444: 24.1, // Fuji – Grand Prix (1)
-  449: 10.0, // Oschersleben – Grand Prix (1, BMW M2)
+  449: 12.5, // Oschersleben – Grand Prix (1, BMW M2; drive-through 10.0 + STOP_START_S)
   525: 29.3, // Spa – Endurance (1)
   584: 17.6, // St. Petersburg (1)
 };

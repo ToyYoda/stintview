@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  carCategory, computeRejoin, KNOWN_LANE_LOSS, DEFAULT_RATES, LaneLossLearner, regulationFromClass, OwnStopLearner, PitModelStore, PitPlanner, stationaryTime, stopRequest, wrapGap,
+  carCategory, computeRejoin, KNOWN_LANE_LOSS, DEFAULT_RATES, LaneLossLearner, regulationFromClass, OwnStopLearner, PitModelStore, PitPlanner, stationaryTime, STOP_START_S, stopRequest, wrapGap,
 } from './pitstop.ts';
 import type { CarInfo, CarProgress } from './standings.ts';
 
@@ -175,6 +175,22 @@ describe('pit lane loss', () => {
     expect(done).toHaveLength(1);
     // 60.1 s between the cones − 30 s standing − 5 s for that stretch on track ≈ 25 s
     expect(done[0]!.loss).toBeCloseTo(25, 0);
+  });
+
+  it('a drive-through without stopping gets the time for stopping and pulling away added', () => {
+    const lane = new LaneLossLearner();
+    const lap = () => 100;
+    let t = 0;
+    lane.onFrame(0, [car(1, 3.5, 50, true)], lap);
+    let done: ReturnType<LaneLossLearner['onFrame']> = [];
+    // 30 s through the lane for 5 % of the lap (5 s on track), never standing still
+    for (let i = 1; i <= 300; i++) {
+      t = i / 10;
+      const pct = 0.5 + (0.05 * i) / 300;
+      done = lane.onFrame(t, [car(1, 3 + pct, 50 + (pct - 0.5) * 100, i < 300)], lap);
+    }
+    expect(done).toHaveLength(1);
+    expect(done[0]!.loss).toBeCloseTo(30 - 5 + STOP_START_S, 0);
   });
 });
 
