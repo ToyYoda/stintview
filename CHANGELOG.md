@@ -2,6 +2,11 @@
 
 Alle veröffentlichten Versionen, neueste zuerst. Installer und Updates: [GitHub Releases](https://github.com/ToyYoda/stintview/releases) – die App aktualisiert sich selbst.
 
+## 0.18.1 – 09.10.2026
+
+- **Mehrere Monitore / Triple-Screens:** Die Anzeigen am Monitor lassen sich jetzt auf jeden Monitor ziehen, nicht mehr nur auf den Hauptmonitor. Bisherige Positionen bleiben, wo sie waren; liegt ein Panel auf einem Monitor, der nicht mehr angeschlossen ist, wird es ins Bild geholt.
+- Website: App-Bild mit aktueller Version.
+
 ## 0.18.0 – 09.10.2026
 
 - **Wer selbst fährt, sieht immer sein eigenes Auto** – auch wenn ein Teamkollege gleichzeitig in derselben Session fährt und fürs Team sendet (z. B. zwei Fahrer im selben offenen Training). Vorher zeigten die Anzeigen des zweiten Fahrers das Auto des anderen. Die Kopfzeile sagt dann „Im Team fährt gerade … – hier dein eigenes Auto“; nach dem Aussteigen zeigen die Anzeigen wieder den Teamfahrer.
