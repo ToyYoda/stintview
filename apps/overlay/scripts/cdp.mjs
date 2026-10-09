@@ -1,7 +1,8 @@
 // Dev helper: drive a running StintView window over the Chrome DevTools Protocol.
 // Start the app with --remote-debugging-port=9333, then:
 //   node scripts/cdp.mjs eval "<js>" [route]    evaluate in the page whose URL contains route (default #/setup)
-//   node scripts/cdp.mjs shot <file.png> [route]
+//   node scripts/cdp.mjs shot <file.png> [route] [selector] [scale] [padding]
+//     selector: capture only that element; scale 2 = sharp, as on the website; padding in CSS px (default 8)
 import { writeFileSync } from 'node:fs';
 import WebSocket from '../../recorder/node_modules/ws/index.js';
 
@@ -42,12 +43,12 @@ if (cmd === 'eval') {
   await mouse('mouseReleased', x2, y2, 0);
   console.log(`dragged ${x1},${y1} -> ${x2},${y2}`);
 } else if (cmd === 'shot') {
-  // optional 4th argument: CSS selector – capture only that element
-  const selector = process.argv[5];
+  const [selector, scale = '1', pad = '8'] = process.argv.slice(5);
+  const s = Number(scale), p = Number(pad);
   let clip;
   if (selector) {
     const q = await call('Runtime.evaluate', {
-      expression: `(() => { const r = document.querySelector(${JSON.stringify(selector)})?.getBoundingClientRect(); return r && { x: r.x - 8, y: r.y - 8, width: r.width + 16, height: r.height + 16, scale: 1 }; })()`,
+      expression: `(() => { const r = document.querySelector(${JSON.stringify(selector)})?.getBoundingClientRect(); return r && { x: r.x - ${p}, y: r.y - ${p}, width: r.width + ${2 * p}, height: r.height + ${2 * p}, scale: ${s} }; })()`,
       returnByValue: true,
     });
     clip = q.result.value ?? undefined;
