@@ -9,6 +9,7 @@
     "typecheck": "tsc -p ."
   },
   "dependencies": {
+    "@stintview/planner": "workspace:*",
     "@stintview/protocol": "workspace:*",
     "@stintview/telemetry": "workspace:*",
     "koffi": "^2.9.0",

@@ -39,4 +39,7 @@ contextBridge.exposeInMainWorld('stintview', {
   checkUpdate: () => ipcRenderer.invoke('app:update-check'),
   installUpdate: () => ipcRenderer.invoke('app:update-install'),
   pitImport: (choose) => ipcRenderer.invoke('app:pit-import', choose),
+  // Stint planner: lap times from the .ibt archive; open the page (resolves { error })
+  lapImport: (choose) => ipcRenderer.invoke('app:lap-import', choose),
+  openPlanner: () => ipcRenderer.invoke('app:planner-open'),
 });

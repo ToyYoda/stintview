@@ -1,6 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { WebSocketServer, type WebSocket } from 'ws';
 import {
   PROTOCOL_VERSION, isTelemetry, pack, unpack,
@@ -8,6 +9,8 @@ import {
 } from '@stintview/protocol';
 import { Room, type Peer } from './room.ts';
 import { TeamStore } from './store.ts';
+import { PlannerStore } from './planner-store.ts';
+import { plannerHandler } from './planner-api.ts';
 
 const PORT = Number(process.env.PORT ?? 8787);
 // Outside the program folder so replacing it on update keeps the teams.
@@ -15,6 +18,14 @@ const dataFile = process.env.STINTVIEW_DATA ??
   join(process.env.APPDATA ?? join(homedir(), 'AppData', 'Roaming'), 'StintView', 'server', 'teams.json');
 const store = new TeamStore(dataFile);
 const rooms = new Map<string, Room>();
+// Stint planner (lap times, races) next to the teams; its page comes from the app's built UI.
+const plannerFile = process.env.STINTVIEW_PLANNER_DATA ?? join(dirname(dataFile), 'planner.json');
+const planner = new PlannerStore(plannerFile);
+const devUi = resolve('..', 'overlay', 'dist'); // `pnpm relay` runs in apps/server
+const plannerDir = process.env.STINTVIEW_PLANNER_DIR ?? (existsSync(join(devUi, 'planner.html')) ? devUi : null);
+const plannerRoutes = plannerHandler({ teams: store, planner, staticDir: plannerDir, log: (m) => log(m) });
+for (const sig of ['SIGINT', 'SIGTERM'] as const) process.on(sig, () => { planner.flush(); process.exit(0); });
+process.on('exit', () => planner.flush());
 
 // ---------------------------------------------------------------------------
 // HTTP: team management
@@ -37,7 +48,8 @@ const validName = (s: unknown): s is string => typeof s === 'string' && s.trim()
 
 const http = createServer(async (req, res) => {
   try {
-    if (req.method === 'GET' && req.url === '/health') return reply(res, 200, { ok: true });
+    if (req.method === 'GET' && req.url === '/health') return reply(res, 200, { ok: true, planner: true });
+    if (await plannerRoutes(req, res)) return;
     if (req.method === 'POST' && req.url === '/api/teams') {
       const { teamName, memberName } = await readJson<CreateTeamRequest>(req);
       if (!validName(teamName) || !validName(memberName)) return reply(res, 400, { error: 'teamName and memberName required' });
@@ -148,4 +160,4 @@ function log(msg: string) {
   console.log(`${new Date().toISOString()} ${msg}`);
 }
 
-http.listen(PORT, () => log(`StintView relay listening on :${PORT} (ws path /ws), teams: ${dataFile}`));
+http.listen(PORT, () => log(`StintView relay listening on :${PORT} (ws path /ws), teams: ${dataFile}, planner page: ${plannerDir ?? 'none'}`));

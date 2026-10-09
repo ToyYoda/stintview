@@ -85,6 +85,13 @@ export interface AppState {
     running: boolean; finished: boolean; done: number; total: number; passes: number; tracks: number;
     folder: string | null; error: string | null;
   };
+  /** Lap time import from the .ibt archive (stint planner). */
+  lapImport: {
+    running: boolean; finished: boolean; done: number; total: number; laps: number; tracks: number;
+    folder: string | null; error: string | null;
+  };
+  /** Lap times on this PC and how many aren't on the team server yet; null until the recorder reported. */
+  lapCounts: { total: number; unsent: number } | null;
   hotkeys: HotkeyGroup[];
   radio: RadioState;
   update: {
@@ -126,6 +133,8 @@ declare global {
       checkUpdate(): Promise<AppState>;
       installUpdate(): Promise<void>;
       pitImport(choose: boolean): Promise<AppState>;
+      lapImport?(choose: boolean): Promise<AppState>;
+      openPlanner?(): Promise<{ error: string | null }>;
       sendMessage?(what: string | { text: string; color: MessageColor }): Promise<boolean>;
       getRadio?(): Promise<RadioState>;
       onRadio?(cb: (state: RadioState) => void): void;

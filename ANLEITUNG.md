@@ -46,7 +46,7 @@ Dann **Team beitreten** klicken. Unter *Status* erscheint **Team-Server: verbund
 
 Nichts zu tun: StintView startet mit Windows und läuft im Infobereich der Taskleiste (unten rechts, das rote „O“; ggf. unter dem Pfeil **^** versteckt).
 
-- **Klick** auf das Symbol öffnet das StintView-Fenster mit den Reitern **Status**, **Anzeigen**, **Boxenstopp**, **Funk**, **Team** und **Kürzel**.
+- **Klick** auf das Symbol öffnet das StintView-Fenster mit den Reitern **Status**, **Anzeigen**, **Boxenstopp**, **Funk**, **Planer**, **Team** und **Kürzel**.
 - **Rechtsklick** öffnet das Menü mit denselben Schaltern und **StintView beenden**.
 
 Sobald du im Auto sitzt, sieht dein Team deine Daten. Steigst du aus, hört StintView von selbst auf zu senden.
@@ -80,6 +80,18 @@ Als Spotter kannst du deinem Fahrer kurze Ansagen schicken, die bei ihm groß im
 - **Empfangen:** Panel **Nachrichten** einblenden – am besten jeder, vor allem der Fahrer. Eine Nachricht erscheint dort 10 Sekunden lang groß in ihrer Farbe mit Absender und verschwindet dann; sonst ist das Panel leer (beim Verschieben steht ein Platzhalter da).
 - Solange **du selbst fährst**, ist das Funk-Panel unsichtbar und die Kürzel sind aus – iRacing behält alle Tasten.
 - Alle Teammitglieder brauchen dafür StintView 0.11 oder neuer (auch der PC mit dem Team-Server).
+
+### Stintplaner: Rennen planen
+
+Für Teamrennen plant StintView die Stints – aus euren echten Rundenzeiten und wann wer Zeit hat. Jeder Stint bekommt einen **Fahrer** und einen **Spotter**.
+
+- **Öffnen:** StintView-Fenster → Reiter **Planer** → **Stintplaner öffnen** (oder Rechtsklick aufs Symbol → **Stintplaner öffnen**). Der Planer öffnet sich in deinem Browser; du bist dort automatisch angemeldet.
+- **Rundenzeiten:** StintView merkt sich jede Runde, die du fährst (auch im Training allein), und schickt sie an den Team-Server. Ältere Runden holst du mit **Rundenzeiten einlesen** (Reiter **Planer**) aus deinen Telemetrie-Dateien (.ibt). Daraus ergeben sich dein **Tempo** (Mittel deiner Runden bis 3 % über der Bestzeit, trocken, ohne Qualifying), dein **Spritverbrauch** und wie viele Runden ein voller Tank bei dir reicht.
+- **Rennen anlegen** (meist der Teamchef): **Neues Rennen** → Name, Strecke und Auto (zur Auswahl stehen Kombinationen, von denen das Team Rundenzeiten hat), Start, Dauer, Zeitverlust je Boxenstopp, optional Sprit je Stint, Teammitglieder **einladen**.
+- **Eintragen** (jeder Eingeladene): im Raster **Verfügbarkeit** deine Zeit markieren (klicken oder ziehen), unter **Teilnehmer** einstellen, wie viele **Stints am Stück** du höchstens fahren willst – oder **nur Spotter**. Zeiten stehen in deiner eigenen Zeitzone.
+- **Planen** (wer das Rennen angelegt hat, und der Teamchef): **Automatisch planen**. Ein Stint ist eine volle Tankfüllung; die schnellsten Fahrer kommen zuerst dran, bei gleichem Tempo wird gleichmäßig verteilt. Fahrer und Spotter müssen den ganzen Stint samt Boxenstopp davor Zeit haben. Geht der Plan nicht auf, steht oben, woran es liegt (z. B. „2 × kein Fahrer“), und die betroffenen Stints sind markiert.
+- **Von Hand ändern:** Fahrer, Spotter und Runden je Stint lassen sich umstellen; StintView rechnet die Zeiten neu und zeigt Konflikte an (nicht verfügbar, zu viele Stints am Stück, Sprit reicht nicht …). **ab hier neu** behält die Stints davor und plant den Rest neu – praktisch auch während des Rennens.
+- Der Teamchef braucht StintView 0.17 oder neuer auf dem PC mit dem Team-Server.
 
 ### Overlay in VR (SteamVR-Brillen)
 
@@ -164,6 +176,6 @@ Damit dein Team dich aus dem Internet erreicht:
 - Am besten einen **DynDNS-Namen** einrichten, damit die Adresse gleich bleibt, auch wenn sich deine IP ändert.
 - Dein PC mit StintView muss während des ganzen Rennens laufen – auch wenn gerade jemand anderes fährt.
 
-Die Teamdaten liegen in `%APPDATA%\StintView\server\teams.json`. Diese Datei sichern – ohne sie müssen alle neu beitreten.
+Die Teamdaten liegen in `%APPDATA%\StintView\server\teams.json`. Diese Datei sichern – ohne sie müssen alle neu beitreten. Rundenzeiten und Rennen des Stintplaners liegen daneben in `planner.json`. Der Stintplaner läuft über dieselbe Portfreigabe (TCP 8787), es ist nichts weiter einzurichten.
 
 **Neue Version veröffentlichen** (im Projektordner): `git tag v0.2.1` und `git push origin v0.2.1`. GitHub baut dann `StintView-Setup.exe` und veröffentlicht sie; alle installierten StintViews aktualisieren sich selbst.

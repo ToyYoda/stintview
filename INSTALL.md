@@ -46,7 +46,7 @@ Then click **Join team**. Under *Status*, **Team server: connected** appears.
 
 Nothing to do: StintView starts with Windows and runs in the notification area of the taskbar (bottom right, the red "O"; possibly hidden under the **^** arrow).
 
-- **Click** the icon to open the StintView window with the tabs **Status**, **Displays**, **Pit stop**, **Radio**, **Team** and **Shortcuts**.
+- **Click** the icon to open the StintView window with the tabs **Status**, **Displays**, **Pit stop**, **Radio**, **Planner**, **Team** and **Shortcuts**.
 - **Right-click** opens the menu with the same switches and **Quit StintView**.
 
 As soon as you are in the car, your team sees your data. When you get out, StintView stops sending on its own.
@@ -79,6 +79,18 @@ As a spotter you can send your driver short calls that appear large in their ove
 - **Receiving:** show the **Messages** panel – ideally everyone, above all the driver. A message appears there for 10 seconds, large in its colour with the sender, then disappears; otherwise the panel is empty (a placeholder shows while moving the displays).
 - While **you are driving yourself**, the Radio panel is hidden and the hotkeys are off – iRacing keeps all its keys.
 - Everyone in the team needs StintView 0.11 or newer for this (including the PC running the team server).
+
+### Stint planner: planning a race
+
+For team races StintView plans the stints – from your real lap times and from when everyone is available. Every stint gets a **driver** and a **spotter**.
+
+- **Open it:** StintView window → **Planner** tab → **Open stint planner** (or right-click the icon → **Open stint planner**). The planner opens in your browser; you are signed in automatically.
+- **Lap times:** StintView remembers every lap you drive (practice on your own too) and sends it to the team server. Older laps come from your telemetry files (.ibt) with **Read lap times** (**Planner** tab). They give your **pace** (median of your laps within 3 % of your best, dry, no qualifying), your **fuel use** and how many laps a full tank lasts for you.
+- **Create a race** (usually the team manager): **New race** → name, track and car (you can choose combinations the team has lap times for), start, length, time lost per pit stop, optionally fuel per stint, and **invite** team members.
+- **Enter your time** (everyone invited): mark your time in the **Availability** grid (click or drag), and under **Participants** set how many **stints in a row** you want to drive at most – or **spotter only**. Times are shown in your own time zone.
+- **Plan** (whoever created the race, and the team manager): **Plan automatically**. A stint is one full tank; the fastest drivers go first, equally fast ones get an even share. Driver and spotter must be available for the whole stint including the pit stop before it. If the plan doesn't work, the top line says why (e.g. "2 × no driver") and the stints concerned are marked.
+- **Change it by hand:** driver, spotter and laps of every stint can be changed; StintView recalculates the times and shows conflicts (not available, too many stints in a row, not enough fuel …). **replan from here** keeps the stints before and plans the rest again – handy during the race too.
+- The team manager needs StintView 0.17 or newer on the PC running the team server.
 
 ### Overlay in VR (SteamVR headsets)
 
@@ -162,6 +174,6 @@ So your team can reach you from the internet:
 - Ideally set up a **DynDNS name**, so the address stays the same when your IP changes.
 - Your PC with StintView must be running for the whole race – even while someone else is driving.
 
-Team data is stored in `%APPDATA%\StintView\server\teams.json`. Back up this file – without it, everyone has to join again.
+Team data is stored in `%APPDATA%\StintView\server\teams.json`. Back up this file – without it, everyone has to join again. Lap times and races of the stint planner are stored next to it in `planner.json`. The stint planner uses the same port forwarding (TCP 8787); there is nothing else to set up.
 
 **Publishing a new version** (in the project folder): `git tag v0.2.1` and `git push origin v0.2.1`. GitHub then builds `StintView-Setup.exe` and publishes it; all installed copies of StintView update themselves.

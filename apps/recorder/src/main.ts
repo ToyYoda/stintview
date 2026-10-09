@@ -12,6 +12,8 @@ import { countryCode } from './country.ts';
 import { parseSessionCars } from './spectator.ts';
 import { PitModelStore, PitPlanner, type PitOverride } from './pitstop.ts';
 import { importArchive, type ImportProgress } from './pitlane-import.ts';
+import { LapLog, LapUploader } from './laps.ts';
+import { importLapArchive, type LapImportProgress } from './lap-import.ts';
 
 const USAGE = `StintView recorder
 
@@ -22,6 +24,8 @@ const USAGE = `StintView recorder
                             play an .ibt file as if it were live (start in minutes)
   import-pitlane <telemetry dir>
                             read pit lane losses from old .ibt files into pit-model.json
+  import-laps <telemetry dir>
+                            read lap times from old .ibt files (stint planner) and upload them
 
 Config: ${configPath()}`;
 
@@ -45,10 +49,13 @@ export type RecorderEvent =
   | { t: 'other-session'; on: boolean }
   | CameraState
   | CameraResult
-  | ({ t: 'pit-import'; finished: boolean; error?: string } & Partial<ImportProgress>);
+  | ({ t: 'pit-import'; finished: boolean; error?: string } & Partial<ImportProgress>)
+  /** Lap times kept on this PC for the stint planner, and how many are not on the team server yet. */
+  | { t: 'laps'; total: number; unsent: number }
+  | ({ t: 'lap-import'; finished: boolean; error?: string } & Partial<LapImportProgress>);
 interface ParentPort {
   postMessage(m: RecorderEvent): void;
-  on(event: 'message', fn: (e: { data: CameraCommand | { t: 'pit-settings'; pit: PitOverride } | { t: 'pit-model-reload' } | SendMessage }) => void): void;
+  on(event: 'message', fn: (e: { data: CameraCommand | { t: 'pit-settings'; pit: PitOverride } | { t: 'pit-model-reload' } | { t: 'laps-sync' } | SendMessage }) => void): void;
 }
 const parentPort = (process as { parentPort?: ParentPort }).parentPort;
 const report = (e: RecorderEvent) => parentPort?.postMessage(e);
@@ -71,7 +78,8 @@ async function register(path: string, body: CreateTeamRequest | JoinTeamRequest)
   console.log(`Saved to ${configPath()}`);
 }
 
-async function record(source: TelemetrySource, label: string, spectator?: Spectator, hazard?: HazardDetector) {
+/** `recordLaps`: keep this PC's laps for the stint planner (live only – replays are no new laps). */
+async function record(source: TelemetrySource, label: string, spectator?: Spectator, hazard?: HazardDetector, recordLaps = false) {
   // Without a team the app's displays still show this PC's own sessions (see `send`).
   const config = loadConfig();
   if (!config && !parentPort) throw new Error(`Not set up yet – run create-team or join first.\n\n${USAGE}`);
@@ -110,6 +118,9 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
     conn?.send(msg);
     report({ t: 'telemetry', msg });
   };
+  const lapLog = new LapLog();
+  const laps = recordLaps ? new LapUploader(lapLog, loadConfig, (line) => console.log(line), (c) => report({ t: 'laps', ...c })) : null;
+  laps?.start();
   let inCar = false;
   const recorder = new Recorder((msg) => {
     if (msg.t === 'driving' && msg.driving !== inCar) {
@@ -118,7 +129,11 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
       report({ t: 'car', inCar, driverName: msg.driverName });
     }
     send(msg);
-  });
+  }, laps ? (lap) => {
+    lapLog.add([lap]);
+    console.log(`[laps] ${lap.time.toFixed(3)} s, ${lap.fuel.toFixed(2)} l (${lap.session}${lap.wet ? ', wet' : ''})`);
+    void laps.sync();
+  } : undefined);
 
   console.log(`[source] ${label}`);
   conn?.connect();
@@ -154,6 +169,7 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
       console.log('[pit] reloading learned values (archive import finished)');
       return pit.reloadModel();
     }
+    if (e.data?.t === 'laps-sync') return void laps?.sync(); // after an .ibt import
     if (e.data?.t === 'send-message') {
       // Team message from the spotter (StintView window, overlay button or hotkey).
       console.log(`[message] ${e.data.color}: ${e.data.text}`);
@@ -196,7 +212,7 @@ async function main() {
           onSourceLost?.();
         }
       });
-      return record(source, 'live iRacing telemetry', spectator, new HazardDetector((line) => console.log(line)));
+      return record(source, 'live iRacing telemetry', spectator, new HazardDetector((line) => console.log(line)), true);
     }
     case 'replay': {
       const file = rest[0];
@@ -204,7 +220,8 @@ async function main() {
       const source = new IbtSource(file, {
         speed: Number(values.speed ?? 1), startMinutes: Number(values.start ?? 0), loop: values.loop,
       });
-      return record(source, `replay ${file} (${source.durationMinutes.toFixed(0)} min, speed ${values.speed ?? 1}x)`);
+      // Tests of the stint planner only: STINTVIEW_REPLAY_LAPS=1 keeps the replayed laps as if driven.
+      return record(source, `replay ${file} (${source.durationMinutes.toFixed(0)} min, speed ${values.speed ?? 1}x)`, undefined, undefined, process.env.STINTVIEW_REPLAY_LAPS === '1');
     }
     case 'import-pitlane': {
       // Separate process started by the app's "Boxengassen-Zeiten einlesen" button.
@@ -216,6 +233,21 @@ async function main() {
         report({ t: 'pit-import', finished: true, done: r.files, total: r.files, passes: r.passes, tracks: r.tracks });
       } catch (e) {
         report({ t: 'pit-import', finished: true, error: (e as Error).message });
+      }
+      return;
+    }
+    case 'import-laps': {
+      // Separate process started by the app's "Rundenzeiten einlesen" button.
+      const dir = rest[0];
+      if (!dir) throw new Error('import-laps needs the telemetry folder');
+      try {
+        const log = new LapLog();
+        const r = await importLapArchive(dir, log, (p) => report({ t: 'lap-import', finished: false, ...p }));
+        console.log(`[laps] archive import: ${r.files} files, ${r.laps} laps on ${r.tracks} tracks`);
+        await new LapUploader(log, loadConfig, (line) => console.log(line)).sync();
+        report({ t: 'lap-import', finished: true, done: r.files, total: r.files, laps: r.laps, tracks: r.tracks });
+      } catch (e) {
+        report({ t: 'lap-import', finished: true, error: (e as Error).message });
       }
       return;
     }

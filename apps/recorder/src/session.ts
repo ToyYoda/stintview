@@ -2,6 +2,10 @@ import { parse } from 'yaml';
 
 export interface SessionMeta {
   track: string;
+  /** Lap times for the stint planner: iRacing TrackID, name with layout, CarID. */
+  trackId: number;
+  trackName: string;
+  carId: number;
   car: string;
   driverName: string;
   teamName: string;
@@ -23,14 +27,14 @@ export interface SessionMeta {
 }
 
 interface Yaml {
-  WeekendInfo?: { TrackDisplayName?: string; SessionID?: number; SubSessionID?: number };
+  WeekendInfo?: { TrackDisplayName?: string; TrackConfigName?: string; TrackID?: number; SessionID?: number; SubSessionID?: number };
   SessionInfo?: { Sessions?: { SessionType?: string }[] };
   DriverInfo?: {
     DriverCarIdx?: number;
     DriverUserID?: number;
     DriverCarFuelMaxLtr?: number;
     DriverCarMaxFuelPct?: number;
-    Drivers?: { CarIdx?: number; UserID?: number; UserName?: string; TeamName?: string; CarScreenName?: string; CarNumberRaw?: number }[];
+    Drivers?: { CarIdx?: number; CarID?: number; UserID?: number; UserName?: string; TeamName?: string; CarScreenName?: string; CarNumberRaw?: number }[];
   };
 }
 
@@ -49,6 +53,9 @@ export function parseSession(text: string): SessionMeta {
   const car = di.Drivers?.find((d) => d.CarIdx === carIdx);
   return {
     track: y.WeekendInfo?.TrackDisplayName ?? '',
+    trackId: y.WeekendInfo?.TrackID ?? 0,
+    trackName: trackName(y.WeekendInfo),
+    carId: car?.CarID ?? 0,
     car: car?.CarScreenName ?? '',
     driverName: me?.UserName ?? car?.UserName ?? '',
     teamName: car?.TeamName ?? '',
@@ -62,4 +69,9 @@ export function parseSession(text: string): SessionMeta {
     // The car's entry names its current driver; unknown → don't block (single-driver sessions).
     isCurrentDriver: car?.UserID === undefined || di.DriverUserID === undefined || car.UserID === di.DriverUserID,
   };
+}
+
+/** "Suzuka International Racing Course – Grand Prix" (name and layout, as in iRacing). */
+export function trackName(wi: { TrackDisplayName?: string; TrackConfigName?: string } | undefined): string {
+  return `${wi?.TrackDisplayName ?? ''}${wi?.TrackConfigName ? ` – ${wi.TrackConfigName}` : ''}`;
 }

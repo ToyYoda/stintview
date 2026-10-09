@@ -154,8 +154,8 @@ function CreateForm({ onState, serverPort }: { onState(s: AppState): void; serve
 // Configured: status and switches
 // ---------------------------------------------------------------------------
 
-type Tab = 'status' | 'displays' | 'pit' | 'radio' | 'team' | 'keys';
-const TABS: Tab[] = ['status', 'displays', 'pit', 'radio', 'team', 'keys'];
+type Tab = 'status' | 'displays' | 'pit' | 'radio' | 'planner' | 'team' | 'keys';
+const TABS: Tab[] = ['status', 'displays', 'pit', 'radio', 'planner', 'team', 'keys'];
 const TAB_KEY = 'stintview.setupTab';
 
 /**
@@ -269,6 +269,8 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
       {tab === 'radio' && (
         <RadioCard radio={state.radio} onChange={(messages) => set({ messages })} />
       )}
+
+      {tab === 'planner' && <PlannerCard state={state} onState={onState} />}
 
       {tab === 'team' && !state.configured && (
         <>
@@ -490,6 +492,60 @@ function PitStopCard({ pit, onChange, imp, onImport }: {
         )}
       </div>
     </section>
+  );
+}
+
+/**
+ * "Planer": open the stint planner (a page on the team server) and the lap times it plans
+ * with – recorded while driving, older ones read from the .ibt archive.
+ */
+function PlannerCard({ state, onState }: { state: AppState; onState(s: AppState): void }) {
+  const [error, setError] = useState<string | null>(null);
+  const [opening, setOpening] = useState(false);
+  const imp = state.lapImport, counts = state.lapCounts;
+  const open = async () => {
+    setOpening(true);
+    setError((await api().openPlanner!()).error);
+    setOpening(false);
+  };
+  return (
+    <>
+      <section className="card">
+        <h2>{t('set.planner')}</h2>
+        <p className="hint">{t('set.plannerHint')}</p>
+        {state.configured ? (
+          <button className="btn" disabled={opening} onClick={open}>{t('set.plannerOpen')}</button>
+        ) : <p className="hint">{t('set.plannerNoTeam')}</p>}
+        {error && <p className="error" role="alert" style={{ marginTop: 12 }}>{error}</p>}
+      </section>
+      <section className="card">
+        <h2>{t('set.lapsTitle')}</h2>
+        <p className="hint">{t('set.lapsHint')}</p>
+        <p className="laps-count">
+          {!counts ? t('set.lapsUnknown')
+            : counts.unsent ? t('set.lapsCount', { total: counts.total, unsent: counts.unsent })
+              : t('set.lapsAllSent', { total: counts.total })}
+        </p>
+        <div className="pit-import">
+          <p className="hint">{t('set.lapImportHint')}</p>
+          <div className="edit-row">
+            <button className="btn ghost" disabled={imp.running} onClick={async () => onState(await api().lapImport!(false))}>
+              {imp.running ? t('set.reading') : t('set.lapImport')}
+            </button>
+            <button className="linkish" disabled={imp.running} onClick={async () => onState(await api().lapImport!(true))}>{t('set.otherFolder')}</button>
+          </div>
+          {(imp.running || imp.finished) && (
+            <small className={imp.error ? 'bad' : ''}>
+              {imp.error ? imp.error
+                : imp.running ? t('set.lapImportProgress', { done: imp.done, total: imp.total || '…', laps: imp.laps, tracks: imp.tracks })
+                  : imp.total === 0 ? t('set.importNothing')
+                    : t('set.lapImportDone', { total: imp.total, laps: imp.laps, tracks: imp.tracks })}
+              {imp.folder && <><br />{imp.folder}</>}
+            </small>
+          )}
+        </div>
+      </section>
+    </>
   );
 }
 

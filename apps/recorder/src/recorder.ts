@@ -1,9 +1,11 @@
+import type { LapRecord } from '@stintview/planner';
 import {
-  WHEELS, type ClientMessage, type Fuel, type SessionInfo, type Triple, type Tyres, type Weather, type Wheel,
+  WHEELS, type ClientMessage, type Fuel, type FuelLap, type SessionInfo, type Triple, type Tyres, type Weather, type Wheel,
 } from '@stintview/protocol';
 import { FuelTracker, InputBatcher, TyreTracker, WeatherTracker } from '@stintview/telemetry';
 import type { Frame } from './irsdk/layout.ts';
 import { parseSession, type SessionMeta } from './session.ts';
+import { newLapId, sessionKind } from './laps.ts';
 
 const STATUS_INTERVAL = 0.5; // seconds of session time
 const WEATHER_SAMPLE = 1; // weather changes slowly
@@ -31,7 +33,8 @@ export class Recorder {
   private lastWeatherSample = -Infinity;
   private lastWeatherSent = -Infinity;
 
-  constructor(private readonly emit: (msg: ClientMessage) => void) {}
+  /** `onLap`: every lap this PC's user completed without pit road (stint planner lap times). */
+  constructor(private readonly emit: (msg: ClientMessage) => void, private readonly onLap?: (lap: LapRecord) => void) {}
 
   get isDriving() {
     return this.driving;
@@ -79,7 +82,12 @@ export class Recorder {
       sessionTime: t, lap: f.num('Lap'), lapDistPct: f.num('LapDistPct'),
       fuelLevel: f.num('FuelLevel'), onPitRoad: f.bool('OnPitRoad'),
     };
-    if (this.fuel.feed(fuelSample)) this.emit(this.fuelMsg());
+    const done = this.fuel.feed(fuelSample);
+    if (done) {
+      this.emit(this.fuelMsg());
+      const lap = this.lapRecord(done, f);
+      if (lap) this.onLap?.(lap);
+    }
 
     const odometer = perWheel((w) => f.num(`${w}odometer`));
     const measurement = this.tyres.feed({
@@ -170,6 +178,17 @@ export class Recorder {
     this.tyres = new TyreTracker();
     this.weather = new WeatherTracker();
     this.inputs.reset();
+  }
+
+  private lapRecord(l: FuelLap, f: Frame): LapRecord | null {
+    const m = this.meta;
+    if (l.pit || !m?.trackId || !m.carId) return null;
+    return {
+      id: newLapId(), track: m.trackId, trackName: m.trackName, car: m.carId, carName: m.car,
+      time: l.lapTime, fuel: l.used, tank: Math.round(m.usableTank * 100) / 100, at: Date.now(),
+      session: sessionKind(m.sessionTypes[Math.max(0, this.lastSessionNum)]),
+      wet: f.has('TrackWetness') && f.num('TrackWetness') >= 3, src: 'live',
+    };
   }
 
   private sessionMsg(): SessionInfo {

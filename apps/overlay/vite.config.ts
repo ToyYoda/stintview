@@ -34,4 +34,7 @@ export default defineConfig({
   base: './',
   plugins: [react(), localConfig()],
   server: { host: '127.0.0.1', port: 5173, strictPort: true },
+  // index.html = app pages (overlay, VR, setup window); planner.html = stint planner page,
+  // served by the team server under /planner/ (same assets folder).
+  build: { rollupOptions: { input: { index: 'index.html', planner: 'planner.html' } } },
 });

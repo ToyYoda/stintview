@@ -178,6 +178,18 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 | 4e.4 | Z | Reiter **Funk**: Text/Farbe ändern, eigene Nachricht hinzufügen, einmalige Nachricht senden | Funk-Panel zeigt sofort die neue Liste; einmalige Nachricht kommt an, steht danach nicht in der Liste | |
 | 4e.5 | A | während der Fahrt Strg+Umschalt+1 drücken | keine Nachricht (Kürzel sind beim Fahrer aus), iRacing bekommt die Taste | |
 
+### Block 4f – Stintplaner (vor oder nach dem Rennen, ohne iRacing möglich)
+
+| # | Wer | Schritt | Erwartet | Ergebnis |
+|---|---|---|---|---|
+| 4f.1 | alle | StintView-Fenster → Reiter **Planer** → **Rundenzeiten einlesen** | Fortschritt „x von y Dateien · n Runden“, danach „Fertig …“; darüber „… Runden auf diesem PC, alle beim Team-Server“ | |
+| 4f.2 | alle | ein paar Runden in iRacing fahren (Training reicht) | Zahl der Runden im Reiter **Planer** steigt; im recorder-Protokoll `[laps] 1:58… s, … l` und `[laps] uploaded …` | |
+| 4f.3 | H | **Stintplaner öffnen** | Browser öffnet die Planer-Seite, „angemeldet als H“; **Neues Rennen**: Strecke/Auto aus euren Daten wählbar, alle Mitglieder einladen, speichern | |
+| 4f.4 | alle | Planer öffnen, beim Rennen Verfügbarkeit ziehen, „Stints am Stück“ einstellen | eigene Zeile änderbar, fremde nicht; andere sehen die Änderung spätestens nach 20 s | |
+| 4f.5 | H | **Automatisch planen** | jeder Stint mit Fahrer + Spotter, schnellste zuerst, Grenzen eingehalten; Plan-Zeile im Raster; sonst Meldung, woran es scheitert | |
+| 4f.6 | H | einen Fahrer von Hand in einen Stint setzen, in dem er keine Zeit hat; dann **ab hier neu** | Stint rot markiert „Fahrer nicht verfügbar“; „ab hier neu“ behält die Stints davor | |
+| 4f.7 | H | Planer-Adresse (`http://<server>:8787/planner/`) in einem anderen Browser ohne Anmeldung öffnen | Hinweis „Bitte über StintView öffnen“, keine Daten sichtbar | |
+
 ### Block 5 – Overlay bedienen (5 min)
 
 | # | Wer | Schritt | Erwartet | Ergebnis |

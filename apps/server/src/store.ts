@@ -53,6 +53,16 @@ export class TeamStore {
     return null;
   }
 
+  /**
+   * Member names (once each – joining again on another PC gives the same name) and the
+   * admin = whoever created the team (stint planner: may edit every race).
+   */
+  teamInfo(teamId: string): { name: string; members: string[]; admin: string | null } | null {
+    const team = this.teams.find((t) => t.id === teamId);
+    if (!team) return null;
+    return { name: team.name, members: [...new Set(team.members.map((m) => m.name))], admin: team.members[0]?.name ?? null };
+  }
+
   private addMember(team: Team, memberName: string): TeamCredentials {
     const token = randomBytes(32).toString('base64url');
     team.members.push({ name: memberName, tokenHash: hash(token) });

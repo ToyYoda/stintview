@@ -108,10 +108,14 @@ let recorder = null;
 let relay = null;
 
 // ---------------------------------------------------------------------------
-// "Boxengassen-Zeiten einlesen": pit lane losses from the local .ibt archive
+// .ibt archive imports: "Boxengassen-Zeiten einlesen" (pit lane losses) and
+// "Rundenzeiten einlesen" (lap times for the stint planner)
 // ---------------------------------------------------------------------------
 
 let pitImport = { running: false, finished: false, done: 0, total: 0, passes: 0, tracks: 0, folder: null, error: null };
+let lapImport = { running: false, finished: false, done: 0, total: 0, laps: 0, tracks: 0, folder: null, error: null };
+/** Lap times on this PC (stint planner) and how many aren't on the team server yet; from the recorder. */
+let lapCounts = null;
 
 const hasIbt = (dir) => {
   try {
@@ -121,43 +125,100 @@ const hasIbt = (dir) => {
   }
 };
 
-/** Runs `recorder.cjs import-pitlane <dir>` as a separate process; `choose` asks for the folder. */
-async function startPitImport(choose) {
-  if (pitImport.running) return;
+/** The iRacing telemetry folder (remembered); `choose` or no .ibt files there asks. null = cancelled. */
+async function telemetryFolder(choose) {
   let dir = settings.telemetryDir ?? path.join(app.getPath('documents'), 'iRacing', 'telemetry');
-  if (choose || !hasIbt(dir)) {
-    const r = await dialog.showOpenDialog(setupWin ?? undefined, {
-      title: t('import.chooseFolder'), defaultPath: dir, properties: ['openDirectory'],
-    });
-    if (r.canceled || !r.filePaths[0]) return;
-    dir = r.filePaths[0];
-    if (!hasIbt(dir)) {
-      pitImport = { ...pitImport, finished: true, folder: dir, error: t('import.noIbt') };
-      return refresh();
-    }
-    settings = { ...settings, telemetryDir: dir };
-    saveSettings(settings);
-  }
-  pitImport = { running: true, finished: false, done: 0, total: 0, passes: 0, tracks: 0, folder: dir, error: null };
-  const proc = utilityProcess.fork(path.join(BUNDLES, 'recorder.cjs'), ['import-pitlane', dir], {
-    serviceName: `${brand.name} Boxengassen-Import`, stdio: 'pipe', env: { ...process.env, STINTVIEW_CONFIG: configPath() },
+  if (!choose && hasIbt(dir)) return dir;
+  const r = await dialog.showOpenDialog(setupWin ?? undefined, {
+    title: t('import.chooseFolder'), defaultPath: dir, properties: ['openDirectory'],
   });
-  proc.stdout?.on('data', (d) => console.log(`[pit-import] ${String(d).trim()}`));
-  proc.stderr?.on('data', (d) => console.error(`[pit-import] ${String(d).trim()}`));
+  if (r.canceled || !r.filePaths[0]) return null;
+  dir = r.filePaths[0];
+  if (!hasIbt(dir)) return { missing: dir };
+  settings = { ...settings, telemetryDir: dir };
+  saveSettings(settings);
+  return dir;
+}
+
+/**
+ * Runs `recorder.cjs <command> <dir>` as a separate process, progress as `event` messages.
+ * `get`/`set` hold the state shown in the window, `done` runs after success.
+ */
+async function startImport({ command, event, service, get, set, done }, choose) {
+  if (get().running) return;
+  const dir = await telemetryFolder(choose);
+  if (dir === null) return;
+  if (typeof dir === 'object') {
+    set({ ...get(), finished: true, folder: dir.missing, error: t('import.noIbt') });
+    return refresh();
+  }
+  set({ ...get(), running: true, finished: false, done: 0, total: 0, tracks: 0, folder: dir, error: null });
+  const proc = utilityProcess.fork(path.join(BUNDLES, 'recorder.cjs'), [command, dir], {
+    serviceName: `${brand.name} ${service}`, stdio: 'pipe', env: { ...process.env, STINTVIEW_CONFIG: configPath() },
+  });
+  proc.stdout?.on('data', (d) => console.log(`[${event}] ${String(d).trim()}`));
+  proc.stderr?.on('data', (d) => console.error(`[${event}] ${String(d).trim()}`));
   proc.on('message', (m) => {
-    if (m.t !== 'pit-import') return;
-    pitImport = { ...pitImport, ...m, running: !m.finished };
-    // The live recorder keeps the learned values in memory: tell it to read the file again.
-    if (m.finished && !m.error) recorder?.post({ t: 'pit-model-reload' });
+    if (m.t !== event) return;
+    const { t: _t, ...progress } = m;
+    set({ ...get(), ...progress, running: !m.finished });
+    if (m.finished && !m.error) done();
     refresh();
   });
   proc.on('exit', (code) => {
-    if (!pitImport.running) return;
-    pitImport = { ...pitImport, running: false, finished: true, error: t('import.aborted', { code }) };
+    if (!get().running) return;
+    set({ ...get(), running: false, finished: true, error: t('import.aborted', { code }) });
     refresh();
   });
   refresh();
 }
+
+const startPitImport = (choose) => startImport({
+  command: 'import-pitlane', event: 'pit-import', service: 'Boxengassen-Import',
+  get: () => pitImport, set: (v) => { pitImport = { ...v, passes: v.passes ?? 0 }; },
+  // The live recorder keeps the learned values in memory: tell it to read the file again.
+  done: () => recorder?.post({ t: 'pit-model-reload' }),
+}, choose);
+
+const startLapImport = (choose) => startImport({
+  command: 'import-laps', event: 'lap-import', service: 'Rundenzeiten-Import',
+  get: () => lapImport, set: (v) => { lapImport = { ...v, laps: v.laps ?? 0 }; },
+  // The import uploads by itself; the live recorder updates the counts and retries what's left.
+  done: () => recorder?.post({ t: 'laps-sync' }),
+}, choose);
+
+// ---------------------------------------------------------------------------
+// Stint planner: a page on the team server, opened in the browser with a one-time code
+// ---------------------------------------------------------------------------
+
+/** Opens the planner page in the browser; resolves { error } (null = opened). */
+async function openPlanner() {
+  const config = loadConfig();
+  if (!config) return { error: t('planner.noTeam') };
+  let res;
+  try {
+    res = await fetch(new URL('/api/planner/login', config.serverUrl), {
+      method: 'POST', headers: { authorization: `Bearer ${config.token}` }, signal: AbortSignal.timeout(8000),
+    });
+  } catch {
+    return { error: t('planner.unreachable', { url: config.serverUrl }) };
+  }
+  if (res.status === 404) return { error: t('planner.oldServer') };
+  if (!res.ok) return { error: t('planner.error', { status: res.status }) };
+  const { code } = await res.json();
+  const url = new URL('/planner/', config.serverUrl);
+  // Brand as a query (the page reads it like the app's pages), the code only in the hash: not sent anywhere.
+  if (brand.id !== 'stintview') url.search = `brand=${brand.id}`;
+  url.hash = new URLSearchParams({ code, lang: settings.language }).toString();
+  await shell.openExternal(url.toString());
+  return { error: null };
+}
+
+async function openPlannerFromMenu() {
+  const { error } = await openPlanner();
+  if (error) dialog.showMessageBox({ type: 'warning', message: t('planner.title'), detail: error });
+}
+
 let runningVrPanels = '';
 
 // ---------------------------------------------------------------------------
@@ -235,13 +296,18 @@ function startRecorder() {
       setSimRunning(false);
     }
     if (m.t === 'camera-state' || m.t === 'camera-result') return onRecorderMessage(m);
+    if (m.t === 'laps') lapCounts = { total: m.total, unsent: m.unsent };
     refresh();
   });
 }
 
 function startRelay() {
   if (relay) return;
-  const env = { PORT: String(settings.serverPort), STINTVIEW_DATA: path.join(dataDir, 'server', 'teams.json') };
+  const env = {
+    PORT: String(settings.serverPort), STINTVIEW_DATA: path.join(dataDir, 'server', 'teams.json'),
+    // The stint planner page is part of the built UI.
+    STINTVIEW_PLANNER_DIR: path.join(__dirname, '..', 'dist'),
+  };
   relay = supervise('server', 'server.cjs', [], env, (m) => {
     status.relay = m.t === 'exit' ? 'error' : status.relay;
     refresh();
@@ -383,6 +449,7 @@ function buildMenu() {
     { label: t('menu.recenter'), enabled: vr === 'connected', click: recenterVr },
     { type: 'separator' },
     { label: t('menu.settings'), click: () => openSetup() },
+    { label: t('menu.planner'), enabled: Boolean(loadConfig()), click: openPlannerFromMenu },
     { label: t('menu.hotkeys'), click: () => openSetup('/setup/keys') },
     { label: t('menu.autostart'), type: 'checkbox', checked: settings.autostart, enabled: app.isPackaged, click: (i) => updateSettings({ autostart: i.checked }) },
     { label: t('menu.server', { port: settings.serverPort }), type: 'checkbox', checked: settings.server, click: (i) => updateSettings({ server: i.checked }) },
@@ -434,6 +501,8 @@ function appState() {
     autostartAvailable: app.isPackaged,
     cameraHotkeys: cameraInfo().hotkeys,
     pitImport,
+    lapImport,
+    lapCounts,
     radio: radioState(),
     hotkeys: (() => {
       const cam = cameraHotkeyInfo();
@@ -535,6 +604,11 @@ ipcMain.handle('app:pit-import', async (_e, choose) => {
   await startPitImport(Boolean(choose));
   return appState();
 });
+ipcMain.handle('app:lap-import', async (_e, choose) => {
+  await startLapImport(Boolean(choose));
+  return appState();
+});
+ipcMain.handle('app:planner-open', () => openPlanner());
 
 let announced = '';
 function onUpdateChange(u) {

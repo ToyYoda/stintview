@@ -9,6 +9,7 @@
     "typecheck": "tsc -p ."
   },
   "dependencies": {
+    "@stintview/planner": "workspace:*",
     "@stintview/protocol": "workspace:*",
     "ws": "^8.18.0"
   },
