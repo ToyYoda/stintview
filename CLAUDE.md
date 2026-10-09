@@ -33,7 +33,7 @@
 
 ## Website-Screenshots
 
-- Deutsch in `site/assets/`, Englisch in `site/assets/en/` (Vorlage nutzt `{{SHOTS}}`). Echte Namen auf Bildern durch „Outcast Endurance“ ersetzen; im App-Bild Version und Standardkürzel (Strg+Umschalt+O/J/K) setzen, weil die Testversion Ausweichkürzel bekommt.
+- Deutsch in `site/assets/`, Englisch in `site/assets/en/` (Vorlage nutzt `{{SHOTS}}`). Echte Namen auf Bildern durch „Outcast Endurance“ ersetzen; im App-Bild Version (die Testversion zeigt „Testinstanz“ statt der Version) und Standardkürzel (Strg+Umschalt+O/J/K) setzen, weil die Testversion Ausweichkürzel bekommt.
 
 ## Release
 

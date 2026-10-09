@@ -200,6 +200,7 @@ Sonstiges: Der Shared-Memory-Bereich existiert auch, wenn nur die iRacing-UI lä
 
 - `pnpm install`, `pnpm app` (Dev), `pnpm test` (12 Tests), `pnpm typecheck`, `pnpm dist` (lokaler Installer).
 - Recorder-CLI für Tests ohne iRacing: `pnpm recorder replay "<datei.ibt>" --start <min> --speed <x> [--loop]`; Mitlesen: `apps/recorder/src/dev/listen.ts`.
+- Aus den Quellen gestartet (`!app.isPackaged`) zeigt die App **„Testinstanz“** statt der Versionsnummer (Fensterkopf, Fußzeile, Tray-Tooltip „StintView (Testinstanz) – …“; `testInstance` im App-Zustand, Wunsch 09.10.2026) – `package.json` hat nur die Platzhalter-Version 0.2.0, die echte kommt beim Release aus dem Tag.
 - Getrenntes Testprofil neben installierter App: `STINTVIEW_HOME=<ordner>` (auch eigenes Electron-Profil/Instanz-Sperre); App fernsteuern mit `--remote-debugging-port=9333` + `apps/overlay/scripts/cdp.mjs eval|drag|shot [route]` (Route per URL-Ende, z. B. `index.html#/`).
 - VR-Diagnose: `STINTVIEW_VR_DUMP=<ordner>` (PNG je Panel, ohne SteamVR), `STINTVIEW_VR_FPS`, `STINTVIEW_VR_STATS=1` (Bilder/s je Panel, MB/s, CPU im Protokoll).
 

@@ -4,6 +4,7 @@ const { app } = require('electron');
 const { brandText } = require('./brand.cjs');
 
 const de = {
+  'app.testInstance': 'Testinstanz',
   'status.noTeam': 'Ohne Team · Anzeigen nur für diesen PC',
   'status.noTeamNoIracing': 'Ohne Team · iRacing nicht aktiv',
   'status.noTeamDriving': 'Ohne Team · du fährst – Anzeigen nur hier',
@@ -81,6 +82,7 @@ const de = {
 };
 
 const en = {
+  'app.testInstance': 'test instance',
   'status.noTeam': 'No team · displays for this PC only',
   'status.noTeamNoIracing': 'No team · iRacing not running',
   'status.noTeamDriving': "No team · you're driving – displays here only",

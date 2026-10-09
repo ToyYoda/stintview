@@ -44,6 +44,8 @@ export type PanelConfig = Record<string, { scale: number; options: PanelOptions 
 
 export interface AppState {
   version: string;
+  /** Started from the sources, not installed: shown as "Testinstanz" instead of the version. */
+  testInstance?: boolean;
   configured: boolean;
   team: { teamName: string; memberName: string; serverUrl: string; inviteCode: string } | null;
   settings: {

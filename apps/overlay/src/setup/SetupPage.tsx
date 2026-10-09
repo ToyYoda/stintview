@@ -34,7 +34,7 @@ export function SetupPage() {
             <span className="plate" aria-hidden="true"><span>BR</span></span>
             <div>
               <div className="wordmark br"><span>BACKSEAT</span><b>RACER</b></div>
-              <div className="product">v{state.version}</div>
+              <div className="product">{state.testInstance ? t('set.testInstance') : `v${state.version}`}</div>
             </div>
           </>
         ) : (
@@ -42,7 +42,7 @@ export function SetupPage() {
             <img className="oe-logo" src={logoUrl} alt="" />
             <div>
               <img className="oe-wordmark" src={wordmarkUrl} alt="Outcast Endurance" />
-              <div className="product">StintView <small>v{state.version}</small></div>
+              <div className="product">StintView <small>{state.testInstance ? t('set.testInstance') : `v${state.version}`}</small></div>
             </div>
           </>
         )}
@@ -298,7 +298,7 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
       {tab === 'keys' && <HotkeyCard groups={state.hotkeys} />}
 
       <p className="foot">
-        {t('set.version', { version: state.version })}
+        {state.testInstance ? t('set.testInstance') : t('set.version', { version: state.version })}
         {state.update.phase !== 'unavailable' && state.update.phase !== 'ready' && (
           <>
             {' · '}

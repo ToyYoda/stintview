@@ -420,7 +420,8 @@ function statusLine() {
 
 function refresh() {
   if (tray) {
-    tray.setToolTip(`${brand.name} – ${statusLine()}`);
+    // Started from the sources: say so, so it can't be mixed up with the installed app.
+    tray.setToolTip(`${brand.name}${app.isPackaged ? '' : ` (${t('app.testInstance')})`} – ${statusLine()}`);
     tray.setContextMenu(buildMenu());
   }
   if (setupWin && !setupWin.isDestroyed()) setupWin.webContents.send('app-state', appState());
@@ -494,6 +495,8 @@ function appState() {
   const config = loadConfig();
   return {
     version: app.getVersion(),
+    // Started from the sources (npx electron .): the version is the placeholder from package.json.
+    testInstance: !app.isPackaged,
     configured: Boolean(config),
     team: config ? { teamName: config.teamName, memberName: config.memberName, serverUrl: config.serverUrl, inviteCode: config.inviteCode } : null,
     settings,
