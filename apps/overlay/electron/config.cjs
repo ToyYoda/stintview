@@ -24,7 +24,7 @@ const PANEL_DEFAULTS = {
   weather: { shown: true, size: 100 },
   standings: {
     shown: true, size: 100,
-    options: { columns: Object.fromEntries(STANDINGS_COLUMNS.map((c) => [c, true])), lapping: true, duel: true },
+    options: { columns: Object.fromEntries(STANDINGS_COLUMNS.map((c) => [c, true])), order: STANDINGS_COLUMNS, lapping: true, duel: true },
   },
   // Added later: off by default, so it does not suddenly appear on existing overlays.
   duel: { shown: false, size: 100, options: { traffic: true } },
@@ -146,7 +146,10 @@ function cleanOptions(id, o) {
     const columns = {};
     for (const c of STANDINGS_COLUMNS) columns[c] = typeof o?.columns?.[c] === 'boolean' ? o.columns[c] : d.columns[c];
     const flag = (k) => (typeof o?.[k] === 'boolean' ? o[k] : d[k]);
-    return { columns, lapping: flag('lapping'), duel: flag('duel') };
+    // Known columns in the saved order, new ones appended in their default order.
+    const saved = Array.isArray(o?.order) ? o.order.filter((c) => STANDINGS_COLUMNS.includes(c)) : [];
+    const order = [...new Set([...saved, ...STANDINGS_COLUMNS])];
+    return { columns, order, lapping: flag('lapping'), duel: flag('duel') };
   }
   if (id === 'duel') return { traffic: typeof o?.traffic === 'boolean' ? o.traffic : d.traffic };
   return d;

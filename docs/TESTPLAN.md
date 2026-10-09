@@ -202,6 +202,7 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 | 5.2b | alle | Tray-Symbol → **Tastaturkürzel …** | Fenster öffnet mit der Übersicht oben; die Kürzel dort funktionieren (z. B. Verschieben); VR-Gruppe grau, solange VR aus | |
 | 5.2c | alle | StintView-Fenster → Anzeigen → **Hintergrund** auf 0 %, dann 100 %; in VR ca. 40 % (Brille auf) | Hintergrund verschwindet/wird deckend, sofort; VR: Panels halbdurchsichtig, Schrift gut lesbar | |
 | 5.2d | alle | Panel „Position“ aufklappen: Größe 150 %, Spalten Stint/Flagge abwählen | Panel größer, Spalten verschwinden sofort; auch in VR | |
+| 5.2e | alle | Panel „Position“ aufklappen, Spalte „Δ Runde“ am Griff ⠿ nach oben ziehen, dann „iRating“ ans Ende | rote Linie zeigt die Einfügestelle; das Panel zeigt die Spalten sofort in der neuen Reihenfolge, auch nach Neustart und in VR | |
 | 5.2e | alle | Ausgabe von Monitor auf VR umschalten und zurück | Panels wandern vom Monitor in die Brille und zurück, nie an beiden Orten | |
 | 5.2f | alle | Anzeigen → **Nur wenn iRacing läuft** an, iRacing (Simulator) beenden, später wieder in eine Session gehen; Monitor und VR | ohne Simulator keine Anzeigen, Status „Anzeigen warten auf iRacing“; mit Simulator erscheinen sie binnen Sekunden; 15 s nach Beenden weg; kurze Ladepausen lassen sie stehen | |
 | 5.3 | alle | außerhalb des Verschiebe-Modus in iRacing klicken, wo das Overlay liegt | Klicks gehen durch zu iRacing | |

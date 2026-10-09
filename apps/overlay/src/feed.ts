@@ -27,7 +27,13 @@ export interface HotkeyGroup {
 
 export type StandingsColumn = 'pos' | 'num' | 'flag' | 'name' | 'irating' | 'sr' | 'best' | 'gap' | 'tyre' | 'compound' | 'delta';
 /** Position panel: which columns, and whether lapping cars are shown. */
-export interface StandingsOptions { columns: Record<StandingsColumn, boolean>; lapping: boolean; duel: boolean }
+export interface StandingsOptions {
+  columns: Record<StandingsColumn, boolean>;
+  /** Column order, set by drag and drop in the StintView window (since 0.19); missing = default order. */
+  order?: StandingsColumn[];
+  lapping: boolean;
+  duel: boolean;
+}
 /** Duel panel: whether cars on another lap between us and the class neighbours are shown. */
 export interface DuelOptions { traffic: boolean }
 export type PanelOptions = StandingsOptions | DuelOptions;

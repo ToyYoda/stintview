@@ -3,6 +3,7 @@ import { MESSAGE_COLORS, MESSAGE_MAX_LENGTH, type MessageColor } from '@stintvie
 import type { AppState, HotkeyGroup, PanelSetting, DuelOptions, RadioState, StandingsColumn, StandingsOptions } from '../feed.ts';
 import { setLang, t, useLang, type Lang } from '../i18n.ts';
 import { brand } from '../brand.ts';
+import { STANDINGS_COLUMNS } from '../widgets/StandingsWidget.tsx';
 import logoUrl from '../assets/logo-light.webp';
 import wordmarkUrl from '../assets/wordmark-light.webp';
 import './setup.css';
@@ -550,7 +551,6 @@ function PlannerCard({ state, onState }: { state: AppState; onState(s: AppState)
 }
 
 const PANEL_IDS = ['header', 'inputs', 'fuel', 'tyres', 'weather', 'standings', 'duel', 'pitstop', 'messages', 'radio'] as const;
-const STANDINGS_COLUMNS: StandingsColumn[] = ['pos', 'num', 'flag', 'name', 'irating', 'sr', 'best', 'gap', 'tyre', 'compound', 'delta'];
 
 /**
  * Every panel: on/off in the header, and when opened its size and panel-specific options.
@@ -588,18 +588,41 @@ function PanelList({ panels, onChange }: {
 }
 
 function StandingsOptionsForm({ options, onChange }: { options: StandingsOptions; onChange(o: StandingsOptions): void }) {
+  const order = [...(options.order ?? []), ...STANDINGS_COLUMNS].filter((c, i, a) => STANDINGS_COLUMNS.includes(c) && a.indexOf(c) === i);
+  // Column being dragged and the place it would drop at (shown as a line).
+  const [dragging, setDragging] = useState<StandingsColumn | null>(null);
+  const [over, setOver] = useState<number | null>(null);
+  const drop = (to: number) => {
+    if (!dragging) return;
+    const rest = order.filter((c) => c !== dragging);
+    const at = to > order.indexOf(dragging) ? to - 1 : to; // the dragged one left its old place
+    onChange({ ...options, order: [...rest.slice(0, at), dragging, ...rest.slice(at)] });
+  };
+  const end = () => { setDragging(null); setOver(null); };
   return (
     <div className="panel-options">
-      <div className="options-title">{t('set.columns')}</div>
-      <div className="options-grid">
-        {STANDINGS_COLUMNS.map((c) => (
-          <label key={c}>
-            <input type="checkbox" checked={options.columns[c] ?? true}
-              onChange={() => onChange({ ...options, columns: { ...options.columns, [c]: !(options.columns[c] ?? true) } })} />
-            {t(`set.col.${c}`)}
-          </label>
+      <div className="options-title">{t('set.columns')} <span className="options-hint">{t('set.columnsDrag')}</span></div>
+      <ul className="column-list" onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(null); }}>
+        {order.map((c, i) => (
+          <li key={c} draggable
+            className={[dragging === c ? 'dragging' : '', over === i ? 'drop-before' : '', over === order.length && i === order.length - 1 ? 'drop-after' : ''].join(' ')}
+            onDragStart={(e) => { setDragging(c); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', c); }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              const r = e.currentTarget.getBoundingClientRect();
+              setOver(e.clientY > r.top + r.height / 2 ? i + 1 : i);
+            }}
+            onDrop={(e) => { e.preventDefault(); if (over !== null) drop(over); end(); }}
+            onDragEnd={end}>
+            <span className="drag-handle" aria-hidden="true">⠿</span>
+            <label>
+              <input type="checkbox" checked={options.columns[c] ?? true}
+                onChange={() => onChange({ ...options, columns: { ...options.columns, [c]: !(options.columns[c] ?? true) } })} />
+              {t(`set.col.${c}`)}
+            </label>
+          </li>
         ))}
-      </div>
+      </ul>
       <label className="option-line">
         <input type="checkbox" checked={options.duel} onChange={() => onChange({ ...options, duel: !options.duel })} />
         {t('set.duel')}

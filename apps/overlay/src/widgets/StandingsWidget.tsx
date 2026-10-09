@@ -1,10 +1,12 @@
+import type { ReactNode } from 'react';
 import type { StandingRow, Standings } from '@stintview/protocol';
 import { t } from '../i18n.ts';
 import { Duel, Flag, gapClass, gapText } from './gaps.tsx';
 import type { StandingsColumn, StandingsOptions } from '../feed.ts';
 
 
-const HEAD: StandingsColumn[] = ['pos', 'num', 'flag', 'name', 'irating', 'sr', 'best', 'gap', 'tyre', 'compound', 'delta'];
+/** Default column order; the StintView window can change it (options.order). */
+export const STANDINGS_COLUMNS: StandingsColumn[] = ['pos', 'num', 'flag', 'name', 'irating', 'sr', 'best', 'gap', 'tyre', 'compound', 'delta'];
 
 /**
  * Running order on track: P1–P3 and three cars ahead of / behind the team car.
@@ -22,6 +24,8 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
   const best = standings?.mode === 'best';
   // Δ compares last laps in the race, best laps in practice/qualifying.
   const ours = (best ? rows.find((r) => r.isTeam)?.bestLap : rows.find((r) => r.isTeam)?.lastLap) ?? null;
+  // Chosen order; columns missing from it (newer versions) keep their default place at the end.
+  const order = [...(options?.order ?? []), ...STANDINGS_COLUMNS].filter((c, i, a) => STANDINGS_COLUMNS.includes(c) && a.indexOf(c) === i);
   // Best lap only outside races; gap and tyre age only in races.
   const col = (c: StandingsColumn) => (best ? c !== 'gap' && c !== 'tyre' : c !== 'best') && (options?.columns[c] ?? true);
   const lapping = options?.lapping === false || best ? [] : standings?.lapping ?? [];
@@ -57,7 +61,7 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
       ) : (
         <table>
           <thead>
-            <tr>{HEAD.filter((c) => col(c)).map((c) => <th key={c} className={`th-${c}`}>{t(`st.col.${c}`)}</th>)}</tr>
+            <tr>{order.filter((c) => col(c)).map((c) => <th key={c} className={`th-${c}`}>{t(`st.col.${c}`)}</th>)}</tr>
           </thead>
           <tbody>
             {list.map(({ r, gap }) => {
@@ -68,38 +72,41 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
               const delta = raw !== null && Math.abs(raw) < (best ? 0.0005 : 0.005) ? 0 : raw;
               const digits = best ? 3 : 2;
               const cls = [r.isTeam ? 'team' : '', gap ? 'gap' : '', r.lap ? `lap-${r.lap}` : '', near(r) ? 'near' : ''].join(' ');
+              const cells: Record<StandingsColumn, ReactNode> = {
+                pos: <td key="pos" className="st-pos">{r.lap ? '' : r.pos}</td>,
+                num: <td key="num" className="st-num">#{r.number}</td>,
+                flag: <td key="flag" className="st-flag-cell"><Flag country={r.country} /></td>,
+                name: (
+                  <td key="name" className="st-name">
+                    {r.name}
+                    {r.lap && <span className="st-lap-tag">{r.lap === 'backmarker' ? t('st.backmarker') : t('st.lapper')}</span>}
+                  </td>
+                ),
+                irating: <td key="irating" className="st-ir">{rating(r.irating)}</td>,
+                sr: <td key="sr" className="st-sr">{r.license ? <License {...r.license} /> : '–'}</td>,
+                best: <td key="best" className="st-best">{r.bestLap ? lapTime(r.bestLap) : '–'}</td>,
+                gap: (
+                  <td key="gap" className="st-gap">
+                    {!r.isTeam && (
+                      <span className={`gap-tile ${r.lap ? '' : gapClass(r.gap, r.lapsGap)}`}>
+                        {r.lap ? gapText(r.gap, 0) : gapText(r.gap, r.lapsGap)}
+                      </span>
+                    )}
+                  </td>
+                ),
+                tyre: <td key="tyre" className="st-tyre">{r.inPit ? t('st.box') : r.tyreLaps ?? '–'}</td>,
+                compound: <td key="compound" className="st-compound">{r.compound ? <Compound name={r.compound} /> : '–'}</td>,
+                delta: (
+                  <td key="delta" className={delta === null || delta === 0 || r.lap ? 'st-delta' : delta > 0 ? 'st-delta slower' : 'st-delta faster'}>
+                    {delta === null
+                      ? (r.isTeam && !best && ours !== null ? lapTime(ours) : '')
+                      : delta === 0 ? (0).toFixed(digits) : `${delta > 0 ? '+' : '−'}${Math.abs(delta).toFixed(digits)}`}
+                  </td>
+                ),
+              };
               return (
                 <tr key={`${r.lap ?? 'row'}-${r.carIdx}`} className={cls}>
-                  {col('pos') && <td className="st-pos">{r.lap ? '' : r.pos}</td>}
-                  {col('num') && <td className="st-num">#{r.number}</td>}
-                  {col('flag') && <td className="st-flag-cell"><Flag country={r.country} /></td>}
-                  {col('name') && (
-                    <td className="st-name">
-                      {r.name}
-                      {r.lap && <span className="st-lap-tag">{r.lap === 'backmarker' ? t('st.backmarker') : t('st.lapper')}</span>}
-                    </td>
-                  )}
-                  {col('irating') && <td className="st-ir">{rating(r.irating)}</td>}
-                  {col('sr') && <td className="st-sr">{r.license ? <License {...r.license} /> : '–'}</td>}
-                  {col('best') && <td className="st-best">{r.bestLap ? lapTime(r.bestLap) : '–'}</td>}
-                  {col('gap') && (
-                    <td className="st-gap">
-                      {!r.isTeam && (
-                        <span className={`gap-tile ${r.lap ? '' : gapClass(r.gap, r.lapsGap)}`}>
-                          {r.lap ? gapText(r.gap, 0) : gapText(r.gap, r.lapsGap)}
-                        </span>
-                      )}
-                    </td>
-                  )}
-                  {col('tyre') && <td className="st-tyre">{r.inPit ? t('st.box') : r.tyreLaps ?? '–'}</td>}
-                  {col('compound') && <td className="st-compound">{r.compound ? <Compound name={r.compound} /> : '–'}</td>}
-                  {col('delta') && (
-                    <td className={delta === null || delta === 0 || r.lap ? 'st-delta' : delta > 0 ? 'st-delta slower' : 'st-delta faster'}>
-                      {delta === null
-                        ? (r.isTeam && !best && ours !== null ? lapTime(ours) : '')
-                        : delta === 0 ? (0).toFixed(digits) : `${delta > 0 ? '+' : '−'}${Math.abs(delta).toFixed(digits)}`}
-                    </td>
-                  )}
+                  {order.filter((c) => col(c)).map((c) => cells[c])}
                 </tr>
               );
             })}
