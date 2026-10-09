@@ -2,6 +2,11 @@
 
 Alle veröffentlichten Versionen, neueste zuerst. Installer und Updates: [GitHub Releases](https://github.com/ToyYoda/stintview/releases) – die App aktualisiert sich selbst.
 
+## 0.17.2 – 09.10.2026
+
+- **Boxenstopp:** Am Monitor brach seit 0.17.1 der Text neben der Stoppdauer um und zerriss die große Sekundenzahl – behoben. „Boxengasse … + Stand …“ steht wieder in einer Zeile, darunter klein „Boxengasse inkl. Anhalten und Anfahren“.
+- Website: neue Bilder aller Panels und des StintView-Fensters.
+
 ## 0.17.1 – 09.10.2026
 
 - **Duell:** unter den Abständen steht jetzt **Δ Runde** – eure letzte Runde minus die des Gegners, derselbe Wert wie im Positions-Panel (**grün** = ihr wart schneller, **rot** = langsamer). Die bisherige Aussicht („dran in ~2 R“, „zieht weg“ …) wechselte im Rennen zu oft und ist entfallen.
