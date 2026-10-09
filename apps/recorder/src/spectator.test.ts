@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { packWords } from './irsdk/broadcast.ts';
 import type { Frame } from './irsdk/layout.ts';
-import { NOT_ACCEPTED, Spectator, VERIFY_MS, findIncidentCar, parseTrackLength, type CarSnapshot } from './spectator.ts';
+import { NOT_ACCEPTED, Spectator, VERIFY_MS, findIncidentCar, parseSessionCars, parseTrackLength, type CarSnapshot } from './spectator.ts';
 
 const L = 24_154; // Nordschleife combined, metres
 const on = (pct: number, surface = 3, onPitRoad = false): CarSnapshot => ({ pct, surface, onPitRoad });
@@ -131,5 +131,35 @@ CameraInfo:
     s.command({ t: 'camera', action: 'incident', team, targetCarIdx: 12 });
     expect(switches).toEqual([]);
     expect(results[0]).toMatchObject({ ok: false });
+  });
+});
+
+describe('session cars: rating, licence, tyres', () => {
+  it('reads iRating, licence with colour and the tyre compounds', () => {
+    const yaml = [
+      'DriverInfo:',
+      ' DriverTires:',
+      ' - TireIndex: 0',
+      '   TireCompoundType: "Hard"',
+      ' - TireIndex: 1',
+      '   TireCompoundType: "Wet"',
+      ' Drivers:',
+      ' - CarIdx: 0',
+      '   UserName: Pace Car',
+      '   IRating: 0',
+      '   LicString: R 0.00',
+      '   LicColor: 0xffffff',
+      ' - CarIdx: 3',
+      '   UserName: Marco Rossi',
+      '   CarNumber: "19"',
+      '   CarNumberRaw: 19',
+      '   IRating: 2431',
+      '   LicString: A 3.45',
+      '   LicColor: 0x0153db',
+    ].join('\n');
+    const cars = parseSessionCars(yaml);
+    expect(cars.tires).toEqual(['Hard', 'Wet']);
+    expect(cars.drivers.get(3)).toMatchObject({ irating: 2431, license: { text: 'A 3.45', color: '#0153db' } });
+    expect(cars.drivers.get(0)).toMatchObject({ irating: null });
   });
 });

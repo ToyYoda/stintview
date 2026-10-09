@@ -121,6 +121,15 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .st-gap, .st-tyre { font-family: var(--mono); text-align: right; width: 54px; }
 .st-tyre { width: 42px; }
 .st-delta { font-family: var(--mono); text-align: right; width: 62px; }
+.st-ir { font-family: var(--mono); text-align: right; width: 44px; }
+.st-sr { text-align: center; width: 58px; }
+.st-lic { display: inline-block; font-family: var(--mono); font-size: 11px; font-weight: 700; padding: 0 4px; border-radius: 3px; white-space: nowrap; }
+.st-compound { text-align: center; width: 30px; }
+.st-compound-chip { display: inline-block; width: 18px; height: 18px; line-height: 15px; border-radius: 50%; border: 2px solid; font-size: 10.5px; font-weight: 800; text-align: center; }
+.st-compound-chip.soft { border-color: #ff4d4d; color: #ff4d4d; }
+.st-compound-chip.medium { border-color: #ffd23f; color: #ffd23f; }
+.st-compound-chip.hard, .st-compound-chip.other { border-color: #e8e8e8; color: #e8e8e8; }
+.st-compound-chip.wet { border-color: #4da3ff; color: #4da3ff; }
 .st-delta.slower { color: var(--bad); }
 .st-delta.faster { color: var(--ok); }
 
@@ -156,6 +165,7 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .st-flag-cell { width: 20px; padding-right: 0 !important; }
 .st-flag-cell .st-flag { margin-right: 0; }
 .standings th.th-name { text-align: left; }
+.standings th.th-sr, .standings th.th-compound { text-align: center; }
 .standings tr.lap-backmarker td { background: rgba(77, 163, 255, 0.28); color: #d6e9ff; }
 .standings tr.lap-lapper td { background: rgba(255, 77, 77, 0.30); color: #ffd9d9; }
 .st-lap-tag { margin-left: 6px; font-size: 10px; padding: 0 4px; border-radius: 3px; background: rgba(0, 0, 0, 0.35); }

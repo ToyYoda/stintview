@@ -23,7 +23,7 @@ const RESEND_S = 2;
  */
 export class HazardDetector {
   private cars = new CarTracker();
-  private session: SessionCars = { drivers: new Map(), farChaseGroup: 0, trackLength: 0, sessionId: '' };
+  private session: SessionCars = { drivers: new Map(), tires: [], farChaseGroup: 0, trackLength: 0, sessionId: '' };
   private streak: { carIdx: number; count: number } | null = null;
   private current: (IncidentCandidate & { lastSeen: number }) | null = null;
   private lastSent = -Infinity;

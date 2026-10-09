@@ -14,7 +14,10 @@ export interface CarProgress {
   onPitRoad?: boolean;
 }
 
-export interface CarInfo { number: string; name: string; /** ISO code for the flag, e.g. "de". */ country?: string | null }
+export interface CarInfo {
+  number: string; name: string; /** ISO code for the flag, e.g. "de". */ country?: string | null;
+  irating?: number | null; license?: { text: string; color: string } | null;
+}
 
 export interface StandingsExtras {
   /** Tyre age in laps per carIdx (null = unknown). */
@@ -369,9 +372,22 @@ export class StandingsTracker {
   private trackLength = 0;
   private sessions = new Map<number, SessionResults>();
 
-  setDrivers(info: Map<number, CarInfo>, trackLength = 0) {
+  private tires: string[] = [];
+
+  setDrivers(info: Map<number, CarInfo>, trackLength = 0, tires: string[] = []) {
     this.info = info;
     this.trackLength = trackLength;
+    this.tires = tires;
+  }
+
+  /** Tyre compound, iRating and licence on every row (also lapping/between rows). */
+  private decorate(f: Frame, rows: StandingRow[]): StandingRow[] {
+    const hasCompound = f.has('CarIdxTireCompound');
+    return rows.map((r) => {
+      const d = this.info.get(r.carIdx);
+      const idx = hasCompound ? f.num('CarIdxTireCompound', r.carIdx) : -1;
+      return { ...r, compound: idx >= 0 ? this.tires[idx] ?? null : null, irating: d?.irating ?? null, license: d?.license ?? null };
+    });
   }
 
   setSessions(sessions: Map<number, SessionResults>) {
@@ -401,16 +417,17 @@ export class StandingsTracker {
       // iRacing's official ranking (valid laps only) once the session has results, telemetry until then.
       const telemetry = readBestLaps(f);
       const field = session!.results.length ? officialBestLaps(telemetry, session!.results) : telemetry;
-      const best = computeBestStandings(field, teamIdx, this.info, 3, 3, tyreLaps);
+      const best = this.decorate(f, computeBestStandings(field, teamIdx, this.info, 3, 3, tyreLaps));
       const projection = bestProjection(field, teamIdx, this.info, projectedLap(f)) ?? undefined;
       return best.length ? { t: 'standings', sessionTime: t, rows: best, mode: 'best', session: sessionLabel(session!.type), projection } : null;
     }
-    const rows = computeStandings(cars, teamIdx, this.info, 3, 3, { tyreLaps });
+    const rows = this.decorate(f, computeStandings(cars, teamIdx, this.info, 3, 3, { tyreLaps }));
     const lapRef = cars.find((c) => c.carIdx === teamIdx)?.lastLap ?? null;
-    const lapping = lappingRows(cars, teamIdx, this.info, lapRef, tyreLaps);
+    const lapping = this.decorate(f, lappingRows(cars, teamIdx, this.info, lapRef, tyreLaps));
     const us = rows.find((r) => r.isTeam);
     const neighbour = (d: number) => (us ? rows.find((r) => r.pos === us.pos + d)?.carIdx ?? null : null);
     const between = betweenRows(cars, teamIdx, neighbour(-1), neighbour(1), this.info, lapRef, 3, tyreLaps);
+    // Chips in the duel line show the number only: no need for the extra fields there.
     return rows.length ? { t: 'standings', sessionTime: t, rows, lapping, between, mode: 'race' } : null;
   }
 

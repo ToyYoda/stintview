@@ -4,7 +4,7 @@ import { Duel, Flag, gapClass, gapText } from './gaps.tsx';
 import type { StandingsColumn, StandingsOptions } from '../feed.ts';
 
 
-const HEAD: StandingsColumn[] = ['pos', 'num', 'flag', 'name', 'best', 'gap', 'tyre', 'delta'];
+const HEAD: StandingsColumn[] = ['pos', 'num', 'flag', 'name', 'irating', 'sr', 'best', 'gap', 'tyre', 'compound', 'delta'];
 
 /**
  * Running order on track: P1–P3 and three cars ahead of / behind the team car.
@@ -79,6 +79,8 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
                       {r.lap && <span className="st-lap-tag">{r.lap === 'backmarker' ? t('st.backmarker') : t('st.lapper')}</span>}
                     </td>
                   )}
+                  {col('irating') && <td className="st-ir">{rating(r.irating)}</td>}
+                  {col('sr') && <td className="st-sr">{r.license ? <License {...r.license} /> : '–'}</td>}
                   {col('best') && <td className="st-best">{r.bestLap ? lapTime(r.bestLap) : '–'}</td>}
                   {col('gap') && (
                     <td className="st-gap">
@@ -90,6 +92,7 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
                     </td>
                   )}
                   {col('tyre') && <td className="st-tyre">{r.inPit ? t('st.box') : r.tyreLaps ?? '–'}</td>}
+                  {col('compound') && <td className="st-compound">{r.compound ? <Compound name={r.compound} /> : '–'}</td>}
                   {col('delta') && (
                     <td className={delta === null || delta === 0 || r.lap ? 'st-delta' : delta > 0 ? 'st-delta slower' : 'st-delta faster'}>
                       {delta === null
@@ -110,4 +113,24 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
 function lapTime(s: number) {
   const m = Math.floor(s / 60);
   return `${m}:${(s - m * 60).toFixed(3).padStart(6, '0')}`;
+}
+
+/** iRating compact: 2431 -> "2.4k". */
+function rating(ir: number | null | undefined) {
+  if (!ir) return '–';
+  return ir >= 1000 ? `${(ir / 1000).toFixed(1)}k` : String(ir);
+}
+
+/** Licence class and safety rating ("A 3.45") on iRacing's licence colour. */
+function License({ text, color }: { text: string; color: string }) {
+  const n = parseInt(color.slice(1), 16);
+  const light = ((n >> 16) & 255) * 0.299 + ((n >> 8) & 255) * 0.587 + (n & 255) * 0.114 > 150;
+  return <span className="st-lic" style={{ background: color, color: light ? '#111' : '#fff' }}>{text}</span>;
+}
+
+/** Tyre compound as one letter in its usual colour: Soft red, Medium yellow, Hard white, Wet blue. */
+function Compound({ name }: { name: string }) {
+  const kind = /wet|rain/i.test(name) ? 'wet' : /soft/i.test(name) ? 'soft' : /medium/i.test(name) ? 'medium' : /hard/i.test(name) ? 'hard' : 'other';
+  const letter = { wet: 'W', soft: 'S', medium: 'M', hard: 'H', other: name.slice(0, 1).toUpperCase() }[kind];
+  return <span className={`st-compound-chip ${kind}`} title={name}>{letter}</span>;
 }

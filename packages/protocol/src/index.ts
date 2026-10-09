@@ -228,6 +228,12 @@ export interface StandingRow {
   otherClass?: boolean;
   /** Practice/qualifying (mode 'best'): best lap time in seconds, null if none yet. */
   bestLap?: number | null;
+  /** Tyre compound fitted now, as iRacing names it ("Hard", "Soft", "Wet"); null = unknown. Since 0.19. */
+  compound?: string | null;
+  /** Current driver's iRating (null = unknown, e.g. AI). Since 0.19. */
+  irating?: number | null;
+  /** Current driver's licence: iRacing's "A 3.45" and the licence colour "#rrggbb". Since 0.19. */
+  license?: { text: string; color: string } | null;
 }
 
 /** P1–P3 and the cars around the team car, about once per second. Additive, no version bump. */

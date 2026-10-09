@@ -139,6 +139,7 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 | 4b.4 | Z | Spalte **Abstand** mit iRacings Relative (F3) vergleichen | ± ca. 0,5 s gleich; überrundete Autos als „−1 R“ (blau); unter 1 s gelb (vor A) / rot (hinter A), über 3 s grau | |
 | 4b.5 | Z | Spalte **Reifen** nach einem Boxenstopp eines Gegners bzw. von A | Gegner: zählt ab Boxenausfahrt ab 0; „Box“ während er in der Boxengasse ist; A's Zeile springt nach Reifenwechsel auf 0 | |
 | 4b.6 | Z | Flaggen vor den Namen mit iRacings Fahrerliste vergleichen | gleiche Länder; Fahrer ohne Land („Global“) ohne Flagge | |
+| 4b.6b | alle | Positions-Panel im Rennen: Spalten iR, SR, Reifen | iRating und Lizenz („A 3.45“, Lizenzfarbe) passen zu iRacings Fahrerliste; Reifen H/W bzw. S/M wie im Auto (nach einem Wechsel auf Regenreifen W in Blau); Spalten in den Panel-Einstellungen abwählbar | |
 | 4b.7 | Z | im Zweikampf von A (< 1 s) auf Duell-Zeile und Kacheln achten | Duell-Zeile oben zeigt Vorder-/Hintermann mit großem Abstand, Kachel gelb/rot; A's Zeile und Nachbarn größer | |
 | 4b.9 | Z | Sprit-Panel im Rennen, unten „Bis zum Ziel“ | Runden bis zum Ziel passen zur Restzeit ÷ Rundenzeit (+ laufende Runde); „Box spätestens Runde N“ passt zu „Runden übrig“; nach dem Stopp „Reicht bis ins Ziel“ bzw. weniger Stopps | |
 | 4b.8 | Z | Sprit-Panel nach einigen Runden | Liter im Balken, darüber ± zur Vorrunde (grün/rot); nach Boxenstopp-Runde keine Veränderung | |

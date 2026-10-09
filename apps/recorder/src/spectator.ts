@@ -101,7 +101,9 @@ export class CarTracker {
 
 export interface SessionCars {
   /** number = CarNumberRaw (camera commands), label = CarNumber as displayed ("07"). */
-  drivers: Map<number, { number: number; label: string; name: string; flair?: string }>;
+  drivers: Map<number, { number: number; label: string; name: string; flair?: string; irating?: number | null; license?: { text: string; color: string } | null }>;
+  /** Tyre compound names by TireIndex (CarIdxTireCompound), e.g. ["Hard", "Wet"]. */
+  tires: string[];
   farChaseGroup: number;
   trackLength: number;
   sessionId: string;
@@ -113,14 +115,21 @@ export function parseSessionCars(text: string): SessionCars {
   try {
     y = parse(text, { strict: false, uniqueKeys: false }) ?? {};
   } catch { /* keep defaults */ }
-  const drivers = new Map<number, { number: number; label: string; name: string; flair?: string }>();
+  const drivers: SessionCars['drivers'] = new Map();
   for (const d of y.DriverInfo?.Drivers ?? []) {
     if (d.CarIdx === undefined) continue;
     const number = d.CarNumberRaw ?? -1;
-    drivers.set(d.CarIdx, { number, label: String(d.CarNumber ?? number), name: d.UserName ?? d.TeamName ?? '', flair: d.FlairName });
+    drivers.set(d.CarIdx, {
+      number, label: String(d.CarNumber ?? number), name: d.UserName ?? d.TeamName ?? '', flair: d.FlairName,
+      irating: typeof d.IRating === 'number' && d.IRating > 0 ? d.IRating : null,
+      license: d.LicString ? { text: String(d.LicString), color: licenseColor(d.LicColor) } : null,
+    });
   }
+  const tires: string[] = [];
+  for (const t of y.DriverInfo?.DriverTires ?? []) if (typeof t.TireIndex === 'number' && t.TireCompoundType) tires[t.TireIndex] = String(t.TireCompoundType);
   return {
     drivers,
+    tires,
     farChaseGroup: y.CameraInfo?.Groups?.find((g) => PREFERRED_GROUP.test(g.GroupName ?? ''))?.GroupNum ?? 0,
     trackLength: parseTrackLength(y.WeekendInfo?.TrackLength),
     sessionId: `${y.WeekendInfo?.SessionID ?? 0}/${y.WeekendInfo?.SubSessionID ?? 0}`,
@@ -143,10 +152,19 @@ export interface CameraState {
 /** `code` + `vars` are translated by the app; `text` (German) is for the log. */
 export interface CameraResult { t: 'camera-result'; ok: boolean; text: string; code: string; vars?: Record<string, string | number> }
 
-interface DriverRow { CarIdx?: number; CarNumberRaw?: number; CarNumber?: string | number; UserName?: string; TeamName?: string; FlairName?: string }
+interface DriverRow {
+  CarIdx?: number; CarNumberRaw?: number; CarNumber?: string | number; UserName?: string; TeamName?: string; FlairName?: string;
+  IRating?: number; LicString?: string; LicColor?: string | number;
+}
+
+/** iRacing's LicColor ("0xfc0706", or a number after YAML parsing) -> "#fc0706". */
+export function licenseColor(c: string | number | undefined): string {
+  const n = typeof c === 'number' ? c : typeof c === 'string' ? parseInt(c.replace(/^0x/i, ''), 16) : NaN;
+  return Number.isFinite(n) ? `#${(n & 0xffffff).toString(16).padStart(6, '0')}` : '#888888';
+}
 interface Yaml {
   WeekendInfo?: { TrackLength?: string; SessionID?: number; SubSessionID?: number };
-  DriverInfo?: { Drivers?: DriverRow[] };
+  DriverInfo?: { Drivers?: DriverRow[]; DriverTires?: { TireIndex?: number; TireCompoundType?: string }[] };
   CameraInfo?: { Groups?: { GroupNum?: number; GroupName?: string }[] };
 }
 
@@ -155,7 +173,7 @@ interface Yaml {
  * Runs next to the recorder on the same shared memory; never acts while driving.
  */
 export class Spectator {
-  private session: SessionCars = { drivers: new Map(), farChaseGroup: 0, trackLength: 0, sessionId: '' };
+  private session: SessionCars = { drivers: new Map(), tires: [], farChaseGroup: 0, trackLength: 0, sessionId: '' };
   private cars = new CarTracker();
   private cam = { idx: -1, group: 0, camera: 0 };
   /** Camera before the jump, restored by "back". */

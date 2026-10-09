@@ -550,7 +550,7 @@ function PlannerCard({ state, onState }: { state: AppState; onState(s: AppState)
 }
 
 const PANEL_IDS = ['header', 'inputs', 'fuel', 'tyres', 'weather', 'standings', 'duel', 'pitstop', 'messages', 'radio'] as const;
-const STANDINGS_COLUMNS: StandingsColumn[] = ['pos', 'num', 'flag', 'name', 'best', 'gap', 'tyre', 'delta'];
+const STANDINGS_COLUMNS: StandingsColumn[] = ['pos', 'num', 'flag', 'name', 'irating', 'sr', 'best', 'gap', 'tyre', 'compound', 'delta'];
 
 /**
  * Every panel: on/off in the header, and when opened its size and panel-specific options.
