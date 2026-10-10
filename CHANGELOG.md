@@ -2,6 +2,12 @@
 
 Alle veröffentlichten Versionen, neueste zuerst. Installer und Updates: [GitHub Releases](https://github.com/ToyYoda/stintview/releases) – die App aktualisiert sich selbst.
 
+## 0.21.1 – 11.10.2026
+
+- **Ruckeln in VR behoben:** Mit gekoppeltem Recenter-Knopf am Lenkrad las StintView jede Meldung des Lenkrads mit (bis zu 1000 pro Sekunde) – das kostete viel Rechenzeit und ließ iRacing ruckeln. Jetzt fragt StintView nur noch den Knopf ab, kaum messbar. Außerdem läuft das nur noch, solange die VR-Anzeigen laufen.
+- **Duell-Panel flackerte:** Die Änderung an der Rundenzählung aus 0.21.0 ist zurückgenommen – sie hielt Autos, die aus der Box kamen, für ein paar Sekunden eine Runde zu weit vorn, und das Duell sprang hin und her.
+- **Abstände:** Ausreißer wie „über 300 s“ für ein Auto direkt hinter dir werden jetzt abgefangen – der Abstand muss zum Abstand auf der Strecke passen. Auffällige Fälle schreibt StintView ins Protokoll, damit wir die Ursache finden. Wirkt, sobald der PC des Fahrers 0.21.1 hat.
+
 ## 0.21.0 – 10.10.2026
 
 - **Abstände im Duell- und Positions-Panel:** Ein Auto direkt hinter oder vor dir konnte für einen Moment mit fast einer ganzen Rundenzeit erscheinen (z. B. „über 300 s“ auf der Nordschleife), und die Reihenfolge sprang kurz – besonders an Start/Ziel. StintView verfolgt jetzt jedes Auto fortlaufend und lässt sich von kurzen Aussetzern in iRacings Rundenzähler nicht mehr täuschen. Auch der Abstand direkt nach dem Überqueren der Linie stimmt jetzt. Die Werte kommen vom PC des Fahrers – sie wirken, sobald dessen StintView 0.21 hat.
