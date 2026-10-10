@@ -2,6 +2,12 @@
 
 Alle veröffentlichten Versionen, neueste zuerst. Installer und Updates: [GitHub Releases](https://github.com/ToyYoda/stintview/releases) – die App aktualisiert sich selbst.
 
+## 0.20.0 – 10.10.2026
+
+- **Funk:** Nachrichten kommen beim Fahrer sofort an – vorher konnten sie sich unter Spiel-Last (besonders in VR) minutenlang stauen und nacheinander nachkommen. Eine neue Nachricht ersetzt die alte sofort, 10 s nach der letzten ist das Panel leer. Wirkt vollständig, sobald der Fahrer-PC und der PC mit dem Team-Server 0.20 haben.
+- **Sprit:** Runde 0 – die Einführungsrunde beim fliegenden Start bzw. die paar Meter vom Startplatz zur Linie beim stehenden Start – wird nicht mehr angezeigt und nicht in Durchschnitt und Prognose eingerechnet.
+- **Positions-Panel:** neue Spalte **Team** mit dem Teamnamen – nur in Teamrennen, sonst ausgeblendet.
+
 ## 0.19.0 – 09.10.2026
 
 - **Positions-Panel – neue Spalten:**
