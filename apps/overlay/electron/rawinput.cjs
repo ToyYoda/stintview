@@ -30,6 +30,8 @@ function ensureProc() {
       finishLearn(null);
     } else if (m?.t === 'error') {
       log(`error: ${m.text}`);
+    } else if (m?.t === 'log') {
+      log(m.text);
     }
   });
   proc.on('exit', (code) => {

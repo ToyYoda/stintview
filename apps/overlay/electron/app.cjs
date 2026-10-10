@@ -358,7 +358,6 @@ function applySettings() {
   setVrOpacity(settings.opacity / 100);
   recorder?.post({ t: 'pit-settings', pit: settings.pitStop });
   setMessages(cleanMessages(settings.messages, settings.language));
-  applyRecenter();
   applyOutputs();
   if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: settings.autostart, args: ['--hidden'] });
   refresh();
@@ -390,9 +389,9 @@ function setSimRunning(running) {
 /** Displays wanted, but held back until iRacing runs ("only while iRacing runs"). */
 const waitingForSim = () => settings.overlay && settings.onlyWithIracing && !simRunning;
 
-/** The iRacing recenter key/button moves the VR panels along – read only while VR is the output. */
+/** The iRacing recenter key/button moves the VR panels along – read only while the VR panels run. */
 function applyRecenter() {
-  const on = settings.overlay && settings.output === 'vr' && settings.vrRecenter;
+  const on = settings.overlay && settings.output === 'vr' && settings.vrRecenter && (!settings.onlyWithIracing || simRunning);
   watchRecenter(on ? settings.vrRecenter : null, alignToHead);
 }
 
@@ -411,6 +410,7 @@ function applyOutputs() {
   } else {
     stopVr();
   }
+  applyRecenter();
 }
 
 function updateSettings(patch) {

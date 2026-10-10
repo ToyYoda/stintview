@@ -1,10 +1,14 @@
-// Utility process: watches keyboards and game controllers (wheels, button boxes) with Windows
-// Raw Input, for the key/button that recenters VR in iRacing. Raw Input only reads along –
-// iRacing still gets every key and button. Runs on its own: a wheel sends up to 1000 reports
-// a second, which must not land on the app's main thread.
+// Utility process: watches the key/button that recenters VR in iRacing. Only reads along –
+// iRacing still gets every key and button.
+// - Keys: Windows Raw Input for the keyboard (a message per keystroke).
+// - Wheel/button box buttons: the Windows joystick API (joyGetPosEx), polled 30 times a
+//   second – it reads the state Windows keeps anyway. Raw Input for controllers only while
+//   learning: a wheel base sends up to 1000 reports a second, and handling each of them all
+//   the time cost a lot of CPU and made iRacing stutter (0.21.0, MOZA R12).
+// - Fallback for buttons above 32 (the joystick API knows 32): Raw Input as while learning.
 //
 // parent -> { t: 'watch', binding } | { t: 'learn' } | { t: 'cancel' } | { t: 'stop' }
-// child  -> { t: 'pressed' } | { t: 'learned', binding } | { t: 'learn-cancel' } | { t: 'error', text }
+// child  -> { t: 'pressed' } | { t: 'learned', binding } | { t: 'learn-cancel' } | { t: 'error' | 'log', text }
 //
 // binding: { kind: 'key', vkey, e0, mods: number[], name } | { kind: 'button', device, button, name }
 const koffi = require('koffi');
@@ -12,9 +16,18 @@ const koffi = require('koffi');
 const user32 = koffi.load('user32.dll');
 const hid = koffi.load('hid.dll');
 const kernel32 = koffi.load('kernel32.dll');
+const winmm = koffi.load('winmm.dll');
 
 const RAWINPUTDEVICE = koffi.struct('RAWINPUTDEVICE', { usUsagePage: 'uint16_t', usUsage: 'uint16_t', dwFlags: 'uint32_t', hwndTarget: 'void *' });
 const POINT = koffi.struct('POINT', { x: 'int32_t', y: 'int32_t' });
+const JOYINFOEX = koffi.struct('JOYINFOEX', Object.fromEntries(
+  ['dwSize', 'dwFlags', 'dwXpos', 'dwYpos', 'dwZpos', 'dwRpos', 'dwUpos', 'dwVpos', 'dwButtons', 'dwButtonNumber', 'dwPOV', 'dwReserved1', 'dwReserved2'].map((k) => [k, 'uint32_t'])));
+const JOYCAPSW = koffi.struct('JOYCAPSW', {
+  wMid: 'uint16_t', wPid: 'uint16_t', szPname: koffi.array('char16_t', 32),
+  ...Object.fromEntries(['wXmin', 'wXmax', 'wYmin', 'wYmax', 'wZmin', 'wZmax', 'wNumButtons', 'wPeriodMin', 'wPeriodMax', 'wRmin', 'wRmax',
+    'wUmin', 'wUmax', 'wVmin', 'wVmax', 'wCaps', 'wMaxAxes', 'wNumAxes', 'wMaxButtons'].map((k) => [k, 'uint32_t'])),
+  szRegKey: koffi.array('char16_t', 32), szOEMVxD: koffi.array('char16_t', 260),
+});
 const MSG = koffi.struct('MSG', { hwnd: 'void *', message: 'uint32_t', wParam: 'uintptr_t', lParam: 'intptr_t', time: 'uint32_t', pt: POINT, lPrivate: 'uint32_t' });
 
 const CreateWindowExW = user32.func('void *CreateWindowExW(uint32_t ex, const char16_t *cls, const char16_t *name, uint32_t style, int x, int y, int w, int h, intptr_t parent, void *menu, void *inst, void *param)');
@@ -31,9 +44,16 @@ const CloseHandle = kernel32.func('bool CloseHandle(intptr_t h)');
 const HidP_MaxUsageListLength = hid.func('uint32_t HidP_MaxUsageListLength(int32_t type, uint16_t page, uint8_t *preparsed)');
 const HidP_GetUsages = hid.func('uint32_t HidP_GetUsages(int32_t type, uint16_t page, uint16_t link, uint16_t *usages, _Inout_ uint32_t *length, uint8_t *preparsed, uint8_t *report, uint32_t reportLength)');
 const HidD_GetProductString = hid.func('bool HidD_GetProductString(intptr_t h, uint8_t *buf, uint32_t size)');
+const joyGetNumDevs = winmm.func('uint32_t joyGetNumDevs()');
+const joyGetDevCapsW = winmm.func('uint32_t joyGetDevCapsW(uintptr_t id, _Out_ JOYCAPSW *caps, uint32_t size)');
+const joyGetPosEx = winmm.func('uint32_t joyGetPosEx(uint32_t id, _Inout_ JOYINFOEX *info)');
 
 const HWND_MESSAGE = -3;
-const RIDEV_INPUTSINK = 0x100;
+const RIDEV_INPUTSINK = 0x100, RIDEV_REMOVE = 0x1;
+const JOY_RETURNBUTTONS = 0x80, JOYERR_NOERROR = 0;
+const JOY_POLL_MS = 33;
+/** A wheel that is gone (unplugged, off) is looked for again this often – enumerating can hitch. */
+const JOY_RETRY_MS = 60000;
 const WM_INPUT = 0xff;
 const PM_REMOVE = 1;
 const RID_INPUT = 0x10000003;
@@ -64,12 +84,82 @@ if (!hwnd) {
   send({ t: 'error', text: `CreateWindowEx failed (${GetLastError()})` });
   process.exit(1);
 }
-// Keyboard, joystick (wheels, button boxes), gamepad, multi-axis controller; INPUTSINK = also
-// while another program (iRacing) has the focus.
-const wanted = [6, 4, 5, 8].map((usage) => ({ usUsagePage: 1, usUsage: usage, dwFlags: RIDEV_INPUTSINK, hwndTarget: hwnd }));
-if (!RegisterRawInputDevices(wanted, wanted.length, koffi.sizeof(RAWINPUTDEVICE))) {
-  send({ t: 'error', text: `RegisterRawInputDevices failed (${GetLastError()})` });
-  process.exit(1);
+const KEYBOARD = [6];
+const CONTROLLERS = [4, 5, 8]; // joystick (wheels, button boxes), gamepad, multi-axis controller
+/** Raw Input usages registered now. */
+const registered = new Set();
+
+/** Registers/unregisters Raw Input usages; INPUTSINK = also while iRacing has the focus. */
+function setRawInput(usages, on) {
+  const change = usages.filter((u) => registered.has(u) !== on);
+  if (!change.length) return;
+  const list = change.map((usage) => ({ usUsagePage: 1, usUsage: usage, dwFlags: on ? RIDEV_INPUTSINK : RIDEV_REMOVE, hwndTarget: on ? hwnd : null }));
+  if (!RegisterRawInputDevices(list, list.length, koffi.sizeof(RAWINPUTDEVICE))) {
+    return send({ t: 'error', text: `RegisterRawInputDevices failed (${GetLastError()})` });
+  }
+  for (const u of change) if (on) registered.add(u); else registered.delete(u);
+  if (on && change.some((u) => CONTROLLERS.includes(u))) for (const d of devices.values()) d.primed = false;
+}
+
+// --- buttons through the joystick API --------------------------------------------------
+
+/** { ids: joystick ids of the device, bit, down, primed, lookedAt } for a button binding. */
+let joy = null;
+
+/** Joystick ids (winmm) of the device with this VID/PID; checks every id once – can hitch. */
+function findJoysticks(vid, pid) {
+  const ids = [];
+  const caps = {};
+  const n = Math.min(joyGetNumDevs(), 16);
+  for (let id = 0; id < n; id++) {
+    if (joyGetDevCapsW(id, caps, koffi.sizeof(JOYCAPSW)) === JOYERR_NOERROR && caps.wMid === vid && caps.wPid === pid) ids.push(id);
+  }
+  return ids;
+}
+
+/** Sets up polling for a button binding; false = not possible (use Raw Input). */
+function setupJoystick() {
+  joy = null;
+  if (binding?.kind !== 'button' || binding.button > 32) return false;
+  const m = /vid_([0-9a-f]{4})&pid_([0-9a-f]{4})/i.exec(binding.device);
+  if (!m) return false;
+  const vid = parseInt(m[1], 16), pid = parseInt(m[2], 16);
+  joy = { vid, pid, ids: findJoysticks(vid, pid), bit: 2 ** (binding.button - 1), down: false, primed: false, lookedAt: Date.now() };
+  if (!joy.ids.length) send({ t: 'log', text: `joystick ${m[0]} not found, retrying every ${JOY_RETRY_MS / 1000} s` });
+  return true;
+}
+
+function pollJoystick() {
+  if (!joy || mode !== 'watch') return;
+  if (!joy.ids.length) {
+    if (Date.now() - joy.lookedAt < JOY_RETRY_MS) return;
+    joy.lookedAt = Date.now();
+    joy.ids = findJoysticks(joy.vid, joy.pid);
+    joy.primed = false;
+    return;
+  }
+  const info = { dwSize: koffi.sizeof(JOYINFOEX), dwFlags: JOY_RETURNBUTTONS };
+  let buttons = 0, ok = false;
+  for (const id of joy.ids) {
+    if (joyGetPosEx(id, info) === JOYERR_NOERROR) { ok = true; buttons |= info.dwButtons; }
+  }
+  if (!ok) { joy.ids = []; joy.lookedAt = Date.now(); return; } // unplugged: look again later
+  const down = (buttons & joy.bit) !== 0;
+  if (down && !joy.down && joy.primed) fire();
+  joy.down = down;
+  joy.primed = true; // a button held when watching starts isn't a press
+}
+
+/** What to listen to for the current mode and binding. */
+function updateSources() {
+  const learning = mode === 'learn';
+  const viaJoystick = !learning && mode === 'watch' && setupJoystick();
+  if (learning || mode !== 'watch') joy = null;
+  setRawInput(KEYBOARD, learning || (mode === 'watch' && binding?.kind === 'key'));
+  setRawInput(CONTROLLERS, learning || (mode === 'watch' && binding?.kind === 'button' && !viaJoystick));
+  if (mode === 'watch' && binding?.kind === 'button') {
+    send({ t: 'log', text: viaJoystick ? `watching ${binding.name} (joystick API)` : `watching ${binding.name} (Raw Input – button above 32 or no VID/PID)` });
+  }
 }
 
 // --- devices ------------------------------------------------------------------
@@ -138,7 +228,7 @@ function onKey(buf) {
   const mods = modsHeld();
   heldKeys.add(id);
   if (mode === 'learn') {
-    if (vkey === VK_ESCAPE) { mode = binding ? 'watch' : 'idle'; return send({ t: 'learn-cancel' }); }
+    if (vkey === VK_ESCAPE) { mode = binding ? 'watch' : 'idle'; updateSources(); return send({ t: 'learn-cancel' }); }
     if (MODIFIERS.has(vkey)) return; // wait for the key that goes with it
     const names = mods.map((m) => ({ 0x10: 'Shift', 0x11: 'Ctrl', 0x12: 'Alt', 0x5b: 'Win', 0x5c: 'Win' })[m]);
     return learned({ kind: 'key', vkey, e0, mods, name: [...names, keyName(vkey, makeCode, e0)].join('+') });
@@ -174,6 +264,7 @@ function learned(b) {
   mode = 'watch';
   lastPressed = Date.now(); // the learning press itself doesn't recenter
   send({ t: 'learned', binding: b });
+  updateSources();
 }
 
 // --- message loop ------------------------------------------------------------------
@@ -200,14 +291,24 @@ function pump() {
   }
 }
 const timer = setInterval(pump, POLL_MS);
+const joyTimer = setInterval(pollJoystick, JOY_POLL_MS);
 
 process.parentPort.on('message', (e) => {
   const m = e.data;
-  if (m?.t === 'watch') { binding = m.binding ?? null; if (mode !== 'learn') mode = binding ? 'watch' : 'idle'; }
-  else if (m?.t === 'learn') mode = 'learn';
-  else if (m?.t === 'cancel' && mode === 'learn') mode = binding ? 'watch' : 'idle';
-  else if (m?.t === 'stop') {
+  if (m?.t === 'watch') {
+    const same = JSON.stringify(binding) === JSON.stringify(m.binding ?? null), before = mode;
+    binding = m.binding ?? null;
+    if (mode !== 'learn') mode = binding ? 'watch' : 'idle';
+    if (!same || mode !== before) updateSources(); // looking for the joystick again can hitch
+  } else if (m?.t === 'learn') {
+    mode = 'learn';
+    updateSources();
+  } else if (m?.t === 'cancel' && mode === 'learn') {
+    mode = binding ? 'watch' : 'idle';
+    updateSources();
+  } else if (m?.t === 'stop') {
     clearInterval(timer);
+    clearInterval(joyTimer);
     DestroyWindow(hwnd);
     process.exit(0);
   }
