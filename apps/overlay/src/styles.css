@@ -29,6 +29,10 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 }
 .draggable { position: absolute; }
 .edit .draggable { cursor: move; outline: 1px dashed var(--accent); outline-offset: 2px; }
+.resize-handle {
+  position: absolute; right: -8px; bottom: -8px; width: 14px; height: 14px; cursor: nwse-resize;
+  background: var(--accent); border: 2px solid #000; border-radius: 3px;
+}
 
 /* Single-widget pages for VR: fills the panel; opacity as set for VR. */
 .single { display: inline-block; width: max-content; padding: 4px; }

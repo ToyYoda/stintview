@@ -57,6 +57,8 @@ export function App() {
   const [config, setConfig] = useState<PanelConfig | null>(null);
   // The overlay window spans all monitors; positions are stored relative to the main monitor.
   const [main, setMain] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  // Size while resizing with the mouse (edit mode), before the StintView window confirms it.
+  const [resizing, setResizing] = useState<{ id: WidgetId; scale: number } | null>(null);
 
   useEffect(() => {
     const onHash = () => setRoute(location.hash);
@@ -116,19 +118,31 @@ export function App() {
         </div>
       )}
       {(Object.keys(widgets) as WidgetId[]).filter((id) => !shown || shown.includes(id)).map((id) => (
-        <Draggable key={id} pos={onScreen(positions[id])} enabled={edit} onMove={(x, y) => move(id, x, y)}>
-          {/* Size from the StintView window; VR panels are sized in the headset instead. */}
-          <div style={{ zoom: config?.[id]?.scale ?? 1 }}>{widgets[id]}</div>
+        <Draggable key={id} pos={onScreen(positions[id])} enabled={edit} onMove={(x, y) => move(id, x, y)}
+          scale={resizing?.id === id ? resizing.scale : config?.[id]?.scale ?? 1}
+          onResize={(scale) => setResizing({ id, scale })}
+          onResized={(scale) => {
+            // Saved as the panel's size in the settings; comes back as panel config.
+            setConfig((c) => (c?.[id] ? { ...c, [id]: { ...c[id], scale } } : c));
+            setResizing(null);
+            window.stintview?.setPanelSize?.(id, Math.round(scale * 100));
+          }}>
+          {/* Size from the StintView window or the corner handle; VR panels are sized in the headset instead. */}
+          <div style={{ zoom: resizing?.id === id ? resizing.scale : config?.[id]?.scale ?? 1 }}>{widgets[id]}</div>
         </Draggable>
       ))}
     </div>
   );
 }
 
-function Draggable({ pos, enabled, onMove, children }: {
-  pos: { x: number; y: number }; enabled: boolean; onMove(x: number, y: number): void; children: ReactNode;
+const MIN_SCALE = 0.5, MAX_SCALE = 2;
+
+function Draggable({ pos, enabled, onMove, scale, onResize, onResized, children }: {
+  pos: { x: number; y: number }; enabled: boolean; onMove(x: number, y: number): void;
+  scale: number; onResize(scale: number): void; onResized(scale: number): void; children: ReactNode;
 }) {
   const start = useRef<{ px: number; py: number; x: number; y: number } | null>(null);
+  const resize = useRef<{ px: number; py: number; w: number; h: number; scale: number; last: number } | null>(null);
   return (
     <div
       className="draggable"
@@ -145,6 +159,35 @@ function Draggable({ pos, enabled, onMove, children }: {
       onPointerUp={() => { start.current = null; }}
     >
       {children}
+      {enabled && (
+        // Corner handle: the panel grows along the drag towards bottom right, in 5 % steps.
+        <div
+          className="resize-handle"
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            (e.target as Element).setPointerCapture(e.pointerId);
+            const box = (e.currentTarget.parentElement as HTMLElement).getBoundingClientRect();
+            resize.current = { px: e.clientX, py: e.clientY, w: box.width, h: box.height, scale, last: scale };
+          }}
+          onPointerMove={(e) => {
+            const r = resize.current;
+            if (!r) return;
+            e.stopPropagation();
+            // Drag projected onto the panel's diagonal.
+            const dx = e.clientX - r.px, dy = e.clientY - r.py;
+            const factor = 1 + (dx * r.w + dy * r.h) / (r.w * r.w + r.h * r.h);
+            const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.round(r.scale * factor * 20) / 20));
+            if (next !== r.last) { r.last = next; onResize(next); }
+          }}
+          onPointerUp={(e) => {
+            const r = resize.current;
+            if (!r) return;
+            e.stopPropagation();
+            resize.current = null;
+            if (r.last !== r.scale) onResized(r.last);
+          }}
+        />
+      )}
     </div>
   );
 }

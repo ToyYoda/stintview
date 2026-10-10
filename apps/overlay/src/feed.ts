@@ -123,6 +123,8 @@ declare global {
       onPanels?(cb: (ids: string[]) => void): void;
       onOpacity?(cb: (value: number) => void): void;
       onPanelConfig?(cb: (cfg: PanelConfig) => void): void;
+      /** Panel size in percent from the corner handle on the monitor overlay (edit mode). */
+      setPanelSize?(id: string, size: number): Promise<void>;
       onLanguage?(cb: (lang: 'de' | 'en') => void): void;
       setTeamCar(team: { carIdx: number; carNumber: number; sessionId: string }): void;
       /** This PC's own recorder (no team server needed): live messages and the latest per type. */

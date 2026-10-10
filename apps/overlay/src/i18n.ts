@@ -42,7 +42,7 @@ const de = {
   'cam.result.not-accepted': 'iRacing hat den Kamerawechsel nicht angenommen. Läuft iRacing als Administrator? Dann blockiert Windows die Steuerung – iRacing normal starten oder StintView ebenfalls als Administrator starten.',
   'cam.result.no-team': 'Noch keine Daten vom Team-Auto',
   'cam.result.no-recorder': 'Recorder läuft nicht',
-  'edit.banner': 'Anzeigen mit der Maus ziehen',
+  'edit.banner': 'Anzeigen mit der Maus ziehen, Größe am Eck unten rechts',
   'edit.endsWith': '{key} beendet',
   'edit.done': 'Fertig',
   // Inputs
@@ -458,7 +458,7 @@ const en: Record<Key, string> = {
   'cam.result.not-accepted': "iRacing didn't accept the camera switch. Is iRacing running as administrator? Then Windows blocks the control – start iRacing normally or start StintView as administrator too.",
   'cam.result.no-team': 'No data from the team car yet',
   'cam.result.no-recorder': 'Recorder is not running',
-  'edit.banner': 'Drag the displays with the mouse',
+  'edit.banner': 'Drag the displays with the mouse, resize at the bottom right corner',
   'edit.endsWith': '{key} ends',
   'edit.done': 'Done',
   'inputs.none': 'No input data',

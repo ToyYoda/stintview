@@ -14,6 +14,8 @@ contextBridge.exposeInMainWorld('stintview', {
   onOpacity: (cb) => ipcRenderer.on('opacity', (_e, v) => cb(v)),
   // Size factor and options per panel
   onPanelConfig: (cb) => ipcRenderer.on('panel-config', (_e, cfg) => cb(cfg)),
+  // Panel size in percent, from the corner handle in edit mode (same setting as in the window)
+  setPanelSize: (id, size) => ipcRenderer.invoke('app:panel-size', id, size),
   // UI language ('de' | 'en')
   onLanguage: (cb) => ipcRenderer.on('language', (_e, l) => cb(l)),
   // This PC's own telemetry (displays without a team server): live messages, latest per type

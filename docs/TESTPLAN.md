@@ -200,6 +200,7 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 |---|---|---|---|---|
 | 5.1b | alle | mit Triple-Screens (oder zweitem Monitor): Anzeigen verschieben, ein Panel auf den linken und eins auf den rechten Monitor ziehen, Fertig, StintView neu starten | Panels lassen sich auf alle Monitore ziehen und bleiben dort; Panels auf dem Hauptmonitor bleiben, wo sie waren | |
 | 5.1 | alle | StintView-Fenster → **Anzeigen verschieben** | gelbes Banner im Overlay, Anzeigen lassen sich ziehen, **Fertig** beendet | |
+| 5.1c | alle | Anzeigen verschieben, gelben Griff unten rechts an einem Panel ziehen, Fertig | Panel wird größer/kleiner (50–200 %); im StintView-Fenster steht die neue Größe beim Panel; bleibt nach Neustart | |
 | 5.2 | alle | Tastenkürzel zum Verschieben (steht im Fenster, z. B. Strg+Umschalt+O oder Strg+Alt+O bei AMD) | wie 5.1 | |
 | 5.2b | alle | Tray-Symbol → **Tastaturkürzel …** | Fenster öffnet mit der Übersicht oben; die Kürzel dort funktionieren (z. B. Verschieben); VR-Gruppe grau, solange VR aus | |
 | 5.2c | alle | StintView-Fenster → Anzeigen → **Hintergrund** auf 0 %, dann 100 %; in VR ca. 40 % (Brille auf) | Hintergrund verschwindet/wird deckend, sofort; VR: Panels halbdurchsichtig, Schrift gut lesbar | |

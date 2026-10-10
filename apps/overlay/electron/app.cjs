@@ -572,6 +572,14 @@ ipcMain.handle('app:settings', (_e, patch) => {
   return appState();
 });
 
+/** Panel size from the corner handle on the monitor overlay: same setting as the slider. */
+ipcMain.handle('app:panel-size', (_e, id, size) => {
+  if (!settings.panels[id] || !Number.isFinite(size)) return;
+  const clamped = Math.min(200, Math.max(50, Math.round(size / 5) * 5));
+  updateSettings({ panels: cleanPanels({ ...settings.panels, [id]: { ...settings.panels[id], size: clamped } }) });
+  refresh();
+});
+
 /** Edit mode of the desktop overlay (drag widgets); on = undefined toggles. */
 ipcMain.handle('app:edit', (_e, on) => {
   if (on === undefined) toggleEdit(); else setEditMode(on);
