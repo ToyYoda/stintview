@@ -131,7 +131,9 @@
     .duel-strip .me { background: var(--signal); color: var(--asphalt); padding: 2px 11px; }
     .showcase { display: grid; grid-template-columns: 1.08fr 1fr; gap: 12px; align-items: start; }
     .showcase img { width: 100%; border-radius: 12px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--line); }
-    .showcase .s-inputs { grid-column: 1 / -1; }
+    /* Inputs and pit stop side by side, the (wide) Position panel across below. */
+    .showcase .s-inputs { align-self: start; }
+    .showcase .s-standings { grid-column: 1 / -1; order: 3; }
 
     /* Signal band (in place of the team livery) */
     .band { background: var(--signal); color: var(--asphalt); overflow: hidden; }
@@ -293,7 +295,7 @@
           </div>
           <div class="showcase" aria-label="{{showcaseLabel}}">
             <img class="s-inputs" src="{{SHOTS}}inputs.png" alt="{{altInputs}}" width="884" height="336">
-            <img class="s-standings" src="{{SHOTS}}standings.png" alt="{{altStandings}}" width="988" height="848">
+            <img class="s-standings" src="{{SHOTS}}standings.png" alt="{{altStandings}}" width="1580" height="908">
             <img class="s-pitstop" src="{{SHOTS}}pitstop.png" alt="{{altPitstop}}" width="724" height="482">
           </div>
         </div>
@@ -331,7 +333,7 @@
             <p>{{f2Text}}</p>
           </article>
           <article class="card">
-            <div class="shot"><img src="{{SHOTS}}standings.png" alt="" width="988" height="848" loading="lazy"></div>
+            <div class="shot"><img src="{{SHOTS}}standings.png" alt="" width="1580" height="908" loading="lazy"></div>
             <h3>{{f4Title}}</h3>
             <p>{{f4Text}}</p>
             <p class="note">{{f4Note}}</p>
