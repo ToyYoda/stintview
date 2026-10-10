@@ -517,7 +517,7 @@ export class PitPlanner {
     const s = this.session;
     if (!s) return null;
     const t = f.num('SessionTime');
-    const cars = readProgress(f);
+    const cars = readProgress(f, (idx) => s.lapEst.get(idx) ?? null);
 
     for (const sample of this.lane.onFrame(t, cars, (idx) => s.lapEst.get(idx) ?? null)) {
       this.store.addLaneLoss(s.track, sample.loss);

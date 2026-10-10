@@ -11,12 +11,15 @@ export interface CarProgress {
   classId: number;
   /** iRacing's estimate of the time from the start/finish line to the car's current spot, null if unknown. */
   estTime?: number | null;
+  /** iRacing's estimated lap time of the car's class (CarClassEstLapTime): the scale of `estTime`. */
+  estLap?: number | null;
   onPitRoad?: boolean;
 }
 
 export interface CarInfo {
   number: string; name: string; /** ISO code for the flag, e.g. "de". */ country?: string | null;
   team?: string | null; car?: string | null; irating?: number | null; license?: { text: string; color: string } | null;
+  /** CarClassEstLapTime in seconds. */ estLap?: number | null;
 }
 
 export interface StandingsExtras {
@@ -27,7 +30,10 @@ export interface StandingsExtras {
 /**
  * Time gap from the team car to `car` along the track in seconds; positive = `car` is ahead.
  * Uses iRacing's per-car time estimate (accounts for slow and fast sections) and the team
- * car's last lap to bridge the start/finish line; falls back to distance × lap time.
+ * car's last lap for whole laps; falls back to distance × lap time.
+ * The estimate runs from 0 at the line to iRacing's estimated class lap time (`estLap`), not
+ * to our real lap time: across the line it wraps with `estLap` and is then scaled to the real
+ * lap (wrapping with the real lap was off by their difference until both cars had crossed).
  * Returns null without a reference lap time.
  */
 export function trackGap(car: CarProgress, team: CarProgress, lapRef: number | null): number | null {
@@ -35,14 +41,18 @@ export function trackGap(car: CarProgress, team: CarProgress, lapRef: number | n
   const laps = Math.trunc(dp);
   const est = car.estTime, ownEst = team.estTime;
   if (est != null && ownEst != null && est >= 0 && ownEst >= 0) {
-    let dt = est - ownEst; // same lap: time between the two spots
+    const ownLap = team.estLap ?? null;
+    // Another class has another estimated lap: the car's spot on our scale.
+    const spot = ownLap && car.estLap ? est * ownLap / car.estLap : est;
+    let dt = spot - ownEst; // same lap: time between the two spots
     const rest = dp - laps; // fraction of a lap between the cars, beyond whole laps
-    if (lapRef) {
-      if (rest > 0 && dt < 0) dt += lapRef; // car is ahead across the line
-      if (rest < 0 && dt > 0) dt -= lapRef; // car is behind across the line
-      return dt + laps * lapRef;
+    const wrap = ownLap ?? lapRef;
+    if (wrap) {
+      if (rest > 0 && dt < 0) dt += wrap; // car is ahead across the line
+      if (rest < 0 && dt > 0) dt -= wrap; // car is behind across the line
     }
-    return laps === 0 && Math.sign(dt) === Math.sign(rest) ? dt : null;
+    if (lapRef) return dt * (ownLap ? lapRef / ownLap : 1) + laps * lapRef;
+    return laps === 0 && (wrap || Math.sign(dt) === Math.sign(rest)) ? dt : null;
   }
   return lapRef ? dp * lapRef : null;
 }
@@ -167,8 +177,11 @@ export function betweenRows(
   return { ahead: side(frontIdx, 1), behind: side(backIdx, -1) };
 }
 
-/** Reads all cars from a telemetry frame; cars not on the track (pct < 0) are skipped. */
-export function readProgress(f: Frame): CarProgress[] {
+/**
+ * Reads all cars from a telemetry frame; cars not on the track (pct < 0) are skipped.
+ * `estLap`: iRacing's estimated class lap time per car (session info), for `trackGap`.
+ */
+export function readProgress(f: Frame, estLap: (carIdx: number) => number | null = () => null): CarProgress[] {
   const n = Math.min(f.count('CarIdxLapCompleted'), f.count('CarIdxLapDistPct'));
   const hasEst = f.has('CarIdxEstTime');
   const hasPit = f.has('CarIdxOnPitRoad');
@@ -185,6 +198,7 @@ export function readProgress(f: Frame): CarProgress[] {
       lastLap: last > 0 ? last : null,
       classId: f.has('CarIdxClass') ? f.num('CarIdxClass', i) : 0,
       estTime: est >= 0 ? est : null,
+      estLap: estLap(i),
       onPitRoad: hasPit && f.num('CarIdxOnPitRoad', i) === 1,
     });
   }
@@ -400,7 +414,7 @@ export class StandingsTracker {
       this.pits.reset();
       this.sessionNum = sessionNum;
     }
-    const cars = readProgress(f);
+    const cars = readProgress(f, (idx) => this.info.get(idx)?.estLap ?? null);
     this.pits.update(cars.map((c) => ({ carIdx: c.carIdx, laps: Math.floor(c.progress), onPitRoad: c.onPitRoad ?? false })));
     if (!driving) return null;
 

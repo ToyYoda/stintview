@@ -50,6 +50,17 @@ describe('trackGap', () => {
     expect(trackGap(car(5.97, 97), car(6.02, 2), 100)).toBeCloseTo(-5);
   });
 
+  it('bridges the line with the estimated lap of iRacing, not the real one', () => {
+    // estimate scale 105 s, real lap 100 s: car ahead 2 s (est) past the line, we 3 s (est) before it
+    const est = (progress: number, estTime: number, estLap = 105): CarProgress => ({ ...car(progress, estTime), estLap });
+    expect(trackGap(est(6.02, 2), est(5.97, 102), 100)).toBeCloseTo(5 * 100 / 105);
+    expect(trackGap(est(5.97, 102), est(6.02, 2), 100)).toBeCloseTo(-5 * 100 / 105);
+    // same lap: scaled to the real lap as well
+    expect(trackGap(est(5.6, 63), est(5.5, 52.5), 100)).toBeCloseTo(10);
+    // other class (estimated lap 120 s) halfway round = halfway on our scale
+    expect(trackGap({ ...car(5.6, 60), estLap: 120 }, est(5.5, 42), 100)).toBeCloseTo(10);
+  });
+
   it('adds whole laps for lapped cars', () => {
     expect(trackGap(car(4.5, 50), car(5.6, 58), 100)).toBeCloseTo(-108);
   });

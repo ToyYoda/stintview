@@ -157,7 +157,7 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
       recorder.onSessionInfo(yaml);
       spectator?.onSessionInfo(yaml);
       const cars = parseSessionCars(yaml);
-      const info = new Map([...cars.drivers].map(([idx, d]) => [idx, { number: d.label, name: d.name, country: countryCode(d.flair), team: d.team, car: d.car, irating: d.irating, license: d.license }]));
+      const info = new Map([...cars.drivers].map(([idx, d]) => [idx, { number: d.label, name: d.name, country: countryCode(d.flair), team: d.team, car: d.car, irating: d.irating, license: d.license, estLap: d.estLap }]));
       standings.setDrivers(info, cars.trackLength, cars.tires);
       standings.setSessions(parseSessions(yaml));
       pit.setSession(yaml, info);
