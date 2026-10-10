@@ -2,6 +2,12 @@
 
 Alle veröffentlichten Versionen, neueste zuerst. Installer und Updates: [GitHub Releases](https://github.com/ToyYoda/stintview/releases) – die App aktualisiert sich selbst.
 
+## 0.21.0 – 10.10.2026
+
+- **Abstände im Duell- und Positions-Panel:** Ein Auto direkt hinter oder vor dir konnte für einen Moment mit fast einer ganzen Rundenzeit erscheinen (z. B. „über 300 s“ auf der Nordschleife), und die Reihenfolge sprang kurz – besonders an Start/Ziel. StintView verfolgt jetzt jedes Auto fortlaufend und lässt sich von kurzen Aussetzern in iRacings Rundenzähler nicht mehr täuschen. Auch der Abstand direkt nach dem Überqueren der Linie stimmt jetzt. Die Werte kommen vom PC des Fahrers – sie wirken, sobald dessen StintView 0.21 hat.
+- **Monitor: Größe mit der Maus:** Beim Anzeigen verschieben hat jedes Panel unten rechts einen gelben Griff – daran ziehen macht es größer oder kleiner (50–200 %, gleiche Einstellung wie der Regler „Größe“ im Fenster).
+- **VR: Recenter mit iRacing koppeln:** iRacings „Sitzposition zurücksetzen“ dreht nur die iRacing-Sicht, nicht die Panels. Im StintView-Fenster unter Anzeigen (Ausgabe VR) bei „Recenter mit iRacing koppeln“ einmal die Taste bzw. den Lenkradknopf drücken, mit dem du in iRacing zurücksetzt – ab dann richten sich die Panels bei jedem Druck mit aus. iRacing bekommt den Knopf weiterhin normal.
+
 ## 0.20.0 – 10.10.2026
 
 - **Funk:** Nachrichten kommen beim Fahrer sofort an – vorher konnten sie sich unter Spiel-Last (besonders in VR) minutenlang stauen und nacheinander nachkommen. Eine neue Nachricht ersetzt die alte sofort, 10 s nach der letzten ist das Panel leer. Wirkt vollständig, sobald der Fahrer-PC und der PC mit dem Team-Server 0.20 haben.
