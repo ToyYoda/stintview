@@ -298,6 +298,12 @@ function startRecorder() {
       setSimRunning(false);
     }
     if (m.t === 'camera-state' || m.t === 'camera-result') return onRecorderMessage(m);
+    // Team messages via the recorder's connection: on time even when a display page's own
+    // connection lags behind the telemetry (driver's PC under load, race 09.10.2026).
+    if (m.t === 'team-message') {
+      for (const win of BrowserWindow.getAllWindows()) if (win !== setupWin && !win.isDestroyed()) win.webContents.send('team-message', m.msg);
+      return;
+    }
     if (m.t === 'laps') lapCounts = { total: m.total, unsent: m.unsent };
     refresh();
   });

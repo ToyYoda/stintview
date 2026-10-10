@@ -140,6 +140,9 @@ export class Room {
     const msg: TeamMessage = { t: 'message', id: this.nextMessageId++, text: clean, color: color as MessageColor, from: p.memberName, at: now };
     this.messages = [...this.messages, msg].slice(-MESSAGE_HISTORY);
     for (const o of this.overlays.values()) if (o.messages) o.send(msg);
+    // The desktop app's recorder passes them on to its displays: its connection carries hardly
+    // any downstream data, so messages arrive on time even when the overlay pages lag (0.20).
+    for (const r of this.recorders.values()) if (r.messages) r.send(msg);
     return msg;
   }
 

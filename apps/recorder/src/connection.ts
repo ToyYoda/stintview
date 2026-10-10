@@ -8,6 +8,8 @@ export interface ConnectionEvents {
   onStatus(status: string): void;
   /** Every standby reply to a driving claim (they repeat every 2 s while it lasts). */
   onStandby?(reason: 'other-driver' | 'other-session'): void;
+  /** Team message from the spotter (only asked for when `onMessage` is set). */
+  onMessage?(msg: Extract<ServerMessage, { t: 'message' }>): void;
 }
 
 /**
@@ -33,7 +35,7 @@ export class Connection {
     this.ws = ws;
     ws.binaryType = 'nodebuffer';
     ws.on('open', () => {
-      ws.send(pack({ t: 'hello', v: PROTOCOL_VERSION, token: this.token, role: 'recorder' }));
+      ws.send(pack({ t: 'hello', v: PROTOCOL_VERSION, token: this.token, role: 'recorder', ...(this.events.onMessage ? { features: ['messages'] } : {}) }));
     });
     ws.on('message', (data: Buffer) => {
       const msg = unpack<ServerMessage>(data);
@@ -51,6 +53,8 @@ export class Connection {
         this.events.onStatus(msg.reason === 'other-session'
           ? 'standby: the team is streaming another iRacing session – not shown to the team'
           : 'standby: another teammate is still streaming – taking over once they leave the car');
+      } else if (msg.t === 'message') {
+        this.events.onMessage?.(msg);
       } else if (msg.t === 'error') {
         this.events.onStatus(`server error: ${msg.message}`);
         if (msg.code !== 'protocol') this.closed = true; // retrying won't help

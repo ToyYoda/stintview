@@ -42,7 +42,9 @@ export class FuelTracker {
     if (s.lap === this.lap) return null;
 
     let done: FuelLap | null = null;
-    if (s.lap === this.lap + 1 && this.observedStart) {
+    // Lap 0 is the formation lap (rolling start) or the few metres from the grid to the line
+    // (standing start): not a lap to count fuel by (race 09.10.2026).
+    if (s.lap === this.lap + 1 && this.observedStart && this.lap >= 1) {
       done = { lap: this.lap, used: round(this.used), lapTime: round(s.sessionTime - this.lapStart), pit: this.pit };
       this.laps.push(done);
       if (this.laps.length > this.keep) this.laps.shift();

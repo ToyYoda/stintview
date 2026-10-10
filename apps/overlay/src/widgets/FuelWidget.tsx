@@ -14,7 +14,8 @@ const fmt = (v: number | null, digits = 2) => (v === null ? '–' : v.toFixed(di
  */
 export function FuelWidget({ fuel, status, session }: { fuel: Fuel | null; status: Status | null; session?: SessionInfo | null }) {
   const level = status?.fuelLevel ?? null;
-  const laps = fuel?.laps ?? [];
+  // Lap 0 (formation lap / grid to line) also from recorders before 0.20.
+  const laps = (fuel?.laps ?? []).filter((l) => l.lap >= 1);
   const s = level !== null ? fuelStats(laps, level) : null;
   const recent = laps.slice(-8);
   const max = Math.max(...recent.map((l) => l.used), 0.001);

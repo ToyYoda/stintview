@@ -152,6 +152,19 @@ describe('Room: team messages', () => {
     expect(messages(overlay.got)).toHaveLength(0);
   });
 
+  it('also to recorders that ask for them (desktop app passes them on to its displays)', () => {
+    const { room, peer } = setup();
+    const spotter = peer(1, 'Ben');
+    const driverApp = Object.assign(peer(2, 'Anna'), { messages: true });
+    const oldRecorder = peer(3, 'Carl');
+    room.addRecorder(spotter);
+    room.addRecorder(driverApp);
+    room.addRecorder(oldRecorder);
+    room.message(spotter, 'Box', 'red');
+    expect(messages(driverApp.got)).toHaveLength(1);
+    expect(messages(oldRecorder.got)).toHaveLength(0);
+  });
+
   it('drops empty texts, unknown colours and repeats within a second; cuts long texts', () => {
     const { room, peer, advance } = setup();
     const s = peer(1, 'Ben');

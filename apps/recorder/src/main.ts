@@ -1,5 +1,5 @@
 import { parseArgs } from 'node:util';
-import type { ClientMessage, CreateTeamRequest, JoinTeamRequest, SendMessage, TeamCredentials } from '@stintview/protocol';
+import type { ClientMessage, CreateTeamRequest, JoinTeamRequest, SendMessage, ServerMessage, TeamCredentials } from '@stintview/protocol';
 import { configPath, loadConfig, saveConfig, wsUrl } from './config.ts';
 import { Connection } from './connection.ts';
 import { IbtSource } from './irsdk/ibt.ts';
@@ -47,6 +47,7 @@ export type RecorderEvent =
   | { t: 'telemetry'; msg: ClientMessage }
   /** The team streams another iRacing session than this PC's: its displays show their own data. */
   | { t: 'other-session'; on: boolean }
+  | { t: 'team-message'; msg: Extract<ServerMessage, { t: 'message' }> }
   | CameraState
   | CameraResult
   | ({ t: 'pit-import'; finished: boolean; error?: string } & Partial<ImportProgress>)
@@ -113,6 +114,8 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
       lastStandby = Date.now();
       setOtherSession(reason === 'other-session' ? recorder.sessionId : null);
     },
+    // In the desktop app: team messages straight to its displays (see Room.message).
+    ...(parentPort ? { onMessage: (msg: Extract<ServerMessage, { t: 'message' }>) => report({ t: 'team-message', msg }) } : {}),
   }) : null;
   const send = (msg: ClientMessage) => {
     conn?.send(msg);

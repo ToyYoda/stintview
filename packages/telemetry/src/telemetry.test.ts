@@ -40,6 +40,14 @@ describe('FuelTracker', () => {
     expect(t.feed({ sessionTime: 5, lap: 3, lapDistPct: 0, fuelLevel: 9, onPitRoad: false })).toBeNull();
     expect(t.feed({ sessionTime: 9, lap: 4, lapDistPct: 0, fuelLevel: 8, onPitRoad: false })?.used).toBeCloseTo(1);
   });
+
+  it('never counts lap 0 (formation lap, or grid to the line at a standing start)', () => {
+    const t = new FuelTracker();
+    t.feed({ sessionTime: 0, lap: 0, lapDistPct: 0, fuelLevel: 60, onPitRoad: false }); // observed from the start
+    expect(t.feed({ sessionTime: 120, lap: 1, lapDistPct: 0, fuelLevel: 58, onPitRoad: false })).toBeNull();
+    expect(t.feed({ sessionTime: 220, lap: 2, lapDistPct: 0, fuelLevel: 54.5, onPitRoad: false })).toMatchObject({ lap: 1, used: 3.5 });
+    expect(t.laps.map((l) => l.lap)).toEqual([1]);
+  });
 });
 
 describe('TyreTracker', () => {

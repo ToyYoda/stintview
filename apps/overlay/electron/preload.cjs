@@ -21,6 +21,8 @@ contextBridge.exposeInMainWorld('stintview', {
   getLocalSnapshot: () => ipcRenderer.invoke('local:snapshot'),
   // true while the team streams another iRacing session: show this PC's own data
   onLocalPrefer: (cb) => ipcRenderer.on('local-prefer', (_e, on) => cb(on)),
+  // Team messages through this PC's recorder (arrive before the page's own connection)
+  onTeamMessage: (cb) => ipcRenderer.on('team-message', (_e, m) => cb(m)),
   // Spectator camera
   setTeamCar: (team) => ipcRenderer.send('app:team-car', team),
   setHazard: (carIdx) => ipcRenderer.send('app:hazard', carIdx),

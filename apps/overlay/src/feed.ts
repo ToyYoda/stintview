@@ -130,6 +130,8 @@ declare global {
       getLocalSnapshot?(): Promise<{ messages: ClientMessage[]; prefer: boolean }>;
       /** true while the team streams another iRacing session: show this PC's own data. */
       onLocalPrefer?(cb: (on: boolean) => void): void;
+      /** Team messages through this PC's recorder connection (desktop app, since 0.20). */
+      onTeamMessage?(cb: (m: TeamMessage) => void): void;
       setHazard?(carIdx: number | null): void;
       camera(action: 'incident' | 'back', targetCarIdx?: number): Promise<void>;
       getCameraInfo(): Promise<{ state: unknown; hotkeys: { incident: string | null; back: string | null } }>;
@@ -309,6 +311,21 @@ function applyLocal(s: FeedState, m: ClientMessage): FeedState {
  * teammate streams to the team from the same session), while the team server isn't connected or
  * the team streams another iRacing session than this PC.
  */
+/** Messages already received (id + server time: ids start over when the server restarts). */
+const seenMessages = new Set<string>();
+
+/**
+ * A new team message replaces what is shown (the panel shows the newest for 10 s from now).
+ * The same message arriving a second time – the page's own, possibly lagging connection after
+ * the recorder's – is ignored, so it can't reappear minutes later.
+ */
+function addMessage(s: FeedState, m: TeamMessage): FeedState {
+  const key = `${m.id}|${m.at}`;
+  if (seenMessages.has(key)) return s;
+  seenMessages.add(key);
+  return { ...s, messages: [...s.messages.filter((x) => x.id !== m.id), { ...m, rx: Date.now() }].slice(-10) };
+}
+
 export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
   const [team, setTeam] = useState<FeedState>(initial);
   const [own, setOwn] = useState<FeedState>(initial);
@@ -337,6 +354,7 @@ export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
       setOwn((s) => applyLocal(s, m));
     });
     api.onLocalPrefer?.(setOtherSession);
+    api.onTeamMessage?.((m) => setTeam((s) => addMessage(s, m)));
     api.getLocalSnapshot?.().then((snap) => {
       setOwn((s) => snap.messages.reduce(applyLocal, s));
       setOtherSession(snap.prefer);
@@ -375,8 +393,12 @@ export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
             case 'active':
               if (!m.driverName) inputs.clear();
               return { ...s, active: m };
-            case 'snapshot': return m.telemetry.reduce(applyTelemetry, { ...s, active: m.active, messages: m.messages ?? s.messages });
-            case 'message': return { ...s, messages: [...s.messages.filter((x) => x.id !== m.id), { ...m, rx: Date.now() }].slice(-10) };
+            case 'snapshot': {
+              // Reconnected: keep the arrival time of a message already shown (else it would vanish early).
+              const messages = (m.messages ?? s.messages).map((x) => s.messages.find((y) => y.id === x.id && y.at === x.at) ?? x);
+              return m.telemetry.reduce(applyTelemetry, { ...s, active: m.active, messages });
+            }
+            case 'message': return addMessage(s, m);
             case 'standby': return s; // recorder-only
             default: return applyTelemetry(s, m);
           }

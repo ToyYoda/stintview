@@ -74,9 +74,18 @@ const http = createServer(async (req, res) => {
 const wss = new WebSocketServer({ server: http, path: '/ws', maxPayload: 256 * 1024 });
 let nextId = 1;
 
+/** Kept up to date by the recorders anyway: skipped for a connection that can't keep up. */
+const DROPPABLE = new Set(['inputs', 'status', 'fuel', 'tyres', 'weather', 'standings', 'pitplan', 'hazard', 'session']);
+/** Unsent bytes at which a slow overlay gets no more telemetry until it has caught up (since 0.20). */
+const BACKLOG_BYTES = 256 * 1024;
+
 wss.on('connection', (ws: WebSocket) => {
   const send = (msg: ServerMessage) => {
-    if (ws.readyState === ws.OPEN) ws.send(pack(msg));
+    if (ws.readyState !== ws.OPEN) return;
+    // A busy PC (e.g. the driver's, in VR) reads its socket late: buffering everything delayed
+    // team messages by minutes behind old telemetry (race 09.10.2026).
+    if (ws.bufferedAmount > BACKLOG_BYTES && DROPPABLE.has(msg.t)) return;
+    ws.send(pack(msg));
   };
   let peer: Peer | null = null;
   let room: Room | null = null;

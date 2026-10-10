@@ -86,6 +86,7 @@ A fährt das Team-Auto, alle anderen schauen A in iRacing zu.
 |---|---|---|---|---|
 | 2.1 | A | ins Auto, losfahren | bei allen: Kopfzeile **A** mit grünem Punkt, Auto · Strecke; A selbst: Status *Du fährst – dein Team sieht deine Daten* | |
 | 2.2 | Z | Eingaben-Anzeige beobachten | Lenkung/Gas/Bremse laufen flüssig, passen zu dem, was man im Bild sieht (Verzögerung < ~0,5 s gefühlt) | |
+| 2.2b | A | Rennen mit Einführungsrunde (fliegender Start) oder stehendem Start | Sprit-Panel: keine Runde 0 bei den Balken; Ø 3/Ø 5 und „Runden übrig“ erst ab Runde 1 | |
 | 2.3 | A | 3 fliegende Runden fahren | Sprit: *Letzte*, *Ø 3* gefüllt, *Runden übrig* plausibel (Tank ÷ Verbrauch) | |
 | 2.4 | A | Boxenstopp **mit Tanken und 4 neuen Reifen** | Sprit: Box-Runde als **grauer Balken**, nicht im Durchschnitt, keine negativen Werte | |
 | 2.5 | Z | nach dem Stopp Reifen-Anzeige | „gemessen Stopp Runde X“, Karkasstemperaturen + „Stopp xx %“, km auf dem Satz startet bei ~0 | |
@@ -179,6 +180,7 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 | 4e.3 | Z | Kürzel Strg+Umschalt+3 drücken (während iRacing im Vordergrund ist) | „Push!“ kommt an und ersetzt die vorige Nachricht | |
 | 4e.4 | Z | Reiter **Funk**: Text/Farbe ändern, eigene Nachricht hinzufügen, einmalige Nachricht senden | Funk-Panel zeigt sofort die neue Liste; einmalige Nachricht kommt an, steht danach nicht in der Liste | |
 | 4e.5 | A | während der Fahrt Strg+Umschalt+1 drücken | keine Nachricht (Kürzel sind beim Fahrer aus), iRacing bekommt die Taste | |
+| 4e.6 | Z | während A fährt (gern in VR) drei Nachrichten kurz hintereinander senden | bei A erscheint jede sofort und ersetzt die vorige; 10 s nach der letzten ist das Panel leer; nichts kommt später nach | |
 
 ### Block 4f – Stintplaner (vor oder nach dem Rennen, ohne iRacing möglich)
 
