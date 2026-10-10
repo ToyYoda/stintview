@@ -4,7 +4,7 @@ import { parse } from 'yaml';
 import type { Pitplan, RejoinCar } from '@stintview/protocol';
 import type { Frame } from './irsdk/layout.ts';
 import { configPath } from './config.ts';
-import { readProgress, trackGap, type CarInfo, type CarProgress } from './standings.ts';
+import { readProgress, SteadyProgress, trackGap, type CarInfo, type CarProgress } from './standings.ts';
 
 // ---------------------------------------------------------------------------
 // Stop duration
@@ -463,6 +463,7 @@ export class PitPlanner {
   private lastSent = -Infinity;
   private override: PitOverride = { fillRate: null, tyreTime: null, regulation: 'auto' };
 
+  private steady = new SteadyProgress();
   constructor(private readonly store = new PitModelStore(), private readonly log: (s: string) => void = () => {}) {}
 
   setSession(yaml: string, info: Map<number, CarInfo>) {
@@ -518,6 +519,7 @@ export class PitPlanner {
     if (!s) return null;
     const t = f.num('SessionTime');
     const cars = readProgress(f, (idx) => s.lapEst.get(idx) ?? null);
+    this.steady.apply(t, cars); // mismatches are logged by the standings
 
     for (const sample of this.lane.onFrame(t, cars, (idx) => s.lapEst.get(idx) ?? null)) {
       this.store.addLaneLoss(s.track, sample.loss);

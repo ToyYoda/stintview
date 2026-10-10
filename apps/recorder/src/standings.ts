@@ -32,8 +32,9 @@ export interface StandingsExtras {
  * Uses iRacing's per-car time estimate (accounts for slow and fast sections) and the team
  * car's last lap for whole laps; falls back to distance × lap time.
  * The estimate runs from 0 at the line to iRacing's estimated class lap time (`estLap`), not
- * to our real lap time: across the line it wraps with `estLap` and is then scaled to the real
- * lap (wrapping with the real lap was off by their difference until both cars had crossed).
+ * to our real lap time: across the line it wraps with `estLap` (wrapping with the real lap
+ * was off by their difference until both cars had crossed). Not scaled to the real lap: a pit
+ * stop or yellow flag lap as last lap would distort every gap.
  * Returns null without a reference lap time.
  */
 export function trackGap(car: CarProgress, team: CarProgress, lapRef: number | null): number | null {
@@ -51,7 +52,7 @@ export function trackGap(car: CarProgress, team: CarProgress, lapRef: number | n
       if (rest > 0 && dt < 0) dt += wrap; // car is ahead across the line
       if (rest < 0 && dt > 0) dt -= wrap; // car is behind across the line
     }
-    if (lapRef) return dt * (ownLap ? lapRef / ownLap : 1) + laps * lapRef;
+    if (lapRef) return dt + laps * lapRef;
     return laps === 0 && (wrap || Math.sign(dt) === Math.sign(rest)) ? dt : null;
   }
   return lapRef ? dp * lapRef : null;
@@ -175,6 +176,78 @@ export function betweenRows(
       .map((x) => physicalRow(x.c, team, x.o * dir, x.laps, info, lapRef, tyreLaps));
   };
   return { ahead: side(frontIdx, 1), behind: side(backIdx, -1) };
+}
+
+/** A lap count that disagrees with the tracked progress for this long is taken over (towed, reset). */
+const LAP_MISMATCH_S = 3;
+/** Frames further apart than this: start tracking afresh. */
+const TRACK_GAP_S = 2;
+/** Logged lap count mismatches per session (diagnostics, recorder.log). */
+const MAX_LOGGED = 50;
+
+/**
+ * Keeps each car's progress (laps + fraction) steady: follows the position on the lap
+ * (`CarIdxLapDistPct`) from frame to frame and ignores a lap count (`CarIdxLapCompleted`)
+ * that briefly disagrees with it. For other cars both come over the network and don't always
+ * change in the same frame at the line: for a moment a car counted a lap ahead or behind –
+ * the running order flipped and a car right behind us showed a gap of almost a whole lap
+ * (> 300 s, race 10.10.2026, Nordschleife). Each mismatch is logged.
+ */
+export class SteadyProgress {
+  private cars = new Map<number, { progress: number; t: number; since: number | null; raw: number }>();
+  private lastT = -Infinity;
+  private logged = 0;
+
+  constructor(private readonly log: (line: string) => void = () => {}) {}
+
+  reset() {
+    this.cars.clear();
+    this.lastT = -Infinity;
+    this.logged = 0;
+  }
+
+  /** Replaces each car's progress with the steady one (in place). */
+  apply(t: number, cars: CarProgress[]) {
+    if (t < this.lastT) this.cars.clear(); // replay jumped back
+    this.lastT = t;
+    for (const c of cars) {
+      const raw = c.progress;
+      const s = this.cars.get(c.carIdx);
+      if (!s || t - s.t > TRACK_GAP_S || t < s.t) {
+        this.cars.set(c.carIdx, { progress: raw, t, since: null, raw });
+        continue;
+      }
+      let d = (raw - Math.floor(raw)) - (s.progress - Math.floor(s.progress));
+      if (d < -0.5) d += 1; // over the line
+      if (d > 0.5) d -= 1; // backwards over the line
+      const tracked = s.progress + d;
+      const off = Math.round(raw - tracked); // whole laps the lap count disagrees
+      if (off === 0) {
+        if (s.since !== null) this.note(`car ${c.carIdx}: lap count off by ${s.raw > 0 ? '+' : ''}${s.raw} for ${(t - s.since).toFixed(2)} s – ignored`);
+        s.progress = raw;
+        s.since = null;
+      } else if (s.since === null) {
+        s.since = t;
+        s.raw = off;
+        s.progress = tracked;
+        this.note(`car ${c.carIdx}: lap count ${Math.floor(raw)} at ${((raw - Math.floor(raw)) * 100).toFixed(1)} % of the lap, expected ${Math.floor(tracked)}`);
+      } else if (t - s.since >= LAP_MISMATCH_S) {
+        this.note(`car ${c.carIdx}: lap count ${Math.floor(raw)} taken over after ${LAP_MISMATCH_S} s`);
+        s.progress = raw;
+        s.since = null;
+      } else {
+        s.progress = tracked;
+      }
+      s.t = t;
+      c.progress = s.progress;
+    }
+  }
+
+  private note(line: string) {
+    if (this.logged < MAX_LOGGED) this.log(`[laps] ${line}`);
+    else if (this.logged === MAX_LOGGED) this.log('[laps] more lap count mismatches this session, not logged');
+    this.logged++;
+  }
 }
 
 /**
@@ -382,11 +455,16 @@ export class StandingsTracker {
   private info = new Map<number, CarInfo>();
   private lastSent = -Infinity;
   private pits = new PitStopTracker();
+  private steady: SteadyProgress;
   private sessionNum = -1;
   private trackLength = 0;
   private sessions = new Map<number, SessionResults>();
 
   private tires: string[] = [];
+
+  constructor(log: (line: string) => void = () => {}) {
+    this.steady = new SteadyProgress(log);
+  }
 
   setDrivers(info: Map<number, CarInfo>, trackLength = 0, tires: string[] = []) {
     this.info = info;
@@ -412,9 +490,11 @@ export class StandingsTracker {
     const sessionNum = f.has('SessionNum') ? f.num('SessionNum') : 0;
     if (sessionNum !== this.sessionNum) {
       this.pits.reset();
+      this.steady.reset();
       this.sessionNum = sessionNum;
     }
     const cars = readProgress(f, (idx) => this.info.get(idx)?.estLap ?? null);
+    this.steady.apply(f.num('SessionTime'), cars); // every frame, also while not driving
     this.pits.update(cars.map((c) => ({ carIdx: c.carIdx, laps: Math.floor(c.progress), onPitRoad: c.onPitRoad ?? false })));
     if (!driving) return null;
 

@@ -140,7 +140,7 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
 
   console.log(`[source] ${label}`);
   conn?.connect();
-  const standings = new StandingsTracker();
+  const standings = new StandingsTracker((line) => console.log(line));
   const pit = new PitPlanner(undefined, (line) => console.log(line));
   source.start(
     (f) => {

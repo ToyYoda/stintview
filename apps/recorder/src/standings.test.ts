@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { countryCode } from './country.ts';
-import { bestProjection, betweenRows, computeBestStandings, computeStandings, isRaceSession, lappingRows, officialBestLaps, parseSessions, PitStopTracker, trackGap, type CarInfo, type CarProgress } from './standings.ts';
+import { SteadyProgress, bestProjection, betweenRows, computeBestStandings, computeStandings, isRaceSession, lappingRows, officialBestLaps, parseSessions, PitStopTracker, trackGap, type CarInfo, type CarProgress } from './standings.ts';
 
 const info = new Map<number, CarInfo>(
   Array.from({ length: 20 }, (_, i) => [i, { number: String(i + 1).padStart(2, '0'), name: `Driver ${i}` }]),
@@ -53,14 +53,47 @@ describe('trackGap', () => {
   it('bridges the line with the estimated lap of iRacing, not the real one', () => {
     // estimate scale 105 s, real lap 100 s: car ahead 2 s (est) past the line, we 3 s (est) before it
     const est = (progress: number, estTime: number, estLap = 105): CarProgress => ({ ...car(progress, estTime), estLap });
-    expect(trackGap(est(6.02, 2), est(5.97, 102), 100)).toBeCloseTo(5 * 100 / 105);
-    expect(trackGap(est(5.97, 102), est(6.02, 2), 100)).toBeCloseTo(-5 * 100 / 105);
-    // same lap: scaled to the real lap as well
-    expect(trackGap(est(5.6, 63), est(5.5, 52.5), 100)).toBeCloseTo(10);
+    expect(trackGap(est(6.02, 2), est(5.97, 102), 100)).toBeCloseTo(5);
+    expect(trackGap(est(5.97, 102), est(6.02, 2), 100)).toBeCloseTo(-5);
+    // not scaled with the last lap (a pit stop lap would distort every gap)
+    expect(trackGap(est(5.6, 63), est(5.5, 52.5), 180)).toBeCloseTo(10.5);
     // other class (estimated lap 120 s) halfway round = halfway on our scale
-    expect(trackGap({ ...car(5.6, 60), estLap: 120 }, est(5.5, 42), 100)).toBeCloseTo(10);
+    expect(trackGap({ ...car(5.6, 60), estLap: 120 }, est(5.5, 42), 100)).toBeCloseTo(10.5);
+  });
+});
+
+describe('SteadyProgress', () => {
+  const at = (carIdx: number, progress: number): CarProgress => ({ carIdx, progress, lastLap: 100, classId: 0 });
+  const run = (steps: [number, number][]) => {
+    const lines: string[] = [];
+    const s = new SteadyProgress((l) => lines.push(l));
+    const out = steps.map(([t, p]) => { const c = [at(7, p)]; s.apply(t, c); return c[0]!.progress; });
+    return { out, lines };
+  };
+
+  it('ignores a lap count that changes before the car reaches the line', () => {
+    // at 98.5 % the count already says the next lap, the position wraps 0.3 s later
+    const { out, lines } = run([[0, 5.98], [0.1, 5.983], [0.2, 6.985], [0.3, 6.99], [0.4, 6.995], [0.5, 6.001], [0.6, 6.004]]);
+    expect(out.map((p) => +p.toFixed(3))).toEqual([5.98, 5.983, 5.985, 5.99, 5.995, 6.001, 6.004]);
+    expect(lines).toHaveLength(2); // mismatch noticed and resolved
   });
 
+  it('ignores a lap count that changes after the line', () => {
+    const { out } = run([[0, 5.995], [0.1, 5.002], [0.2, 5.005], [0.3, 6.008]]);
+    expect(out.map((p) => +p.toFixed(3))).toEqual([5.995, 6.002, 6.005, 6.008]);
+  });
+
+  it('takes over a lap count that stays different (towed, reset)', () => {
+    const steps: [number, number][] = [[0, 5.5]];
+    for (let i = 1; i <= 40; i++) steps.push([i / 10, 4.5]); // count one lap lower for 4 s
+    const { out } = run(steps);
+    expect(out[10]).toBeCloseTo(5.5);
+    expect(out[40]).toBeCloseTo(4.5);
+  });
+
+});
+
+describe('trackGap (whole laps)', () => {
   it('adds whole laps for lapped cars', () => {
     expect(trackGap(car(4.5, 50), car(5.6, 58), 100)).toBeCloseTo(-108);
   });
