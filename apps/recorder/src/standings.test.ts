@@ -72,6 +72,21 @@ describe('trackGap: the estimate restarting', () => {
     // up to 0.20 the same case gave −99.1 (signs agreed, no wrap)
   });
 
+  it('estimate jumping mid-lap: the distance counts, logged', () => {
+    const notes: string[] = [];
+    // last km of a 465 s lap: car 0.5 % behind us, but its estimate says 300 s less
+    const est = (progress: number, estTime: number): CarProgress => ({ ...car(progress, estTime), estLap: 465 });
+    expect(trackGap(est(5.955, 143), est(5.96, 446), 470, (l) => notes.push(l))).toBeCloseTo(-0.005 * 465);
+    expect(notes).toHaveLength(1);
+    expect(notes[0]).toContain('from the distance');
+  });
+
+  it('slow corner: estimate twice the distance gap stays', () => {
+    const est = (progress: number, estTime: number): CarProgress => ({ ...car(progress, estTime), estLap: 465 });
+    // 0.2 % of the lap = 0.93 s by distance, 2.0 s by the estimate (slow section)
+    expect(trackGap(est(5.5, 230), est(5.502, 232), 470)).toBeCloseTo(-2);
+  });
+
   it('a normal gap stays as it is and is not logged', () => {
     const notes: string[] = [];
     expect(trackGap(car(5.45, 44), car(5.5, 50), 100, (l) => notes.push(l))).toBeCloseTo(-6);

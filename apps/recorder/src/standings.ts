@@ -39,8 +39,8 @@ export interface StandingsExtras {
  * fits the distance on track best counts (up to 0.20 only a wrap when the signs disagreed, with
  * the real lap: a car right behind us showed > 300 s, race 10.10.2026). Not scaled to the
  * real lap: a pit stop or yellow flag lap as last lap would distort every gap.
- * `note` gets odd cases (a wrap without the line between the cars or the other way round, a gap
- * far from the distance) for the log.
+ * Way off the distance on track, the distance counts. `note` gets odd cases (a wrap without the
+ * line between the cars or the other way round, a gap way off the distance) for the log.
  * Returns null without a reference lap time.
  */
 export function trackGap(
@@ -59,12 +59,18 @@ export function trackGap(
     const expected = rest * ownLap;
     let dt = raw;
     for (const c of [raw - ownLap, raw + ownLap]) if (Math.abs(c - expected) < Math.abs(dt - expected)) dt = c;
+    // Way off the distance on track (> 5 s + 50 %; slow corners differ by up to ~2×): the
+    // estimate jumped – take the distance. Seen as "> 300 s" for a car right behind us in the
+    // last km of the Nordschleife (race 10.10.2026, not near the line); cause unknown, logged.
+    const off = Math.abs(dt - expected) > 5 + 0.5 * Math.abs(expected);
+    const estimate = dt;
+    if (off) dt = expected;
     if (note) {
       // A wrap is due when the line lies between the two cars (the one in front has crossed it).
       const pct = (p: number) => p - Math.floor(p);
       const across = rest !== 0 && (rest > 0) === (pct(car.progress) < pct(team.progress));
-      if ((dt !== raw) !== across || Math.abs(dt - expected) > 5 + 0.1 * ownLap) {
-        note(`car ${car.carIdx}: ${dt.toFixed(1)} s (estimate ${raw.toFixed(1)}, distance ${expected.toFixed(1)}) – `
+      if (off || (estimate !== raw) !== across) {
+        note(`car ${car.carIdx}: ${dt.toFixed(1)} s${off ? ' from the distance' : ''} (estimate ${raw.toFixed(1)}${estimate !== raw ? ` → ${estimate.toFixed(1)}` : ''}, distance ${expected.toFixed(1)}) – `
           + `car ${car.progress.toFixed(4)} est ${est.toFixed(1)}, us ${team.progress.toFixed(4)} est ${ownEst.toFixed(1)}, `
           + `est lap ${ownLap.toFixed(1)}, last lap ${lapRef?.toFixed(1) ?? '–'}`);
       }
