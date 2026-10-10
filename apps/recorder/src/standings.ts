@@ -25,33 +25,128 @@ export interface CarInfo {
 export interface StandingsExtras {
   /** Tyre age in laps per carIdx (null = unknown). */
   tyreLaps?: (carIdx: number) => number | null;
+  /** Measured passing times, for exact gaps (see `PassingTimes`). */
+  timing?: Passing | null;
+}
+
+/** Seconds since a car passed a point of the track (lap fraction), null if not measured. */
+export interface Passing {
+  since(carIdx: number, pct: number): number | null;
+}
+
+/** Longest step between two frames still counted as driving (else: towed, reset, paused). */
+const MAX_STEP_S = 1;
+/** Faster than this between two frames = towed or reset (no car drives 540 km/h). */
+const MAX_SPEED_MS = 150;
+/** Without a track length: at most this part of a lap per frame. */
+const MAX_STEP_LAPS = 0.05;
+/** Metres between the points of `PassingTimes`. */
+const POINT_SPACING_M = 5;
+
+/**
+ * When each car last passed each point of the track (session time, interpolated between
+ * frames). The gap to the car in front is how long ago it passed the spot where we are now,
+ * the gap to the car behind how long ago we passed its spot – measured, unlike iRacing's
+ * estimate (CarIdxEstTime: a reference lap of the class; gaps were often off in the race
+ * on 10.10.2026, Nordschleife).
+ */
+export class PassingTimes implements Passing {
+  private times = new Map<number, Float64Array>();
+  private last = new Map<number, { pct: number; t: number }>();
+  private now = 0;
+  private points: number;
+  private trackLength: number;
+
+  constructor(trackLength = 0) {
+    this.points = PassingTimes.pointsFor(trackLength);
+    this.trackLength = trackLength;
+  }
+
+  private static pointsFor(trackLength: number) {
+    return Math.max(500, Math.round(trackLength / POINT_SPACING_M));
+  }
+
+  /** New session or track: forget everything. */
+  reset(trackLength?: number) {
+    if (trackLength !== undefined) {
+      this.points = PassingTimes.pointsFor(trackLength);
+      this.trackLength = trackLength;
+    }
+    this.times.clear();
+    this.last.clear();
+    this.now = 0;
+  }
+
+  update(t: number, cars: { carIdx: number; progress: number }[]) {
+    if (t < this.now) this.reset(); // replay jumped back
+    this.now = t;
+    const n = this.points;
+    for (const c of cars) {
+      const pct = c.progress - Math.floor(c.progress);
+      const prev = this.last.get(c.carIdx);
+      this.last.set(c.carIdx, { pct, t });
+      if (!prev || t <= prev.t || t - prev.t > MAX_STEP_S) continue;
+      let d = pct - prev.pct;
+      if (d < -0.5) d += 1; // over the line
+      const maxStep = this.trackLength > 0 ? (MAX_SPEED_MS * (t - prev.t)) / this.trackLength : MAX_STEP_LAPS;
+      if (d <= 0 || d > maxStep) continue; // standing, backwards, towed
+      let arr = this.times.get(c.carIdx);
+      if (!arr) this.times.set(c.carIdx, arr = new Float64Array(n).fill(NaN));
+      // Every point crossed between the two frames, at the time it was crossed.
+      for (let i = Math.floor(prev.pct * n) + 1; i / n <= prev.pct + d; i++) {
+        arr[i % n] = prev.t + ((i / n - prev.pct) / d) * (t - prev.t);
+      }
+    }
+  }
+
+  since(carIdx: number, pct: number): number | null {
+    const arr = this.times.get(carIdx);
+    if (!arr) return null;
+    const n = this.points, x = (pct - Math.floor(pct)) * n;
+    const i = Math.floor(x) % n;
+    const a = arr[i]!, b = arr[(i + 1) % n]!;
+    if (!Number.isFinite(a)) return null;
+    // Between two points: interpolate if both belong to the same pass.
+    const at = Number.isFinite(b) && b >= a && b - a < 10 ? a + (x - Math.floor(x)) * (b - a) : a;
+    const s = this.now - at;
+    return s >= 0 ? s : null;
+  }
 }
 
 /**
  * Time gap from the team car to `car` along the track in seconds; positive = `car` is ahead.
- * Uses iRacing's per-car time estimate (accounts for slow and fast sections) and the team
- * car's last lap for whole laps; falls back to distance × lap time.
+ * Whole laps count with the team car's last lap. Within a lap: measured passing times
+ * (`timing`); until measured, iRacing's per-car time estimate, else distance × lap time.
  * The estimate runs from 0 at the line to iRacing's estimated class lap time (`estLap`), not
- * to our real lap time: across the line it wraps with `estLap` and is then scaled to the real
- * lap (wrapping with the real lap was off by their difference until both cars had crossed).
+ * to our real lap time: across the line it wraps with `estLap` (wrapping with the real lap
+ * was off by their difference until both cars had crossed).
  * Returns null without a reference lap time.
  */
-export function trackGap(car: CarProgress, team: CarProgress, lapRef: number | null): number | null {
+export function trackGap(car: CarProgress, team: CarProgress, lapRef: number | null, timing?: Passing | null): number | null {
   const dp = car.progress - team.progress;
   const laps = Math.trunc(dp);
+  const rest = dp - laps; // fraction of a lap between the cars, beyond whole laps
+  if (timing) {
+    // In front: since it passed our spot. Behind: since we passed its spot.
+    const s = rest > 0 ? timing.since(car.carIdx, team.progress) : rest < 0 ? timing.since(team.carIdx, car.progress) : 0;
+    if (s !== null) {
+      const g = rest < 0 ? -s : s;
+      if (lapRef) return g + laps * lapRef;
+      if (laps === 0) return g;
+    }
+  }
   const est = car.estTime, ownEst = team.estTime;
   if (est != null && ownEst != null && est >= 0 && ownEst >= 0) {
     const ownLap = team.estLap ?? null;
     // Another class has another estimated lap: the car's spot on our scale.
     const spot = ownLap && car.estLap ? est * ownLap / car.estLap : est;
     let dt = spot - ownEst; // same lap: time between the two spots
-    const rest = dp - laps; // fraction of a lap between the cars, beyond whole laps
     const wrap = ownLap ?? lapRef;
     if (wrap) {
       if (rest > 0 && dt < 0) dt += wrap; // car is ahead across the line
       if (rest < 0 && dt > 0) dt -= wrap; // car is behind across the line
     }
-    if (lapRef) return dt * (ownLap ? lapRef / ownLap : 1) + laps * lapRef;
+    if (lapRef) return dt + laps * lapRef;
     return laps === 0 && (wrap || Math.sign(dt) === Math.sign(rest)) ? dt : null;
   }
   return lapRef ? dp * lapRef : null;
@@ -88,7 +183,7 @@ export function computeStandings(
       country: d?.country ?? null,
       lastLap: c.lastLap,
       isTeam,
-      gap: isTeam ? 0 : trackGap(c, team, lapRef),
+      gap: isTeam ? 0 : trackGap(c, team, lapRef, extras.timing),
       lapsGap: isTeam ? 0 : Math.trunc(c.progress - team.progress),
       tyreLaps: extras.tyreLaps?.(c.carIdx) ?? null,
       inPit: c.onPitRoad ?? false,
@@ -103,7 +198,7 @@ export function computeStandings(
  */
 export function lappingRows(
   cars: CarProgress[], teamIdx: number, info: Map<number, CarInfo>, lapRef: number | null,
-  tyreLaps: (carIdx: number) => number | null = () => null,
+  tyreLaps: (carIdx: number) => number | null = () => null, timing: Passing | null = null,
 ): StandingRow[] {
   const team = cars.find((c) => c.carIdx === teamIdx);
   if (!team) return [];
@@ -119,7 +214,7 @@ export function lappingRows(
     if (o < 0 && (!behind || o > behind.o)) behind = { c, o, laps };
   }
   const row = (x: Near, lap: 'backmarker' | 'lapper'): StandingRow =>
-    ({ ...physicalRow(x.c, team, x.o, x.laps, info, lapRef, tyreLaps), lap });
+    ({ ...physicalRow(x.c, team, x.o, x.laps, info, lapRef, tyreLaps, timing), lap });
   const out: StandingRow[] = [];
   if (ahead && ahead.laps <= -1) out.push(row(ahead, 'backmarker'));
   if (behind && behind.laps >= 1) out.push(row(behind, 'lapper'));
@@ -132,10 +227,10 @@ export function lappingRows(
  */
 function physicalRow(
   c: CarProgress, team: CarProgress, o: number, laps: number, info: Map<number, CarInfo>, lapRef: number | null,
-  tyreLaps: (carIdx: number) => number | null,
+  tyreLaps: (carIdx: number) => number | null, timing: Passing | null = null,
 ): StandingRow {
   const d = info.get(c.carIdx);
-  const g = trackGap(c, team, lapRef);
+  const g = trackGap(c, team, lapRef, timing);
   // Physical gap on track: race gap without the whole laps.
   const gap = g !== null && lapRef ? g - laps * lapRef : lapRef ? o * lapRef : null;
   return {
@@ -153,7 +248,7 @@ function physicalRow(
 export function betweenRows(
   cars: CarProgress[], teamIdx: number, frontIdx: number | null, backIdx: number | null,
   info: Map<number, CarInfo>, lapRef: number | null, max = 3,
-  tyreLaps: (carIdx: number) => number | null = () => null,
+  tyreLaps: (carIdx: number) => number | null = () => null, timing: Passing | null = null,
 ): { ahead: StandingRow[]; behind: StandingRow[] } {
   const team = cars.find((c) => c.carIdx === teamIdx);
   if (!team) return { ahead: [], behind: [] };
@@ -172,7 +267,7 @@ export function betweenRows(
       if (laps !== 0) found.push({ c, o, laps });
     }
     return found.sort((a, b) => a.o - b.o).slice(0, max)
-      .map((x) => physicalRow(x.c, team, x.o * dir, x.laps, info, lapRef, tyreLaps));
+      .map((x) => physicalRow(x.c, team, x.o * dir, x.laps, info, lapRef, tyreLaps, timing));
   };
   return { ahead: side(frontIdx, 1), behind: side(backIdx, -1) };
 }
@@ -382,6 +477,7 @@ export class StandingsTracker {
   private info = new Map<number, CarInfo>();
   private lastSent = -Infinity;
   private pits = new PitStopTracker();
+  private timing = new PassingTimes();
   private sessionNum = -1;
   private trackLength = 0;
   private sessions = new Map<number, SessionResults>();
@@ -390,6 +486,7 @@ export class StandingsTracker {
 
   setDrivers(info: Map<number, CarInfo>, trackLength = 0, tires: string[] = []) {
     this.info = info;
+    if (trackLength !== this.trackLength) this.timing.reset(trackLength);
     this.trackLength = trackLength;
     this.tires = tires;
   }
@@ -412,9 +509,12 @@ export class StandingsTracker {
     const sessionNum = f.has('SessionNum') ? f.num('SessionNum') : 0;
     if (sessionNum !== this.sessionNum) {
       this.pits.reset();
+      this.timing.reset();
       this.sessionNum = sessionNum;
     }
     const cars = readProgress(f, (idx) => this.info.get(idx)?.estLap ?? null);
+    // Every frame, also while not driving: the passing times need the whole lap.
+    this.timing.update(f.num('SessionTime'), cars);
     this.pits.update(cars.map((c) => ({ carIdx: c.carIdx, laps: Math.floor(c.progress), onPitRoad: c.onPitRoad ?? false })));
     if (!driving) return null;
 
@@ -435,12 +535,12 @@ export class StandingsTracker {
       const projection = bestProjection(field, teamIdx, this.info, projectedLap(f)) ?? undefined;
       return best.length ? { t: 'standings', sessionTime: t, rows: best, mode: 'best', session: sessionLabel(session!.type), projection } : null;
     }
-    const rows = this.decorate(f, computeStandings(cars, teamIdx, this.info, 3, 3, { tyreLaps }));
+    const rows = this.decorate(f, computeStandings(cars, teamIdx, this.info, 3, 3, { tyreLaps, timing: this.timing }));
     const lapRef = cars.find((c) => c.carIdx === teamIdx)?.lastLap ?? null;
-    const lapping = this.decorate(f, lappingRows(cars, teamIdx, this.info, lapRef, tyreLaps));
+    const lapping = this.decorate(f, lappingRows(cars, teamIdx, this.info, lapRef, tyreLaps, this.timing));
     const us = rows.find((r) => r.isTeam);
     const neighbour = (d: number) => (us ? rows.find((r) => r.pos === us.pos + d)?.carIdx ?? null : null);
-    const between = betweenRows(cars, teamIdx, neighbour(-1), neighbour(1), this.info, lapRef, 3, tyreLaps);
+    const between = betweenRows(cars, teamIdx, neighbour(-1), neighbour(1), this.info, lapRef, 3, tyreLaps, this.timing);
     // Chips in the duel line show the number only: no need for the extra fields there.
     return rows.length ? { t: 'standings', sessionTime: t, rows, lapping, between, mode: 'race' } : null;
   }
