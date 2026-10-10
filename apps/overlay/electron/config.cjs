@@ -61,6 +61,8 @@ const DEFAULT_SETTINGS = {
   telemetryDir: null,
   // Team messages to send (StintView window, "Radio" panel, hotkeys); null = defaults in the UI language.
   messages: null,
+  // VR: the key/button that recenters in iRacing; pressing it also puts the panels at the head.
+  vrRecenter: null,
 };
 const PANEL_IDS = Object.keys(PANEL_DEFAULTS);
 
@@ -99,7 +101,24 @@ function loadSettings() {
     pitStop: cleanPitStop(saved.pitStop),
     // Stays null until edited, so the defaults follow the UI language.
     messages: Array.isArray(saved.messages) ? cleanMessages(saved.messages) : null,
+    vrRecenter: cleanVrRecenter(saved.vrRecenter),
   };
+}
+
+/**
+ * Recenter key/button (rawinput-proc.cjs): { kind: 'key', vkey, e0, mods, name } or
+ * { kind: 'button', device, button, name }; anything else = none.
+ */
+function cleanVrRecenter(b) {
+  const name = typeof b?.name === 'string' ? b.name.slice(0, 100) : '';
+  const int = (v, max) => Number.isInteger(v) && v > 0 && v <= max;
+  if (b?.kind === 'key' && int(b.vkey, 0xfe) && Array.isArray(b.mods) && b.mods.every((m) => int(m, 0xfe))) {
+    return { kind: 'key', vkey: b.vkey, e0: b.e0 === true, mods: [...b.mods].sort((x, y) => x - y), name };
+  }
+  if (b?.kind === 'button' && typeof b.device === 'string' && b.device && int(b.button, 0xffff)) {
+    return { kind: 'button', device: b.device.slice(0, 500), button: b.button, name };
+  }
+  return null;
 }
 
 /**
@@ -215,5 +234,5 @@ function normalizeUrl(input) {
 
 module.exports = {
   dataDir, logDir, configPath, loadConfig, saveConfig, clearConfig, loadSettings, saveSettings, register, normalizeUrl,
-  cleanLanguage, cleanPanels, cleanOpacity, cleanOutput, cleanPitStop, cleanMessages, panelsFor, panelConfig, MESSAGE_COLORS,
+  cleanLanguage, cleanPanels, cleanOpacity, cleanOutput, cleanPitStop, cleanMessages, cleanVrRecenter, panelsFor, panelConfig, MESSAGE_COLORS,
 };

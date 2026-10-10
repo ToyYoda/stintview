@@ -244,3 +244,8 @@ body.setup-body #root { height: auto; }
 [data-brand="backseat"] .setup h2 { font-size: 18px; letter-spacing: 0.12em; }
 [data-brand="backseat"] .setup .tabs button { font-size: 15px; letter-spacing: 0.05em; }
 [data-brand="backseat"] .setup .btn { font-size: 17px; letter-spacing: 0.05em; }
+
+/* VR recenter key coupled to iRacing */
+.recenter { margin: 8px 0 12px; }
+.recenter .edit-row { margin: 4px 0; }
+.recenter-wait { color: var(--accent); }

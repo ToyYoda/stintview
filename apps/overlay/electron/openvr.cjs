@@ -3,12 +3,17 @@
 const koffi = require('koffi');
 const { readFileSync } = require('node:fs');
 const path = require('node:path');
+const { panelTransform } = require('./vrmath.cjs');
 
 const IVROVERLAY = 'FnTable:IVROverlay_028';
 const IVRCHAPERONE = 'FnTable:IVRChaperone_004';
 /** Index of ResetZeroPose in VR_IVRChaperone_FnTable. */
 const CHAPERONE_RESET_ZERO_POSE = 8;
 const RESET_ZERO_POSE = koffi.proto('void ResetZeroPose(int32_t origin)');
+/** IVRSystem: the first entries are the same in all recent versions; newest first. */
+const IVRSYSTEM = ['FnTable:IVRSystem_026', 'FnTable:IVRSystem_023', 'FnTable:IVRSystem_022', 'FnTable:IVRSystem_021'];
+/** Index of GetDeviceToAbsoluteTrackingPose in VR_IVRSystem_FnTable. */
+const SYSTEM_GET_POSE = 12;
 
 const APP_OVERLAY = 2;
 const APP_BACKGROUND = 3;
@@ -36,6 +41,12 @@ const FN = {
 
 const HmdMatrix34 = koffi.struct('HmdMatrix34_t', { m: koffi.array('float', 12) });
 const Texture = koffi.struct('Texture_t', { handle: 'void *', eType: 'int32_t', eColorSpace: 'int32_t' });
+const HmdVector3 = koffi.struct('HmdVector3_t', { v: koffi.array('float', 3) });
+const TrackedDevicePose = koffi.struct('TrackedDevicePose_t', {
+  mDeviceToAbsoluteTracking: HmdMatrix34, vVelocity: HmdVector3, vAngularVelocity: HmdVector3,
+  eTrackingResult: 'int32_t', bPoseIsValid: 'bool', bDeviceIsConnected: 'bool',
+});
+const GET_POSE = koffi.proto('void GetDeviceToAbsoluteTrackingPose(int32_t origin, float predicted, _Out_ TrackedDevicePose_t *poses, uint32_t count)');
 const TEXTURE_DIRECTX = 0;
 const COLORSPACE_AUTO = 0;
 
@@ -103,12 +114,19 @@ class OpenVR {
     // Optional: only needed to recenter; an older runtime without it just lacks that function.
     const chaperone = this.api.GetGenericInterface(IVRCHAPERONE, err);
     this.chaperone = chaperone && err[0] === 0 ? chaperone : null;
+    // Optional as well: only needed to place the panels at the head (recenter with iRacing).
+    this.system = null;
+    for (const version of IVRSYSTEM) {
+      const system = this.api.GetGenericInterface(version, err);
+      if (system && err[0] === 0) { this.system = system; break; }
+    }
   }
 
   shutdown() {
     if (!this.table) return;
     this.table = null;
     this.chaperone = null;
+    this.system = null;
     this.api.ShutdownInternal();
   }
 
@@ -154,6 +172,15 @@ class OpenVR {
     koffi.call(fn, RESET_ZERO_POSE, UNIVERSE_SEATED);
   }
 
+  /** Head pose (device 0) in seated space as a row-major 3x4 transform, null if not tracked. */
+  headPose() {
+    if (!this.system) throw new Error('IVRSystem not available');
+    const fn = koffi.decode(this.system, SYSTEM_GET_POSE * 8, 'void *');
+    const pose = {};
+    koffi.call(fn, GET_POSE, UNIVERSE_SEATED, 0, pose, 1);
+    return pose.bPoseIsValid ? [...pose.mDeviceToAbsoluteTracking.m] : null;
+  }
+
   /** What the compositor holds for this overlay – for diagnostics. */
   inspect(h) {
     const w = [0], hh = [0];
@@ -170,23 +197,6 @@ class OpenVR {
   setRaw(h, rgba, width, height) {
     this.check('SetOverlayRaw', h, rgba, width, height, 4);
   }
-}
-
-/**
- * Transform for a panel `distance` m in front of the seated origin, `down` m below
- * eye height and `right` m to the side, turned and tilted so it faces the eyes.
- */
-function panelTransform({ distance, down, right }) {
-  // Panel normal is +Z; point it from the panel towards the origin.
-  const yaw = Math.atan2(-right, distance);
-  const pitch = -Math.atan2(down, Math.hypot(distance, right));
-  const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
-  // R = Ry(yaw) * Rx(pitch); OpenVR: -Z is forward, +Y up.
-  return [
-    cy, sy * sp, sy * cp, right,
-    0, cp, -sp, -down,
-    -sy, cy * sp, cy * cp, -distance,
-  ];
 }
 
 module.exports = { OpenVR, panelTransform, findOpenVrDll, TRANSIENT_ERRORS };

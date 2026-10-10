@@ -4,15 +4,16 @@ const { app, BrowserWindow, Menu, Tray, dialog, ipcMain, nativeImage, shell, uti
 const { createWriteStream, mkdirSync, readdirSync } = require('node:fs');
 const path = require('node:path');
 const {
-  cleanLanguage, cleanMessages, cleanOpacity, cleanOutput, cleanPanels, cleanPitStop, clearConfig, configPath, dataDir, loadConfig, loadSettings, logDir, normalizeUrl, panelConfig, panelsFor, register, saveSettings,
+  cleanLanguage, cleanMessages, cleanOpacity, cleanOutput, cleanPanels, cleanPitStop, cleanVrRecenter, clearConfig, configPath, dataDir, loadConfig, loadSettings, logDir, normalizeUrl, panelConfig, panelsFor, register, saveSettings,
 } = require('./config.cjs');
 const {
   editHotkey, editing, onOverlayChange, overlayRunning, editHotkeyInfo, setEditMode, setOverlayLanguage, setOverlayOpacity, setOverlayPanelConfig, setOverlayPanels, startOverlay, stopOverlay, toggleEdit,
 } = require('./overlay-window.cjs');
 const { PRELOAD, loadRoute } = require('./renderer.cjs');
 const { cameraCommand, cameraHotkeyInfo, cameraInfo, onRecorderMessage, setHazardCar, setTeamCar, startCamera, stopCamera } = require('./camera.cjs');
-const { recenterVr, setVrLanguage, setVrOpacity, setVrPanelConfig, startVr, stopVr, vrHotkeyInfo, vrStatus } = require('./vr.cjs');
+const { alignToHead, recenterVr, resetPanelAnchor, setVrLanguage, setVrOpacity, setVrPanelConfig, startVr, stopVr, vrHotkeyInfo, vrStatus } = require('./vr.cjs');
 const { hotkeyGroups } = require('./hotkeys.cjs');
+const { cancelLearnRecenter, learnRecenter, watchRecenter } = require('./rawinput.cjs');
 const { messageHotkeyInfo, radioState, sendMessage, setDriving, setMessages, startMessages, stopMessages } = require('./messages.cjs');
 const { checkNow, installNow, setupUpdates, updateInfo, updateLabel } = require('./updates.cjs');
 const { setLanguage, t } = require('./i18n.cjs');
@@ -357,6 +358,7 @@ function applySettings() {
   setVrOpacity(settings.opacity / 100);
   recorder?.post({ t: 'pit-settings', pit: settings.pitStop });
   setMessages(cleanMessages(settings.messages, settings.language));
+  applyRecenter();
   applyOutputs();
   if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: settings.autostart, args: ['--hidden'] });
   refresh();
@@ -378,6 +380,7 @@ function setSimRunning(running) {
     simGoneTimer = setTimeout(() => {
       simGoneTimer = null;
       simRunning = false;
+      resetPanelAnchor(); // iRacing's own recenter is gone as well
       applyOutputs();
       refresh();
     }, SIM_GONE_MS);
@@ -386,6 +389,12 @@ function setSimRunning(running) {
 
 /** Displays wanted, but held back until iRacing runs ("only while iRacing runs"). */
 const waitingForSim = () => settings.overlay && settings.onlyWithIracing && !simRunning;
+
+/** The iRacing recenter key/button moves the VR panels along – read only while VR is the output. */
+function applyRecenter() {
+  const on = settings.overlay && settings.output === 'vr' && settings.vrRecenter;
+  watchRecenter(on ? settings.vrRecenter : null, alignToHead);
+}
 
 /** Starts/stops the monitor overlay or the VR panels according to the settings and iRacing. */
 function applyOutputs() {
@@ -557,7 +566,7 @@ ipcMain.handle('app:create', async (_e, { serverUrl, teamName, memberName, hostH
 });
 
 ipcMain.handle('app:settings', (_e, patch) => {
-  const allowed = ['language', 'overlay', 'onlyWithIracing', 'output', 'autostart', 'server', 'panels', 'opacity', 'pitStop', 'messages'];
+  const allowed = ['language', 'overlay', 'onlyWithIracing', 'output', 'autostart', 'server', 'panels', 'opacity', 'pitStop', 'messages', 'vrRecenter'];
   const clean = Object.fromEntries(Object.entries(patch ?? {}).filter(([k]) => allowed.includes(k)));
   if (clean.panels) clean.panels = cleanPanels({ ...settings.panels, ...clean.panels });
   if ('opacity' in clean) clean.opacity = cleanOpacity(clean.opacity);
@@ -567,6 +576,7 @@ ipcMain.handle('app:settings', (_e, patch) => {
   if ('onlyWithIracing' in clean) clean.onlyWithIracing = Boolean(clean.onlyWithIracing);
   if (clean.pitStop) clean.pitStop = cleanPitStop({ ...settings.pitStop, ...clean.pitStop });
   // null ("restore defaults") stays null, so the defaults follow the UI language again.
+  if ('vrRecenter' in clean) clean.vrRecenter = cleanVrRecenter(clean.vrRecenter);
   if ('messages' in clean) clean.messages = Array.isArray(clean.messages) ? cleanMessages(clean.messages) : null;
   updateSettings(clean);
   return appState();
@@ -579,6 +589,15 @@ ipcMain.handle('app:panel-size', (_e, id, size) => {
   updateSettings({ panels: cleanPanels({ ...settings.panels, [id]: { ...settings.panels[id], size: clamped } }) });
   refresh();
 });
+
+/** VR recenter coupled to iRacing: the next key/button pressed anywhere (null = cancelled/timeout). */
+ipcMain.handle('app:recenter-learn', async () => {
+  const b = cleanVrRecenter(await learnRecenter());
+  if (b) updateSettings({ vrRecenter: b }); else applyRecenter();
+  refresh();
+  return appState();
+});
+ipcMain.handle('app:recenter-cancel', () => cancelLearnRecenter());
 
 /** Edit mode of the desktop overlay (drag widgets); on = undefined toggles. */
 ipcMain.handle('app:edit', (_e, on) => {
@@ -671,4 +690,5 @@ app.on('before-quit', () => {
   stopRelay();
   stopVr();
   stopOverlay();
+  watchRecenter(null);
 });

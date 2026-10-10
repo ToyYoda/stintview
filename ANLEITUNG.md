@@ -97,7 +97,9 @@ Für Teamrennen plant StintView die Stints – aus euren echten Rundenzeiten und
 
 Schalter **Anzeigen einblenden** an und bei **Ausgabe** „VR (SteamVR)“ wählen – die Anzeigen erscheinen dann nur in der Brille, nicht am Monitor. Funktioniert mit allem, was über **SteamVR** läuft (z. B. Bigscreen Beyond, Valve Index, Vive, Pimax). StintView verbindet sich automatisch, sobald SteamVR läuft.
 
-Die Anzeigen erscheinen ca. 80 cm vor dir, knapp unter Augenhöhe. Falls sie irgendwo im Raum schweben: in iRacing die Sitzposition zurücksetzen (Recenter).
+Die Anzeigen erscheinen ca. 80 cm vor dir, knapp unter Augenhöhe.
+
+**Recenter mit iRacing koppeln:** iRacings Zurücksetzen der Sitzposition dreht nur die iRacing-Sicht, nicht die Anzeigen. Damit die Anzeigen mitgehen, im StintView-Fenster (Reiter **Anzeigen**, Ausgabe VR) bei **Recenter mit iRacing koppeln** auf **Taste/Knopf festlegen** klicken und die Taste bzw. den Lenkradknopf drücken, mit dem du in iRacing zurücksetzt. Ab dann richtet StintView bei jedem Druck auch die Anzeigen an deiner Blickrichtung aus; iRacing bekommt den Knopf ganz normal. Nach dem Ende von iRacing gilt wieder die SteamVR-Mitte. Alternativ **Strg+Umschalt+R** (siehe unten): setzt SteamVR zurück, iRacing-Sicht und Anzeigen gehen gemeinsam mit.
 
 Anzeigen verschieben – geht mit Brille auf der Tastatur:
 

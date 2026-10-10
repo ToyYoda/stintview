@@ -98,6 +98,8 @@ Switch **Show displays** on and choose **Output** „VR (SteamVR)“ – the dis
 
 The displays appear about 80 cm in front of you, just below eye level. If they float somewhere else in the room: reset the seated position (Ctrl+Shift+R, see below).
 
+**Couple recentre with iRacing:** iRacing's seat reset only turns iRacing's view, not the displays. To have the displays follow, click **Set key/button** at **Couple recentre with iRacing** in the StintView window (**Displays** tab, output VR) and press the key or wheel button you recentre with in iRacing. From then on StintView also moves the displays to where you look on every press; iRacing still gets the button as usual. After iRacing ends, the SteamVR centre applies again.
+
 Moving the displays – works with the headset on, using the keyboard:
 
 | Keys | Effect |

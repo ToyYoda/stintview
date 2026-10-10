@@ -41,6 +41,9 @@ contextBridge.exposeInMainWorld('stintview', {
   join: (data) => ipcRenderer.invoke('app:join', data),
   create: (data) => ipcRenderer.invoke('app:create', data),
   updateSettings: (patch) => ipcRenderer.invoke('app:settings', patch),
+  // VR recenter coupled to iRacing: learn the key/button (resolves after the press, Esc or 20 s)
+  recenterLearn: () => ipcRenderer.invoke('app:recenter-learn'),
+  recenterCancel: () => ipcRenderer.invoke('app:recenter-cancel'),
   leave: () => ipcRenderer.invoke('app:leave'),
   checkUpdate: () => ipcRenderer.invoke('app:update-check'),
   installUpdate: () => ipcRenderer.invoke('app:update-install'),

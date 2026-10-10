@@ -69,6 +69,8 @@ export interface AppState {
     pitStop: { fillRate: number | null; tyreTime: number | null; regulation: 'auto' | 'standard' | 'imsa' | 'nec' | 'dtm' };
     /** Team messages to send; null = defaults in the UI language (see `radio`). */
     messages: { id: string; text: string; color: MessageColor }[] | null;
+    /** VR: the key/button that recenters in iRacing (also moves the panels); null = not coupled. */
+    vrRecenter: { kind: 'key' | 'button'; name: string } | null;
   };
   status: {
     line: string;
@@ -143,6 +145,9 @@ declare global {
       join(data: { serverUrl: string; inviteCode: string; memberName: string }): Promise<AppState>;
       create(data: { serverUrl: string; teamName: string; memberName: string; hostHere: boolean }): Promise<AppState>;
       updateSettings(patch: Partial<AppState['settings']>): Promise<AppState>;
+      /** Waits for the next key/button pressed anywhere and saves it as VR recenter key. */
+      recenterLearn?(): Promise<AppState>;
+      recenterCancel?(): Promise<void>;
       leave(): Promise<AppState>;
       checkUpdate(): Promise<AppState>;
       installUpdate(): Promise<void>;

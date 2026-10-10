@@ -242,6 +242,7 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
           ))}
         </div>
         <p className="hint">{settings.output === 'monitor' ? t('set.monitorHint') : t('set.vrHint')}</p>
+        {settings.output === 'vr' && <RecenterKey current={settings.vrRecenter} onState={onState} onClear={() => set({ vrRecenter: null })} />}
         {status.overlay && (
           <div className="edit-row">
             <button className="btn ghost" onClick={async () => onState(await api().setEditMode(!status.editing))}>
@@ -556,6 +557,42 @@ const PANEL_IDS = ['header', 'inputs', 'fuel', 'tyres', 'weather', 'standings', 
  * Every panel: on/off in the header, and when opened its size and panel-specific options.
  * Applies to the chosen output (monitor or VR).
  */
+/** VR: couple the panels to iRacing's recenter key/button (learnt by pressing it). */
+function RecenterKey({ current, onState, onClear }: {
+  current: AppState['settings']['vrRecenter']; onState(s: AppState): void; onClear(): void;
+}) {
+  const [learning, setLearning] = useState(false);
+  const learn = async () => {
+    setLearning(true);
+    try {
+      const s = await api().recenterLearn?.();
+      if (s) onState(s);
+    } finally {
+      setLearning(false);
+    }
+  };
+  return (
+    <div className="recenter">
+      <b>{t('set.recenter')}</b>
+      <div className="edit-row">
+        {learning ? (
+          <>
+            <span className="recenter-wait">{t('set.recenterWaiting')}</span>
+            <button className="btn ghost" onClick={() => api().recenterCancel?.()}>{t('set.recenterCancel')}</button>
+          </>
+        ) : (
+          <>
+            <span>{current ? t('set.recenterKey', { name: current.name }) : t('set.recenterNone')}</span>
+            <button className="btn ghost" onClick={learn}>{current ? t('set.recenterChange') : t('set.recenterLearn')}</button>
+            {current && <button className="btn ghost" onClick={onClear}>{t('set.recenterRemove')}</button>}
+          </>
+        )}
+      </div>
+      <p className="hint">{t('set.recenterHint')}</p>
+    </div>
+  );
+}
+
 function PanelList({ panels, onChange }: {
   panels: AppState['settings']['panels'];
   onChange(p: AppState['settings']['panels']): void;

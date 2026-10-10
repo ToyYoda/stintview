@@ -6,7 +6,8 @@ const { mkdirSync, readFileSync, writeFileSync } = require('node:fs');
 const path = require('node:path');
 const { dataDir } = require('./config.cjs');
 const { D3D11 } = require('./d3d11.cjs');
-const { OpenVR, panelTransform, TRANSIENT_ERRORS } = require('./openvr.cjs');
+const { OpenVR, TRANSIENT_ERRORS } = require('./openvr.cjs');
+const { anchorFromPose, IDENTITY, mul34, panelTransform } = require('./vrmath.cjs');
 const { PRELOAD, loadRoute } = require('./renderer.cjs');
 const { brand } = require('./brand.cjs');
 
@@ -21,7 +22,9 @@ const ZOOM = 2; // render at 2x for sharp text in the headset
 const RETRY_MS = 5000;
 const layoutPath = path.join(dataDir, 'vr.json');
 
-// Metres, relative to the seated origin set by recentering in iRacing.
+// Metres, relative to the panels' origin: SteamVR's seated origin, or the head at the last
+// recenter coupled to iRacing's (`anchor`). iRacing in OpenXR mode recenters only its own
+// view, not SteamVR's seated origin.
 const DEFAULT_LAYOUT = {
   visible: true,
   panels: {
@@ -50,6 +53,11 @@ function loadLayout() {
 }
 
 let layout = null;
+/**
+ * Panels' origin in seated space from the coupled iRacing recenter (`alignToHead`), null =
+ * SteamVR's seated origin. Not saved: iRacing starts without its recenter as well.
+ */
+let anchor = null;
 let ids = [];
 /** id -> { win, handle, textures, texW, texH, flip, width, height, failures, fitTimer } */
 const panels = new Map();
@@ -261,7 +269,7 @@ function placePanel(id) {
   const panel = panels.get(id);
   if (!vr || !panel?.handle) return;
   vr.setWidth(panel.handle, p.width * (vrPanelConfig[id]?.scale ?? 1));
-  vr.setSeatedTransform(panel.handle, panelTransform(p));
+  vr.setSeatedTransform(panel.handle, mul34(anchor ?? IDENTITY, panelTransform(p)));
 }
 
 function connectVr() {
@@ -378,6 +386,31 @@ function recenterVr() {
   }
 }
 
+/**
+ * Puts the panels' origin where the head is now, facing where it looks (level) – what iRacing
+ * does with its own view when recentering. Called by the iRacing recenter key/button.
+ */
+function alignToHead() {
+  if (!vr) return log('align: SteamVR not connected');
+  try {
+    const pose = vr.headPose();
+    if (!pose) return log('align: headset not tracked');
+    anchor = anchorFromPose(pose);
+    for (const id of ids) placePanel(id);
+    log(`align: panels at the head (${anchor[3].toFixed(2)}, ${anchor[7].toFixed(2)}, ${anchor[11].toFixed(2)})`);
+  } catch (e) {
+    log(`align failed: ${e.message}`);
+  }
+}
+
+/** iRacing has ended (and with it its recenter): back to SteamVR's seated origin. */
+function resetPanelAnchor() {
+  if (!anchor) return;
+  anchor = null;
+  for (const id of ids) placePanel(id);
+  log('align: back to the seated origin');
+}
+
 // ---------------------------------------------------------------------------
 
 /** Starts rendering the panels and keeps (re)connecting to SteamVR while it runs. */
@@ -437,4 +470,4 @@ const vrHotkeyInfo = () => ({
   keys: Object.keys(HOTKEYS).map((key) => ({ key, label: HOTKEY_LABELS[key] ? t(HOTKEY_LABELS[key]) : key, ok: !failedHotkeys.has(key) })),
 });
 
-module.exports = { startVr, stopVr, vrStatus, vrHotkeyInfo, setVrOpacity, setVrPanelConfig, setVrLanguage, recenterVr };
+module.exports = { startVr, stopVr, vrStatus, vrHotkeyInfo, setVrOpacity, setVrPanelConfig, setVrLanguage, recenterVr, alignToHead, resetPanelAnchor };
