@@ -191,9 +191,14 @@ export const STOP_START_S = 2.5;
  * same stretch takes on track (iRacing's per-car time estimate). What is left is the pit
  * lane loss – the same for every stop at this track, braking into the box and pulling away
  * included (STOP_START_S added for cars that drove through without stopping).
+ * Only cars that drive into pit road from the track count: a car that appears on pit road
+ * (reset to the pits, pit lane start, getting in) gave values of ~3 s, which made the median
+ * jump during the race (11.10.2026; pit-model.json had 3.2–3.8 s next to 18–19.5 s).
  */
 export class LaneLossLearner {
   private cars = new Map<number, { t0: number; est0: number; stationary: number; lastT: number; lastPct: number }>();
+  /** Last frame per car: on pit road, place on the lap. */
+  private prev = new Map<number, { onPit: boolean; pct: number }>();
 
   /** `lapEst(carIdx)`: that car's class lap time estimate (to bridge the start/finish line). */
   onFrame(t: number, cars: CarProgress[], lapEst: (carIdx: number) => number | null): LaneSample[] {
@@ -203,9 +208,16 @@ export class LaneLossLearner {
       seen.add(c.carIdx);
       const pct = c.progress - Math.floor(c.progress);
       const s = this.cars.get(c.carIdx);
+      const prev = this.prev.get(c.carIdx);
+      this.prev.set(c.carIdx, { onPit: c.onPitRoad ?? false, pct });
       if (c.onPitRoad) {
         if (!s) {
-          if (c.estTime != null) this.cars.set(c.carIdx, { t0: t, est0: c.estTime, stationary: 0, lastT: t, lastPct: pct });
+          // Entered from the track: off pit road a moment ago, close by (not teleported).
+          let moved = prev ? Math.abs(pct - prev.pct) : 1;
+          if (moved > 0.5) moved = 1 - moved;
+          if (prev && !prev.onPit && moved < 0.01 && c.estTime != null) {
+            this.cars.set(c.carIdx, { t0: t, est0: c.estTime, stationary: 0, lastT: t, lastPct: pct });
+          }
           continue;
         }
         const dt = t - s.lastT;
@@ -224,6 +236,7 @@ export class LaneLossLearner {
       }
     }
     for (const idx of this.cars.keys()) if (!seen.has(idx)) this.cars.delete(idx);
+    for (const idx of this.prev.keys()) if (!seen.has(idx)) this.prev.delete(idx);
     return done;
   }
 }
@@ -310,6 +323,18 @@ const median = (xs: number[]) => {
 };
 
 /**
+ * Pit lane loss from the samples: the median of those not far below the usual ones (at least
+ * 60 % of the upper quartile). Leftover short values (cars that didn't come in from the track,
+ * stored before 0.24.1) don't count, so the value stays put during a race.
+ */
+export function laneMedian(xs: number[]): number | null {
+  const s = [...xs].sort((a, b) => a - b);
+  if (!s.length) return null;
+  const upper = s[Math.floor(0.75 * (s.length - 1))]!;
+  return median(s.filter((x) => x >= 0.6 * upper));
+}
+
+/**
  * Learned values on this PC. Every change re-reads the file first, so the live recorder and
  * the archive import (a separate process) don't overwrite each other.
  */
@@ -331,7 +356,7 @@ export class PitModelStore {
   /** Measured at this track on this PC, else the team's archive value, else null. */
   laneLoss(track: string): { loss: number | null; samples: number; from: Pitplan['laneFrom'] } {
     const xs = this.data.tracks[track] ?? [];
-    if (xs.length) return { loss: median(xs), samples: xs.length, from: 'measured' };
+    if (xs.length) return { loss: laneMedian(xs), samples: xs.length, from: 'measured' };
     const known = KNOWN_LANE_LOSS[track];
     return known !== undefined ? { loss: known, samples: 0, from: 'archive' } : { loss: null, samples: 0, from: null };
   }

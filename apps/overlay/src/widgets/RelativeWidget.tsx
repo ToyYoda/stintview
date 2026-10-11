@@ -3,7 +3,7 @@ import type { StandingRow, Standings } from '@stintview/protocol';
 import { t } from '../i18n.ts';
 import { Flag } from './gaps.tsx';
 import { CarMake } from './carMake.tsx';
-import { License, rating } from './StandingsWidget.tsx';
+import { License, rating, SessionClock } from './StandingsWidget.tsx';
 import type { ColumnOptions, RelativeColumn } from '../feed.ts';
 
 /** Default column order; the StintView window can change it and switch columns off. */
@@ -60,6 +60,7 @@ export function RelativeWidget({ standings, options }: { standings: Standings | 
           </tbody>
         </table>
       )}
+      <SessionClock clock={standings?.clock} />
     </div>
   );
 }

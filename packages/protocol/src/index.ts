@@ -301,6 +301,12 @@ export interface Standings {
   relative?: StandingRow[];
   /** Class standings panel (since 0.22): every class, fastest first. */
   classes?: ClassStandings[];
+  /**
+   * Bottom line of the Relative and Position panels (since 0.24.1): the team car's lap now
+   * (iRacing's Lap), the session's laps if it is limited by laps (else null) and the time
+   * left in the session ("remaining"; null if unlimited).
+   */
+  clock?: { lap: number | null; lapsTotal: number | null; timeRemain: number | null };
 }
 
 /** A car around us after the stop (all classes: traffic matters regardless of class). */

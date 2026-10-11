@@ -101,7 +101,7 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
                     )}
                   </td>
                 ),
-                tyre: <td key="tyre" className="st-tyre">{r.inPit ? t('st.box') : r.tyreLaps ?? '–'}</td>,
+                tyre: <td key="tyre" className="st-tyre">{r.inPit ? t('st.box') : stintLap(r.tyreLaps)}</td>,
                 compound: <td key="compound" className="st-compound">{r.compound ? <Compound name={r.compound} /> : '–'}</td>,
                 delta: (
                   <td key="delta" className={delta === null || delta === 0 || r.lap ? 'st-delta' : delta > 0 ? 'st-delta slower' : 'st-delta faster'}>
@@ -120,6 +120,34 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
           </tbody>
         </table>
       )}
+      <SessionClock clock={standings?.clock} />
+    </div>
+  );
+}
+
+/**
+ * Stint column: the lap of the stint being driven, counted from 1 (wish 11.10.2026; the recorder
+ * sends completed laps since the stop – our car: on these tyres).
+ */
+export function stintLap(laps: number | null | undefined) {
+  return laps == null ? '–' : String(laps + 1);
+}
+
+/** h:mm:ss or m:ss. */
+function clockTime(s: number) {
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60);
+  return h ? `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}` : `${m}:${String(sec).padStart(2, '0')}`;
+}
+
+/** Bottom line of the Relative and Position panels: lap (of the session's laps) and time remaining. */
+export function SessionClock({ clock }: { clock: Standings['clock'] }) {
+  if (!clock || (clock.lap === null && clock.timeRemain === null)) return null;
+  const lap = clock.lap === null ? null
+    : clock.lapsTotal ? t('clock.lapOf', { lap: clock.lap, total: clock.lapsTotal }) : t('clock.lap', { lap: clock.lap });
+  return (
+    <div className="session-clock">
+      {lap && <span>{lap}</span>}
+      {clock.timeRemain !== null && <span>{t('clock.remaining', { time: clockTime(clock.timeRemain) })}</span>}
     </div>
   );
 }

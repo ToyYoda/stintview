@@ -553,7 +553,11 @@ export function readBestLaps(f: Frame): BestLap[] {
 }
 
 /** Per session of the event: its type and iRacing's official results so far (empty if none yet). */
-export interface SessionResults { type: string; results: OfficialResult[] }
+export interface SessionResults {
+  type: string; results: OfficialResult[];
+  /** Laps of a session limited by laps, null if unlimited (timed). */
+  laps?: number | null;
+}
 
 /**
  * SessionNum -> SessionType ("Practice", "Open Qualify", "Race", ...) and the official results
@@ -561,12 +565,14 @@ export interface SessionResults { type: string; results: OfficialResult[] }
  */
 export function parseSessions(text: string): Map<number, SessionResults> {
   type Pos = { Position?: number; CarIdx?: number; FastestTime?: number };
-  let y: { SessionInfo?: { Sessions?: { SessionNum?: number; SessionType?: string; ResultsPositions?: Pos[] | null }[] } } = {};
+  let y: { SessionInfo?: { Sessions?: { SessionNum?: number; SessionType?: string; SessionLaps?: number | string; ResultsPositions?: Pos[] | null }[] } } = {};
   try {
     y = parse(text, { strict: false, uniqueKeys: false, maxAliasCount: -1 }) ?? {};
   } catch { /* none */ }
   return new Map((y.SessionInfo?.Sessions ?? []).filter((s) => s.SessionNum !== undefined).map((s) => [s.SessionNum!, {
     type: s.SessionType ?? '',
+    // "unlimited" for timed sessions.
+    laps: typeof s.SessionLaps === 'number' && s.SessionLaps > 0 ? s.SessionLaps : null,
     results: (s.ResultsPositions ?? [])
       .filter((p) => typeof p.CarIdx === 'number' && typeof p.Position === 'number')
       .map((p) => ({ carIdx: p.CarIdx!, position: p.Position!, fastest: p.FastestTime! > 0 ? p.FastestTime! : null })),
@@ -589,6 +595,8 @@ export const isRaceSession = (type: string | undefined) => type === undefined ||
 const sessionLabel = (type: string) => (/qualify/i.test(type) ? 'Qualifying' : 'Training');
 
 const SEND_EVERY_S = 1;
+/** Class standings panel: every car of every class (wish 11.10.2026; before P1–3 + around us). */
+const ALL = 1000;
 /** Odd gaps logged per session (diagnostics). */
 const MAX_NOTES = 50;
 /** Practice/qualifying: the projection of the lap in progress changes all the time. */
@@ -666,6 +674,13 @@ export class StandingsTracker {
     const lapRef = lapRefOf(cars.find((c) => c.carIdx === teamIdx));
     // Relative panel: on track, in every session.
     const relative = this.decorate(f, relativeRows(cars, teamIdx, this.info, lapRef, 5, tyreLaps, !bestMode));
+    // iRacing says ~604800 s for "unlimited".
+    const remain = f.has('SessionTimeRemain') ? f.num('SessionTimeRemain') : -1;
+    const lapNow = f.has('Lap') ? f.num('Lap') : -1;
+    const clock = {
+      lap: lapNow >= 0 ? lapNow : null, lapsTotal: session?.laps ?? null,
+      timeRemain: remain >= 0 && remain < 100_000 ? remain : null,
+    };
     const decorateClasses = (cs: ClassStandings[]) => cs.map((c) => ({ ...c, rows: this.decorate(f, c.rows) }));
     if (bestMode) {
       // iRacing's official ranking (valid laps only) once the session has results, telemetry until then.
@@ -673,17 +688,17 @@ export class StandingsTracker {
       const field = session!.results.length ? officialBestLaps(telemetry, session!.results) : telemetry;
       const best = this.decorate(f, computeBestStandings(field, teamIdx, this.info, 3, 3, tyreLaps));
       const projection = bestProjection(field, teamIdx, this.info, projectedLap(f)) ?? undefined;
-      const classes = decorateClasses(classBestStandings(field, teamIdx, this.info, tyreLaps));
-      return best.length ? { t: 'standings', sessionTime: t, rows: best, mode: 'best', session: sessionLabel(session!.type), projection, relative, classes } : null;
+      const classes = decorateClasses(classBestStandings(field, teamIdx, this.info, tyreLaps, ALL));
+      return best.length ? { t: 'standings', sessionTime: t, rows: best, mode: 'best', session: sessionLabel(session!.type), projection, relative, classes, clock } : null;
     }
     const rows = this.decorate(f, computeStandings(cars, teamIdx, this.info, 3, 3, { tyreLaps, note: this.note }));
-    const classes = decorateClasses(classStandings(cars, teamIdx, this.info, tyreLaps));
+    const classes = decorateClasses(classStandings(cars, teamIdx, this.info, tyreLaps, ALL));
     const lapping = this.decorate(f, lappingRows(cars, teamIdx, this.info, lapRef, tyreLaps));
     const us = rows.find((r) => r.isTeam);
     const neighbour = (d: number) => (us ? rows.find((r) => r.pos === us.pos + d)?.carIdx ?? null : null);
     const between = betweenRows(cars, teamIdx, neighbour(-1), neighbour(1), this.info, lapRef, 3, tyreLaps);
     // Chips in the duel line show the number only: no need for the extra fields there.
-    return rows.length ? { t: 'standings', sessionTime: t, rows, lapping, between, mode: 'race', relative, classes } : null;
+    return rows.length ? { t: 'standings', sessionTime: t, rows, lapping, between, mode: 'race', relative, classes, clock } : null;
   }
 
   /** Own car: exact, from the distance the tyres have run since they were fitted (newest tyre). */

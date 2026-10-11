@@ -167,6 +167,7 @@ describe('pit lane loss', () => {
       }
       return out;
     };
+    lane.onFrame(-0.1, [car(1, 3.499, 49.9, false)], lap); // comes in from the track
     lane.onFrame(0, [car(1, 3.5, 50, true)], lap);
     move(10, 0.52, true);
     move(30, 0.52, true);
@@ -181,6 +182,7 @@ describe('pit lane loss', () => {
     const lane = new LaneLossLearner();
     const lap = () => 100;
     let t = 0;
+    lane.onFrame(-0.1, [car(1, 3.499, 49.9, false)], lap);
     lane.onFrame(0, [car(1, 3.5, 50, true)], lap);
     let done: ReturnType<LaneLossLearner['onFrame']> = [];
     // 30 s through the lane for 5 % of the lap (5 s on track), never standing still
@@ -231,6 +233,27 @@ describe('rejoin', () => {
     const r = computeRejoin(cars, 0, 60, 100, info);
     expect(r.ahead.find((c) => c.carIdx === 1)).toMatchObject({ laps: -1 });
     expect(r.behind.find((c) => c.carIdx === 2)).toMatchObject({ laps: 1 });
+  });
+});
+
+describe('pit lane loss: only cars coming in from the track', () => {
+  it('a car that appears on pit road (reset, pit lane start) gives no sample', () => {
+    const lane = new LaneLossLearner();
+    const lap = () => 100;
+    let done: ReturnType<LaneLossLearner['onFrame']> = [];
+    // first seen in its pit box, drives out after 20 s
+    for (let i = 0; i <= 250; i++) {
+      const t = i / 10;
+      const pct = 0.5 + (i > 200 ? (0.01 * (i - 200)) / 50 : 0);
+      done.push(...lane.onFrame(t, [car(1, 3 + pct, 50 + (pct - 0.5) * 100, i < 250)], lap));
+    }
+    expect(done).toHaveLength(0);
+  });
+
+  it('short leftovers are left out of the value (the median stays put)', () => {
+    const store = new PitModelStore(null);
+    for (const x of [3.3, 3.3, 3.2, 3.3, 3.3, 3.2, 18.4, 18.6, 17.8, 18.2, 8.8, 18]) store.addLaneLoss('219', x);
+    expect(store.laneLoss('219').loss).toBeCloseTo(18.2); // before: (8.8 + 3.3) / 2 = 6.05
   });
 });
 

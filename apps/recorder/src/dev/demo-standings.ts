@@ -140,6 +140,7 @@ ws.on('open', async () => {
       send({
         t: 'standings', sessionTime: 5000 + i / 2, rows: moving, lapping, between,
         relative: relativeRows(field, 0, necInfo, 470, 5, (c) => (c * 7) % 23).map(necRow),
+        clock: { lap: 31, lapsTotal: null, timeRemain: 4700 - i / 2 },
         classes: classStandings(field, 0, necInfo, (c) => (c * 7) % 23).map((c) => ({ ...c, rows: c.rows.map(necRow) })),
       });
     }

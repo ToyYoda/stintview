@@ -4,7 +4,7 @@ import { t } from '../i18n.ts';
 import { Flag } from './gaps.tsx';
 import { CarMake } from './carMake.tsx';
 import { ClassBar, columnOrder } from './RelativeWidget.tsx';
-import { Compound, lapTime, License, rating } from './StandingsWidget.tsx';
+import { Compound, lapTime, License, rating, stintLap } from './StandingsWidget.tsx';
 import type { ClassesColumn, ColumnOptions } from '../feed.ts';
 
 /** Default column order; the StintView window can change it and switch columns off. */
@@ -18,8 +18,8 @@ const HEAD: Record<ClassesColumn, string> = {
 };
 
 /**
- * Standings by class (fastest class first): P1–P3 of every class, in ours also the cars around
- * us. Gap = behind the class leader (seconds on the same lap, else laps). Fastest lap purple
+ * Standings by class (fastest class first): every car of every class (since 0.24.1; before
+ * P1–P3 and the cars around us). Gap = behind the class leader (seconds on the same lap, else laps). Fastest lap purple
  * when it is the class's best, last lap green when it is that driver's best. Stint = laps
  * since the last pit stop. Practice/qualifying: by best lap, gap = best − the leader's best.
  * Team column only in team races. Columns can be switched off and moved in the StintView window.
@@ -79,7 +79,7 @@ function ClassRows({ cls, best, cols }: { cls: ClassStandings; best: boolean; co
           sr: <td key="sr" className="st-sr">{r.license ? <License {...r.license} /> : '–'}</td>,
           fastest: <td key="fastest" className={`cls-lap${r.bestLap && r.bestLap === cls.best ? ' class-best' : ''}`}>{r.bestLap ? lapTime(r.bestLap) : '–'}</td>,
           last: <td key="last" className={`cls-lap${r.lastLap && r.lastLap === r.bestLap ? ' personal-best' : ''}`}>{r.lastLap ? lapTime(r.lastLap) : '–'}</td>,
-          tyre: <td key="tyre" className="st-tyre">{r.inPit ? t('st.box') : r.tyreLaps ?? '–'}</td>,
+          tyre: <td key="tyre" className="st-tyre">{r.inPit ? t('st.box') : stintLap(r.tyreLaps)}</td>,
           compound: <td key="compound" className="st-compound">{r.compound ? <Compound name={r.compound} /> : '–'}</td>,
         };
         return (

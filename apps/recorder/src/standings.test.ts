@@ -267,6 +267,12 @@ describe('practice and qualifying: ranking by best lap', () => {
     expect(isRaceSession(undefined)).toBe(true);
   });
 
+  it('session laps: a number for sessions over laps, null for timed ones', () => {
+    const sessions = parseSessions(['SessionInfo:', ' Sessions:', ' - SessionNum: 0', '   SessionType: Race', '   SessionLaps: 30', ' - SessionNum: 1', '   SessionType: Race', '   SessionLaps: unlimited', ''].join(String.fromCharCode(10)));
+    expect(sessions.get(0)?.laps).toBe(30);
+    expect(sessions.get(1)?.laps).toBeNull();
+  });
+
   it('official results from the YAML decide order and best lap', () => {
     const sessions = parseSessions([
       'SessionInfo:', ' Sessions:', ' - SessionNum: 0', '   SessionType: Practice', '   ResultsPositions:',
