@@ -158,7 +158,8 @@ function CreateForm({ onState, serverPort }: { onState(s: AppState): void; serve
 // ---------------------------------------------------------------------------
 
 type Tab = 'status' | 'displays' | 'pit' | 'radio' | 'planner' | 'team' | 'keys';
-const TABS: Tab[] = ['status', 'displays', 'pit', 'radio', 'planner', 'team', 'keys'];
+// The stint planner tab is hidden until the planner works (11.10.2026); add 'planner' here to show it again.
+const TABS: Tab[] = ['status', 'displays', 'pit', 'radio', 'team', 'keys'];
 const TAB_KEY = 'stintview.setupTab';
 
 /**

@@ -215,6 +215,9 @@ async function openPlanner() {
   return { error: null };
 }
 
+/** Stint planner in the tray menu (and its tab in the StintView window): hidden until it works. */
+const PLANNER_SHOWN = false;
+
 async function openPlannerFromMenu() {
   const { error } = await openPlanner();
   if (error) dialog.showMessageBox({ type: 'warning', message: t('planner.title'), detail: error });
@@ -543,7 +546,8 @@ function buildMenu() {
     { label: t('menu.recenter'), enabled: vr === 'connected', click: recenterVr },
     { type: 'separator' },
     { label: t('menu.settings'), click: () => openSetup() },
-    { label: t('menu.planner'), enabled: Boolean(loadConfig()), click: openPlannerFromMenu },
+    // Stint planner hidden until it works (11.10.2026), like its tab in the StintView window.
+    ...(PLANNER_SHOWN ? [{ label: t('menu.planner'), enabled: Boolean(loadConfig()), click: openPlannerFromMenu }] : []),
     { label: t('menu.hotkeys'), click: () => openSetup('/setup/keys') },
     { label: t('menu.autostart'), type: 'checkbox', checked: settings.autostart, enabled: app.isPackaged, click: (i) => updateSettings({ autostart: i.checked }) },
     { label: t('menu.server', { port: settings.serverPort }), type: 'checkbox', checked: settings.server, click: (i) => updateSettings({ server: i.checked }) },

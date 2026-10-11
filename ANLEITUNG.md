@@ -46,7 +46,7 @@ Dann **Team beitreten** klicken. Unter *Status* erscheint **Team-Server: verbund
 
 Nichts zu tun: StintView startet mit Windows und läuft im Infobereich der Taskleiste (unten rechts, das rote „O“; ggf. unter dem Pfeil **^** versteckt).
 
-- **Klick** auf das Symbol öffnet das StintView-Fenster mit den Reitern **Status**, **Anzeigen**, **Boxenstopp**, **Funk**, **Planer**, **Team** und **Kürzel**.
+- **Klick** auf das Symbol öffnet das StintView-Fenster mit den Reitern **Status**, **Anzeigen**, **Boxenstopp**, **Funk**, **Team** und **Kürzel**.
 - **Rechtsklick** öffnet das Menü mit denselben Schaltern und **StintView beenden**.
 
 Sobald du im Auto sitzt, sieht dein Team deine Daten. Steigst du aus, hört StintView von selbst auf zu senden.
@@ -91,6 +91,8 @@ Als Spotter kannst du deinem Fahrer kurze Ansagen schicken, die bei ihm groß im
 - Alle Teammitglieder brauchen dafür StintView 0.11 oder neuer (auch der PC mit dem Team-Server).
 
 ### Stintplaner: Rennen planen
+
+> **Derzeit ausgeblendet:** Der Stintplaner wird noch überarbeitet. Reiter und Menüeintrag sind deshalb in der App vorerst nicht zu sehen.
 
 Für Teamrennen plant StintView die Stints – aus euren echten Rundenzeiten und wann wer Zeit hat. Jeder Stint bekommt einen **Fahrer** und einen **Spotter**.
 

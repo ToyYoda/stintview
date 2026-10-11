@@ -46,7 +46,7 @@ Then click **Join team**. Under *Status*, **Team server: connected** appears.
 
 Nothing to do: StintView starts with Windows and runs in the notification area of the taskbar (bottom right, the red "O"; possibly hidden under the **^** arrow).
 
-- **Click** the icon to open the StintView window with the tabs **Status**, **Displays**, **Pit stop**, **Radio**, **Planner**, **Team** and **Shortcuts**.
+- **Click** the icon to open the StintView window with the tabs **Status**, **Displays**, **Pit stop**, **Radio**, **Team** and **Shortcuts**.
 - **Right-click** opens the menu with the same switches and **Quit StintView**.
 
 As soon as you are in the car, your team sees your data. When you get out, StintView stops sending on its own.
@@ -90,6 +90,8 @@ As a spotter you can send your driver short calls that appear large in their ove
 - Everyone in the team needs StintView 0.11 or newer for this (including the PC running the team server).
 
 ### Stint planner: planning a race
+
+> **Hidden for now:** the stint planner is being reworked, so its tab and menu entry are not shown in the app for the time being.
 
 For team races StintView plans the stints – from your real lap times and from when everyone is available. Every stint gets a **driver** and a **spotter**.
 
