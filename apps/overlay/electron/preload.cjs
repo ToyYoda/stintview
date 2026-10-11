@@ -4,7 +4,7 @@ contextBridge.exposeInMainWorld('stintview', {
   // Overlay widgets
   getConfig: () => ipcRenderer.invoke('get-config'),
   onEditMode: (cb) => ipcRenderer.on('edit-mode', (_e, on, hotkey) => cb(on, hotkey)),
-  setEditMode: (on) => ipcRenderer.invoke('app:edit', on),
+  setEditMode: (on, profile) => ipcRenderer.invoke('app:edit', on, profile),
   // Clickable buttons in the otherwise click-through overlay
   setInteractive: (on) => ipcRenderer.send('overlay:interactive', on),
   onPanels: (cb) => ipcRenderer.on('panels', (_e, ids) => cb(ids)),
@@ -14,6 +14,8 @@ contextBridge.exposeInMainWorld('stintview', {
   onOpacity: (cb) => ipcRenderer.on('opacity', (_e, v) => cb(v)),
   // Size factor and options per panel
   onPanelConfig: (cb) => ipcRenderer.on('panel-config', (_e, cfg) => cb(cfg)),
+  // Profile shown on the monitor overlay ('driving' | 'watching'): positions are kept per profile
+  onProfile: (cb) => ipcRenderer.on('profile', (_e, p) => cb(p)),
   // Panel size in percent, from the corner handle in edit mode (same setting as in the window)
   setPanelSize: (id, size) => ipcRenderer.invoke('app:panel-size', id, size),
   // UI language ('de' | 'en')

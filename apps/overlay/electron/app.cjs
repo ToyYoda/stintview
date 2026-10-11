@@ -1,18 +1,18 @@
 // StintView desktop app: tray icon, setup window, and the background pieces –
 // recorder (always), desktop overlay / VR panels (per setting) and optionally the team relay.
-const { app, BrowserWindow, Menu, Tray, dialog, ipcMain, nativeImage, shell, utilityProcess } = require('electron');
+const { app, BrowserWindow, Menu, Tray, dialog, globalShortcut, ipcMain, nativeImage, shell, utilityProcess } = require('electron');
 const { createWriteStream, mkdirSync, readdirSync } = require('node:fs');
 const path = require('node:path');
 const {
-  cleanLanguage, cleanMessages, cleanOpacity, cleanOutput, cleanPanels, cleanPitStop, cleanVrRecenter, clearConfig, configPath, dataDir, loadConfig, loadSettings, logDir, normalizeUrl, panelConfig, panelsFor, register, saveSettings,
+  cleanLanguage, cleanMessages, cleanOpacity, cleanOutput, cleanPanels, cleanPitStop, cleanProfile, cleanProfileMode, cleanVrRecenter, clearConfig, PROFILE_IDS, configPath, dataDir, loadConfig, loadSettings, logDir, normalizeUrl, panelConfig, panelsFor, register, saveSettings,
 } = require('./config.cjs');
 const {
-  editHotkey, editing, onOverlayChange, overlayRunning, editHotkeyInfo, setEditMode, setOverlayLanguage, setOverlayOpacity, setOverlayPanelConfig, setOverlayPanels, startOverlay, stopOverlay, toggleEdit,
+  editHotkey, editing, onOverlayChange, overlayRunning, editHotkeyInfo, setEditMode, setOverlayLanguage, setOverlayOpacity, setOverlayPanelConfig, setOverlayPanels, setOverlayProfile, startOverlay, stopOverlay, toggleEdit,
 } = require('./overlay-window.cjs');
 const { PRELOAD, loadRoute } = require('./renderer.cjs');
 const { cameraCommand, cameraHotkeyInfo, cameraInfo, onRecorderMessage, setHazardCar, setTeamCar, startCamera, stopCamera } = require('./camera.cjs');
 const { alignToHead, recenterVr, resetPanelAnchor, setVrLanguage, setVrOpacity, setVrPanelConfig, startVr, stopVr, vrHotkeyInfo, vrStatus } = require('./vr.cjs');
-const { hotkeyGroups } = require('./hotkeys.cjs');
+const { displayKey, hotkeyGroups } = require('./hotkeys.cjs');
 const { cancelLearnRecenter, learnRecenter, watchRecenter } = require('./rawinput.cjs');
 const { messageHotkeyInfo, radioState, sendMessage, setDriving, setMessages, startMessages, stopMessages } = require('./messages.cjs');
 const { checkNow, installNow, setupUpdates, updateInfo, updateLabel } = require('./updates.cjs');
@@ -283,6 +283,7 @@ function startRecorder() {
     if (m.t === 'car') {
       status.inCar = m.inCar;
       setDriving(m.inCar); // Radio panel and message hotkeys are off while you drive
+      setAutoProfile(m.inCar);
     }
     if (m.t === 'server') {
       status.serverText = m.text;
@@ -296,6 +297,7 @@ function startRecorder() {
       if (localLatest.get('driving')?.driving) onLocalTelemetry({ t: 'driving', driving: false, driverName: '', session: '' });
       Object.assign(status, { iracing: false, inCar: false, server: 'offline' });
       setDriving(false);
+      setAutoProfile(false);
       setSimRunning(false);
     }
     if (m.t === 'camera-state' || m.t === 'camera-result') return onRecorderMessage(m);
@@ -342,6 +344,64 @@ async function waitForRelay() {
 }
 
 // ---------------------------------------------------------------------------
+// Profiles: one panel set-up while this PC drives, one while watching (since 0.23)
+// ---------------------------------------------------------------------------
+
+/** Out of the car this long before switching to watching: a reset or tow in the pits doesn't flip. */
+const LEAVE_CAR_MS = 5000;
+/** Hotkey to switch between the profiles (holds the other one); first free wins. */
+const PROFILE_HOTKEYS = ['Control+Shift+P', 'Control+Alt+P', 'Control+Shift+F10'];
+let autoProfile = 'watching';
+let leaveTimer = null;
+/** While moving panels from the StintView window: the profile being edited there. */
+let editProfile = null;
+let profileHotkey = null;
+
+/** The profile shown now: the one being moved, else the held one, else by whether we drive. */
+function activeProfile() {
+  if (editProfile) return editProfile;
+  return settings.profileMode === 'auto' ? autoProfile : settings.profileMode;
+}
+const cur = () => settings.profiles[activeProfile()];
+
+/** From the recorder: this PC's driver got in or out of the car. */
+function setAutoProfile(inCar) {
+  clearTimeout(leaveTimer);
+  leaveTimer = null;
+  if (inCar) {
+    if (autoProfile !== 'driving') { autoProfile = 'driving'; applySettings(); }
+  } else if (autoProfile !== 'watching') {
+    leaveTimer = setTimeout(() => { leaveTimer = null; autoProfile = 'watching'; applySettings(); }, LEAVE_CAR_MS);
+  }
+}
+
+/** Hotkey / tray: show the other profile and hold it (automatic again in the window or tray). */
+function switchProfile() {
+  updateSettings({ profileMode: activeProfile() === 'driving' ? 'watching' : 'driving' });
+}
+
+function registerProfileHotkey() {
+  profileHotkey = PROFILE_HOTKEYS.find((h) => globalShortcut.register(h, switchProfile)) ?? null;
+  if (!profileHotkey) console.warn('[profile] no hotkey available, all taken:', PROFILE_HOTKEYS.join(', '));
+}
+
+/** Changes to one profile ({ output?, panels?, opacity? }), cleaned; panels merge per panel. */
+function patchProfiles(patch) {
+  const profiles = { ...settings.profiles };
+  for (const id of PROFILE_IDS) {
+    const p = patch?.[id];
+    if (!p || typeof p !== 'object') continue;
+    const old = profiles[id];
+    profiles[id] = cleanProfile({
+      output: p.output ?? old.output,
+      panels: p.panels ? { ...old.panels, ...p.panels } : old.panels,
+      opacity: p.opacity ?? old.opacity,
+    }, old);
+  }
+  return profiles;
+}
+
+// ---------------------------------------------------------------------------
 // Settings -> running pieces
 // ---------------------------------------------------------------------------
 
@@ -350,12 +410,13 @@ function applySettings() {
   setLanguage(settings.language);
   setOverlayLanguage(settings.language);
   setVrLanguage(settings.language);
-  const shown = panelsFor(settings);
-  setOverlayPanels(shown);
-  setOverlayPanelConfig(panelConfig(settings));
-  setOverlayOpacity(settings.opacity / 100);
-  setVrPanelConfig(panelConfig(settings));
-  setVrOpacity(settings.opacity / 100);
+  const profile = cur();
+  setOverlayProfile(activeProfile());
+  setOverlayPanels(panelsFor(profile));
+  setOverlayPanelConfig(panelConfig(profile));
+  setOverlayOpacity(profile.opacity / 100);
+  setVrPanelConfig(panelConfig(profile));
+  setVrOpacity(profile.opacity / 100);
   recorder?.post({ t: 'pit-settings', pit: settings.pitStop });
   setMessages(cleanMessages(settings.messages, settings.language));
   applyOutputs();
@@ -391,7 +452,7 @@ const waitingForSim = () => settings.overlay && settings.onlyWithIracing && !sim
 
 /** The iRacing recenter key/button moves the VR panels along – read only while the VR panels run. */
 function applyRecenter() {
-  const on = settings.overlay && settings.output === 'vr' && settings.vrRecenter && (!settings.onlyWithIracing || simRunning);
+  const on = settings.overlay && cur().output === 'vr' && settings.vrRecenter && (!settings.onlyWithIracing || simRunning);
   watchRecenter(on ? settings.vrRecenter : null, alignToHead);
 }
 
@@ -399,14 +460,17 @@ function applyRecenter() {
 function applyOutputs() {
   // Also without a team: the displays then show this PC's own sessions.
   const on = settings.overlay && (!settings.onlyWithIracing || simRunning);
-  // One output at a time: the monitor overlay or the VR panels.
-  if (on && settings.output === 'monitor') startOverlay(); else stopOverlay();
-  // VR panels are separate windows: restart the VR host when the selection changes.
-  const vrPanels = panelsFor(settings);
-  if (on && settings.output === 'vr') {
-    if (vrStatus() !== 'off' && vrPanels.join() !== runningVrPanels) stopVr();
-    runningVrPanels = vrPanels.join();
-    startVr(refresh, vrPanels).catch((e) => console.error('[vr]', e));
+  // One output at a time: the monitor overlay or the VR panels (each profile has its own).
+  const output = cur().output;
+  if (on && output === 'monitor') startOverlay(); else stopOverlay();
+  // VR panels are separate windows with a layout per profile: restart the VR host when the
+  // selection or the profile changes.
+  const vrPanels = panelsFor(cur());
+  const vrKey = `${activeProfile()}:${vrPanels.join()}`;
+  if (on && output === 'vr') {
+    if (vrStatus() !== 'off' && vrKey !== runningVrPanels) stopVr();
+    runningVrPanels = vrKey;
+    startVr(refresh, vrPanels, activeProfile()).catch((e) => console.error('[vr]', e));
   } else {
     stopVr();
   }
@@ -455,10 +519,22 @@ function buildMenu() {
       label: `${t('menu.onlyWithIracing')}${waitingForSim() ? t('menu.waitingForIracing') : ''}`,
       type: 'checkbox', checked: settings.onlyWithIracing, enabled: settings.overlay, click: (i) => updateSettings({ onlyWithIracing: i.checked }),
     },
-    { label: t('menu.monitor'), type: 'radio', checked: settings.output === 'monitor', click: () => updateSettings({ output: 'monitor' }) },
     {
-      label: `${t('menu.vr')}${settings.output === 'vr' && vr === 'waiting' ? t('menu.vrWaiting') : ''}`,
-      type: 'radio', checked: settings.output === 'vr', click: () => updateSettings({ output: 'vr' }),
+      label: t('menu.profile', { name: t(`profile.${activeProfile()}`) }),
+      submenu: [
+        { label: t('menu.profileAuto', { name: t(`profile.${autoProfile}`) }), type: 'radio', checked: settings.profileMode === 'auto', click: () => updateSettings({ profileMode: 'auto' }) },
+        ...PROFILE_IDS.map((id) => ({
+          label: t('menu.profileHold', { name: t(`profile.${id}`) }), type: 'radio', checked: settings.profileMode === id, click: () => updateSettings({ profileMode: id }),
+        })),
+        { type: 'separator' },
+        { label: `${t('menu.profileSwitch')}${profileHotkey ? ` (${displayKey(profileHotkey)})` : ''}`, click: switchProfile },
+      ],
+    },
+    // Output of the profile shown now.
+    { label: t('menu.monitor'), type: 'radio', checked: cur().output === 'monitor', click: () => updateSettings({ profiles: patchProfiles({ [activeProfile()]: { output: 'monitor' } }) }) },
+    {
+      label: `${t('menu.vr')}${cur().output === 'vr' && vr === 'waiting' ? t('menu.vrWaiting') : ''}`,
+      type: 'radio', checked: cur().output === 'vr', click: () => updateSettings({ profiles: patchProfiles({ [activeProfile()]: { output: 'vr' } }) }),
     },
     {
       label: `${t('menu.move')}${editHotkey() ? ` (${editHotkey()})` : ''}`,
@@ -517,7 +593,7 @@ function appState() {
     configured: Boolean(config),
     team: config ? { teamName: config.teamName, memberName: config.memberName, serverUrl: config.serverUrl, inviteCode: config.inviteCode } : null,
     settings,
-    status: { ...status, otherSession, line: statusLine(), waitingForIracing: waitingForSim(), vr: vrStatus(), overlay: overlayRunning(), editing: editing(), editHotkey: editHotkey() },
+    status: { ...status, otherSession, profile: activeProfile(), autoProfile, profileHotkey: displayKey(profileHotkey), line: statusLine(), waitingForIracing: waitingForSim(), vr: vrStatus(), overlay: overlayRunning(), editing: editing(), editHotkey: editHotkey() },
     autostartAvailable: app.isPackaged,
     cameraHotkeys: cameraInfo().hotkeys,
     pitImport,
@@ -527,7 +603,7 @@ function appState() {
     hotkeys: (() => {
       const cam = cameraHotkeyInfo();
       return hotkeyGroups(editHotkeyInfo(), cam.keys, cam.candidates, vrHotkeyInfo(), { overlay: overlayRunning() },
-        { items: messageHotkeyInfo(), driving: radioState().driving });
+        { items: messageHotkeyInfo(), driving: radioState().driving }, { key: profileHotkey, candidates: PROFILE_HOTKEYS });
     })(),
     update: { ...updateInfo(), label: updateLabel() },
   };
@@ -566,11 +642,11 @@ ipcMain.handle('app:create', async (_e, { serverUrl, teamName, memberName, hostH
 });
 
 ipcMain.handle('app:settings', (_e, patch) => {
-  const allowed = ['language', 'overlay', 'onlyWithIracing', 'output', 'autostart', 'server', 'panels', 'opacity', 'pitStop', 'messages', 'vrRecenter'];
+  const allowed = ['language', 'overlay', 'onlyWithIracing', 'autostart', 'server', 'profiles', 'profileMode', 'pitStop', 'messages', 'vrRecenter'];
   const clean = Object.fromEntries(Object.entries(patch ?? {}).filter(([k]) => allowed.includes(k)));
-  if (clean.panels) clean.panels = cleanPanels({ ...settings.panels, ...clean.panels });
-  if ('opacity' in clean) clean.opacity = cleanOpacity(clean.opacity);
-  if ('output' in clean) clean.output = cleanOutput(clean.output);
+  // { profiles: { driving: { output?, panels?, opacity? } } } – only what changed, per profile.
+  if (clean.profiles) clean.profiles = patchProfiles(clean.profiles);
+  if ('profileMode' in clean) clean.profileMode = cleanProfileMode(clean.profileMode);
   if ('language' in clean) clean.language = cleanLanguage(clean.language);
   if ('overlay' in clean) clean.overlay = Boolean(clean.overlay);
   if ('onlyWithIracing' in clean) clean.onlyWithIracing = Boolean(clean.onlyWithIracing);
@@ -584,9 +660,10 @@ ipcMain.handle('app:settings', (_e, patch) => {
 
 /** Panel size from the corner handle on the monitor overlay: same setting as the slider. */
 ipcMain.handle('app:panel-size', (_e, id, size) => {
-  if (!settings.panels[id] || !Number.isFinite(size)) return;
+  const panels = cur().panels;
+  if (!panels[id] || !Number.isFinite(size)) return;
   const clamped = Math.min(200, Math.max(50, Math.round(size / 5) * 5));
-  updateSettings({ panels: cleanPanels({ ...settings.panels, [id]: { ...settings.panels[id], size: clamped } }) });
+  updateSettings({ profiles: patchProfiles({ [activeProfile()]: { panels: { [id]: { ...panels[id], size: clamped } } } }) });
   refresh();
 });
 
@@ -599,8 +676,15 @@ ipcMain.handle('app:recenter-learn', async () => {
 });
 ipcMain.handle('app:recenter-cancel', () => cancelLearnRecenter());
 
-/** Edit mode of the desktop overlay (drag widgets); on = undefined toggles. */
-ipcMain.handle('app:edit', (_e, on) => {
+/**
+ * Edit mode of the desktop overlay (drag widgets); on = undefined toggles. `profile`: from the
+ * StintView window – show that profile while moving (it is the one being edited there).
+ */
+ipcMain.handle('app:edit', (_e, on, profile) => {
+  if (on && PROFILE_IDS.includes(profile) && profile !== activeProfile()) {
+    editProfile = profile;
+    applySettings(); // may start the monitor overlay
+  }
   if (on === undefined) toggleEdit(); else setEditMode(on);
   return appState();
 });
@@ -667,7 +751,15 @@ function onUpdateChange(u) {
 app.on('second-instance', () => openSetup());
 
 app.whenReady().then(() => {
-  onOverlayChange(() => refresh());
+  onOverlayChange(() => {
+    // Moving done (button, hotkey or window): back to the profile that applies.
+    if (!editing() && editProfile) {
+      editProfile = null;
+      applySettings();
+    }
+    refresh();
+  });
+  registerProfileHotkey();
   tray = new Tray(nativeImage.createFromPath(ICON));
   tray.on('click', () => openSetup());
   startRecorder();
@@ -691,4 +783,5 @@ app.on('before-quit', () => {
   stopVr();
   stopOverlay();
   watchRecenter(null);
+  if (profileHotkey) globalShortcut.unregister(profileHotkey);
 });

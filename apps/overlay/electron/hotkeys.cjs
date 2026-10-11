@@ -17,8 +17,9 @@ function displayKey(h) {
  * @param {{ keys: { key: string, label: string, ok: boolean }[], running: boolean }} vr
  * @param {{ overlay: boolean }} active
  * @param {{ items: { label: string, key: string | null, candidates: string[] }[], driving: boolean }} radio  team messages
+ * @param {{ key: string | null, candidates: string[] }} profile    switch between the driving/watching profiles
  */
-function hotkeyGroups(edit, camera, cameraCandidates, vr, active, radio = { items: [], driving: false }) {
+function hotkeyGroups(edit, camera, cameraCandidates, vr, active, radio = { items: [], driving: false }, profile = { key: null, candidates: [] }) {
   // Candidates before the registered key are held by other programs, later ones are spares.
   const item = (label, key, candidates, on) => {
     const at = key ? candidates.indexOf(key) : -1;
@@ -35,7 +36,10 @@ function hotkeyGroups(edit, camera, cameraCandidates, vr, active, radio = { item
     {
       title: t('keys.overlay'),
       note: active.overlay ? null : t('keys.overlayNote'),
-      items: [item(t('keys.move'), edit.key ?? (active.overlay ? null : edit.candidates[0]), edit.candidates, active.overlay)],
+      items: [
+        item(t('keys.move'), edit.key ?? (active.overlay ? null : edit.candidates[0]), edit.candidates, active.overlay),
+        item(t('keys.profile'), profile.key, profile.candidates, true),
+      ],
     },
     {
       title: t('keys.camera'),

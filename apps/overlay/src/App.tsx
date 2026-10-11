@@ -35,10 +35,13 @@ const DEFAULT_POSITIONS: Positions = {
   classes: { x: 860, y: 40 },
 };
 const STORAGE_KEY = 'stintview.positions';
+/** Positions per profile (since 0.23); the one key from before counts for both until moved. */
+const storageKey = (profile: string | null) => (profile ? `${STORAGE_KEY}.${profile}` : STORAGE_KEY);
 
-function loadPositions(): Positions {
+function loadPositions(profile: string | null): Positions {
   try {
-    return { ...DEFAULT_POSITIONS, ...JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') };
+    const saved = localStorage.getItem(storageKey(profile)) ?? localStorage.getItem(STORAGE_KEY) ?? '{}';
+    return { ...DEFAULT_POSITIONS, ...JSON.parse(saved) };
   } catch {
     return DEFAULT_POSITIONS;
   }
@@ -54,7 +57,9 @@ export function App() {
   const [route, setRoute] = useState(location.hash);
   // Browser: always movable. Electron: toggled by hotkey (desktop) or panel selection (VR).
   const [edit, setEdit] = useState(!window.stintview && !location.hash.startsWith('#/widget/'));
-  const [positions, setPositions] = useState(loadPositions);
+  // Profile shown (driving / watching, from the app); null in a browser.
+  const [profile, setProfile] = useState<string | null>(null);
+  const [positions, setPositions] = useState(() => loadPositions(null));
   const [hotkey, setHotkey] = useState<string | null>(null);
   // Widgets chosen for the monitor overlay in the StintView window (null = all, e.g. in a browser).
   const [shown, setShown] = useState<string[] | null>(null);
@@ -75,6 +80,7 @@ export function App() {
     window.stintview?.onPanels?.(setShown);
     window.stintview?.onOverlayArea?.(setMain);
     window.stintview?.onPanelConfig?.(setConfig);
+    window.stintview?.onProfile?.((p) => { setProfile(p); setPositions(loadPositions(p)); });
     window.stintview?.onLanguage?.(setLang);
     window.stintview?.onOpacity?.((v) => document.documentElement.style.setProperty('--panel-alpha', String(v)));
     return () => removeEventListener('hashchange', onHash);
@@ -112,7 +118,7 @@ export function App() {
   const move = (id: WidgetId, x: number, y: number) =>
     setPositions((p) => {
       const next = { ...p, [id]: { x: x - ox, y: y - oy } };
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* not persisted */ }
+      try { localStorage.setItem(storageKey(profile), JSON.stringify(next)); } catch { /* not persisted */ }
       return next;
     });
 

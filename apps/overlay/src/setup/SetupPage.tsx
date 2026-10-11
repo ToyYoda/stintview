@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { MESSAGE_COLORS, MESSAGE_MAX_LENGTH, type MessageColor } from '@stintview/protocol';
-import type { AppState, ClassesColumn, ColumnOptions, HotkeyGroup, PanelSetting, DuelOptions, RadioState, RelativeColumn, StandingsOptions } from '../feed.ts';
+import type { AppState, ClassesColumn, ColumnOptions, HotkeyGroup, PanelSetting, DuelOptions, Profile, ProfileId, RadioState, RelativeColumn, StandingsOptions } from '../feed.ts';
 import { setLang, t, useLang, type Lang } from '../i18n.ts';
 import { brand } from '../brand.ts';
 import { STANDINGS_COLUMNS } from '../widgets/StandingsWidget.tsx';
@@ -180,6 +180,11 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
   const set = async (patch: Partial<AppState['settings']>) => onState(await api().updateSettings(patch));
   const serverDot = status.server === 'connected' || status.server === 'standby' ? 'ok' : status.server === 'error' ? 'bad' : 'warn';
   const [tab, setTabState] = useState<Tab>(() => initialTab(state.configured));
+  // Profile being edited in the Displays tab (starts with the one shown now).
+  const [editing, setEditing] = useState<ProfileId>(status.profile);
+  const prof = settings.profiles[editing];
+  /** Changes to the profile being edited (only what changed; the app merges per panel). */
+  const setProf = (patch: Partial<Profile>) => set({ profiles: { [editing]: patch } } as unknown as Partial<AppState['settings']>);
   const setTab = (next: Tab) => {
     setTabState(next);
     try { localStorage.setItem(TAB_KEY, next); } catch { /* not remembered */ }
@@ -222,7 +227,7 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
           <li><Dot kind={status.iracing ? 'ok' : 'idle'} />{status.iracing ? t('set.iracingRunning') : t('set.iracingNot')}</li>
           <li><Dot kind={status.inCar ? (status.server === 'standby' && !status.otherSession ? 'warn' : 'ok') : 'idle'} />{status.inCar ? (status.server === 'standby' && !status.otherSession ? t('set.standby') : status.server === 'connected' ? t('set.driving') : t('set.drivingLocal')) : t('set.notInCar')}</li>
           {status.waitingForIracing && <li><Dot kind="idle" />{t('set.waitingForIracing')}</li>}
-          {settings.overlay && settings.output === 'vr' && !status.waitingForIracing && <li><Dot kind={status.vr === 'connected' ? 'ok' : 'warn'} />{status.vr === 'connected' ? t('set.vrConnected') : t('set.vrWaiting')}</li>}
+          {settings.overlay && settings.profiles[status.profile].output === 'vr' && !status.waitingForIracing && <li><Dot kind={status.vr === 'connected' ? 'ok' : 'warn'} />{status.vr === 'connected' ? t('set.vrConnected') : t('set.vrWaiting')}</li>}
           {settings.server && <li><Dot kind={status.relay === 'running' ? 'ok' : 'bad'} />{status.relay === 'running' ? t('set.relayRunning') : t('set.relayStopped')}</li>}
         </ul>
       </section>
@@ -234,28 +239,56 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
         <Toggle checked={settings.overlay} onChange={(v) => set({ overlay: v })} label={t('set.show')} hint={t('set.showHint')} />
         <Toggle checked={settings.onlyWithIracing} disabled={!settings.overlay} onChange={(v) => set({ onlyWithIracing: v })}
           label={t('set.onlyWithIracing')} hint={t('set.onlyWithIracingHint')} />
+        <div className="profile-box">
+          <div className="output-choice" role="radiogroup" aria-label={t('set.profile')}>
+            <span>{t('set.profile')}</span>
+            {(['auto', 'driving', 'watching'] as const).map((m) => (
+              <button key={m} type="button" role="radio" aria-checked={settings.profileMode === m}
+                className={settings.profileMode === m ? 'seg active' : 'seg'} onClick={() => set({ profileMode: m })}>
+                {m === 'auto' ? t('set.profileAuto') : t(`profile.${m}`)}
+              </button>
+            ))}
+          </div>
+          <p className="hint">
+            {t('set.profileActive', { name: t(`profile.${status.profile}`) })}{' '}
+            {settings.profileMode === 'auto' ? (status.profile === 'driving' ? t('set.profileInCar') : t('set.profileNotInCar')) : t('set.profileHeld')}
+            {status.profileHotkey ? ` ${t('set.profileKey', { key: status.profileHotkey })}` : ''}
+          </p>
+          <div className="profile-tabs" role="tablist" aria-label={t('set.profileEdit')}>
+            <span>{t('set.profileEdit')}</span>
+            {(['driving', 'watching'] as const).map((id) => (
+              <button key={id} type="button" role="tab" aria-selected={editing === id} className={editing === id ? 'on' : ''} onClick={() => setEditing(id)}>
+                {t(`profile.${id}`)}{status.profile === id && <span className="profile-live" title={t('set.profileLive')}>●</span>}
+              </button>
+            ))}
+          </div>
         <div className="output-choice" role="radiogroup" aria-label={t('set.output')}>
           <span>{t('set.output')}</span>
           {(['monitor', 'vr'] as const).map((o) => (
-            <button key={o} type="button" role="radio" aria-checked={settings.output === o}
-              className={settings.output === o ? 'seg active' : 'seg'} onClick={() => set({ output: o })}>
+            <button key={o} type="button" role="radio" aria-checked={prof.output === o}
+              className={prof.output === o ? 'seg active' : 'seg'} onClick={() => setProf({ output: o })}>
               {o === 'monitor' ? t('set.monitor') : t('set.vr')}
             </button>
           ))}
         </div>
-        <p className="hint">{settings.output === 'monitor' ? t('set.monitorHint') : t('set.vrHint')}</p>
-        {settings.output === 'vr' && <RecenterKey current={settings.vrRecenter} onState={onState} onClear={() => set({ vrRecenter: null })} />}
-        {status.overlay && (
+        <p className="hint">{prof.output === 'monitor' ? t('set.monitorHint') : t('set.vrHint')}</p>
+        {prof.output === 'vr' && <RecenterKey current={settings.vrRecenter} onState={onState} onClear={() => set({ vrRecenter: null })} />}
+        {/* Moving shows the profile being edited here, also when the other one applies right now. */}
+        {settings.overlay && prof.output === 'monitor' && !status.waitingForIracing && (
           <div className="edit-row">
-            <button className="btn ghost" onClick={async () => onState(await api().setEditMode(!status.editing))}>
+            <button className="btn ghost" onClick={async () => onState(await api().setEditMode(!status.editing, editing))}>
               {status.editing ? t('set.moveEnd') : t('set.move')}
             </button>
-            <small>{status.editHotkey ? t('set.orKey', { key: status.editHotkey }) : t('set.noKey')}</small>
+            <small>
+              {status.editHotkey ? t('set.orKey', { key: status.editHotkey }) : t('set.noKey')}
+              {editing !== status.profile && !status.editing ? ` · ${t('set.moveOther', { name: t(`profile.${editing}`) })}` : ''}
+            </small>
           </div>
         )}
-        <Slider label={t('set.background')} hint={t('set.backgroundHint')}
-          value={settings.opacity} min={0} max={100} step={5} onCommit={(opacity) => set({ opacity })} />
-        <PanelList panels={settings.panels} onChange={(panels) => set({ panels })} />
+        <Slider key={`opacity-${editing}`} label={t('set.background')} hint={t('set.backgroundHint')}
+          value={prof.opacity} min={0} max={100} step={5} onCommit={(opacity) => setProf({ opacity })} />
+        <PanelList key={`panels-${editing}`} panels={prof.panels} onChange={(panels) => setProf({ panels })} />
+        </div>
         <p className="hint cam-keys">
           {t('set.camKeysA')}<b>{state.cameraHotkeys.incident ?? '–'}</b>{t('set.camKeysB')}
           <b>{state.cameraHotkeys.back ?? '–'}</b>{t('set.camKeysC')}{' '}
@@ -596,8 +629,8 @@ function RecenterKey({ current, onState, onClear }: {
 }
 
 function PanelList({ panels, onChange }: {
-  panels: AppState['settings']['panels'];
-  onChange(p: AppState['settings']['panels']): void;
+  panels: Profile['panels'];
+  onChange(p: Profile['panels']): void;
 }) {
   const update = (id: string, patch: Partial<PanelSetting>) => onChange({ ...panels, [id]: { ...panels[id]!, ...patch } });
   return (

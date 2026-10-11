@@ -15,6 +15,7 @@ let panels = null; // widget ids to show, null = all
 let opacity = 0.78; // panel background opacity 0–1
 let panelConfig = null; // { [id]: { scale, options } }
 let language = 'de';
+let profile = 'watching'; // panel positions are kept per profile
 
 /** Called whenever edit mode or the overlay changes (tray menu, setup window). */
 const onOverlayChange = (fn) => { notify = fn; };
@@ -106,6 +107,7 @@ function startOverlay() {
     win.webContents.send('opacity', opacity);
     if (panelConfig) win.webContents.send('panel-config', panelConfig);
     win.webContents.send('language', language);
+    win.webContents.send('profile', profile);
     win.webContents.send('overlay-area', overlayArea().main);
   });
   setEdit(false);
@@ -126,6 +128,13 @@ function stopOverlay() {
 function setOverlayPanels(ids) {
   panels = ids;
   if (win) win.webContents.send('panels', ids);
+}
+
+/** Profile shown (driving / watching): the page keeps panel positions per profile. */
+function setOverlayProfile(p) {
+  if (p === profile) return;
+  profile = p;
+  if (win) win.webContents.send('profile', p);
 }
 
 /** UI language of the overlay page. */
@@ -154,5 +163,5 @@ const editing = () => edit;
 const editHotkeyInfo = () => ({ key: hotkey, candidates: EDIT_HOTKEYS });
 
 module.exports = {
-  startOverlay, stopOverlay, toggleEdit, setEditMode, overlayRunning, editHotkey, editHotkeyInfo, editing, onOverlayChange, setOverlayPanels, setOverlayOpacity, setOverlayPanelConfig, setOverlayLanguage,
+  startOverlay, stopOverlay, toggleEdit, setEditMode, overlayRunning, editHotkey, editHotkeyInfo, editing, onOverlayChange, setOverlayPanels, setOverlayOpacity, setOverlayPanelConfig, setOverlayLanguage, setOverlayProfile,
 };

@@ -21,3 +21,28 @@ describe('panel columns', () => {
     expect(p.columns.gap).toBe(false);
   });
 });
+
+describe('profiles (driving / watching)', () => {
+  const { cleanProfile, cleanProfileMode } = createRequire(import.meta.url)('./config.cjs');
+  const old = { output: 'vr', panels: cleanPanels({ fuel: { shown: false, size: 120 } }), opacity: 60 };
+
+  it('a missing profile takes the set-up from before (one for everything)', () => {
+    const p = cleanProfile(undefined, old);
+    expect(p.output).toBe('vr');
+    expect(p.opacity).toBe(60);
+    expect(p.panels.fuel).toMatchObject({ shown: false, size: 120 });
+  });
+
+  it('a saved profile keeps its own values and gets defaults for missing panels', () => {
+    const p = cleanProfile({ output: 'monitor', panels: { inputs: { shown: false, size: 80 } }, opacity: 150 }, old);
+    expect(p.output).toBe('monitor');
+    expect(p.opacity).toBe(100); // clamped
+    expect(p.panels.inputs).toMatchObject({ shown: false, size: 80 });
+    expect(p.panels.relative.options.order[0]).toBe('class');
+  });
+
+  it('mode: auto unless one profile is held', () => {
+    expect(cleanProfileMode('driving')).toBe('driving');
+    expect(cleanProfileMode('nonsense')).toBe('auto');
+  });
+});

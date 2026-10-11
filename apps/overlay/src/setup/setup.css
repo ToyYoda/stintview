@@ -250,3 +250,14 @@ body.setup-body #root { height: auto; }
 .recenter { margin: 8px 0 12px; }
 .recenter .edit-row { margin: 4px 0; }
 .recenter-wait { color: var(--accent); }
+
+/* Two panel set-ups (driving / watching, since 0.23): mode, profile being edited, its settings. */
+.setup .profile-box { border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 10px; padding-top: 10px; }
+.setup .profile-tabs { display: flex; align-items: center; gap: 6px; margin: 4px 0 12px; }
+.setup .profile-tabs > span { margin-right: 6px; }
+.setup .profile-tabs button {
+  font: inherit; font-weight: 700; background: rgba(255, 255, 255, 0.06); color: inherit; border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px; padding: 6px 14px; cursor: pointer;
+}
+.setup .profile-tabs button.on { background: var(--o-red); border-color: var(--o-red); color: #fff; }
+.setup .profile-live { margin-left: 6px; color: #3ddc84; font-size: 10px; vertical-align: 1px; }

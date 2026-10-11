@@ -53,17 +53,26 @@ const DEFAULT_MESSAGES = {
   en: [['Box this lap', 'red'], ['Save fuel', 'amber'], ['Push!', 'green'], ['Yellow ahead', 'amber'], ['Faster car behind you', 'blue'], ['Good job, keep going', 'green']],
 };
 
+const PROFILE_IDS = ['driving', 'watching'];
+
+/** Output, panels and opacity of one profile. Opacity: background in percent, text stays fully visible. */
+function defaultProfile() {
+  return { output: 'monitor', panels: PANEL_DEFAULTS, opacity: 78 };
+}
+
 const DEFAULT_SETTINGS = {
   language: null, // 'de' | 'en'; null = from Windows
   overlay: true, // show the panels at all
   onlyWithIracing: false, // start the displays only while the iRacing simulator runs
-  output: 'monitor', // where: 'monitor' (transparent window over iRacing) or 'vr' (SteamVR panels)
   autostart: true, // start with Windows
   server: false, // run the team relay on this PC
   serverPort: 8787,
-  panels: PANEL_DEFAULTS,
-  // Panel background opacity in percent, for all panels (text stays fully visible).
-  opacity: 78,
+  // Two panel set-ups (since 0.23): one while this PC drives, one while watching. Each has its own
+  // output, panels (shown, size, columns), and background opacity; positions live with the
+  // overlay (monitor) and in vr.json (VR), per profile as well.
+  profiles: { driving: defaultProfile(), watching: defaultProfile() },
+  // 'auto' = driving while this PC's driver is in the car, else watching; or one held.
+  profileMode: 'auto',
   // Pit stop: rates null = measured at our own stops; regulation 'auto' = from the series.
   pitStop: { fillRate: null, tyreTime: null, regulation: 'auto' },
   // iRacing telemetry folder chosen for the pit lane import; null = Documents\\iRacing\\telemetry.
@@ -98,21 +107,38 @@ function loadSettings() {
   // Up to 0.7: separate switches and panel ticks for monitor and VR. Now one output at a time.
   const legacy = saved.output === undefined;
   const output = legacy ? (saved.vr && saved.overlay === false ? 'vr' : 'monitor') : cleanOutput(saved.output);
-  const { vr: _legacyVr, ...rest } = saved;
+  const { vr: _legacyVr, output: _o, panels: _p, opacity: _op, ...rest } = saved;
+  // Up to 0.22: one set-up for everything – it becomes both profiles.
+  const single = {
+    output,
+    panels: cleanPanels(saved.panels, output),
+    opacity: cleanOpacity(typeof saved.opacity === 'object' && saved.opacity ? saved.opacity[output] : saved.opacity),
+  };
   return {
     ...DEFAULT_SETTINGS, ...rest,
     overlay: legacy ? (saved.overlay ?? true) || Boolean(saved.vr) : saved.overlay !== false,
     onlyWithIracing: saved.onlyWithIracing === true,
-    output,
     language: cleanLanguage(saved.language),
-    panels: cleanPanels(saved.panels, output),
-    opacity: cleanOpacity(typeof saved.opacity === 'object' && saved.opacity ? saved.opacity[output] : saved.opacity),
+    profiles: Object.fromEntries(PROFILE_IDS.map((id) => [id, cleanProfile(saved.profiles?.[id], single)])),
+    profileMode: cleanProfileMode(saved.profileMode),
     pitStop: cleanPitStop(saved.pitStop),
     // Stays null until edited, so the defaults follow the UI language.
     messages: Array.isArray(saved.messages) ? cleanMessages(saved.messages) : null,
     vrRecenter: cleanVrRecenter(saved.vrRecenter),
   };
 }
+
+/** One profile: output, panels, opacity; missing parts from `fallback`. */
+function cleanProfile(p, fallback = defaultProfile()) {
+  const output = cleanOutput(p?.output ?? fallback.output);
+  return {
+    output,
+    panels: p?.panels ? cleanPanels(p.panels, output) : cleanPanels(fallback.panels, output),
+    opacity: cleanOpacity(p?.opacity ?? fallback.opacity),
+  };
+}
+
+const cleanProfileMode = (m) => (m === 'driving' || m === 'watching' ? m : 'auto');
 
 /**
  * Recenter key/button (rawinput-proc.cjs): { kind: 'key', vkey, e0, mods, name } or
@@ -210,7 +236,7 @@ function cleanPitStop(p) {
   };
 }
 
-/** Panels switched on. */
+/** Panels switched on (of a profile: anything with `panels`). */
 const panelsFor = (settings) => PANEL_IDS.filter((id) => settings.panels[id]?.shown);
 /** What the panel pages need: size factor and options per panel. */
 const panelConfig = (settings) => Object.fromEntries(PANEL_IDS.map((id) => [id, {
@@ -255,5 +281,5 @@ function normalizeUrl(input) {
 
 module.exports = {
   dataDir, logDir, configPath, loadConfig, saveConfig, clearConfig, loadSettings, saveSettings, register, normalizeUrl,
-  cleanLanguage, cleanPanels, cleanOpacity, cleanOutput, cleanPitStop, cleanMessages, cleanVrRecenter, panelsFor, panelConfig, MESSAGE_COLORS,
+  cleanLanguage, cleanPanels, cleanOpacity, cleanOutput, cleanPitStop, cleanMessages, cleanVrRecenter, cleanProfile, cleanProfileMode, PROFILE_IDS, panelsFor, panelConfig, MESSAGE_COLORS,
 };

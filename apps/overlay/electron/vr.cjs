@@ -43,9 +43,20 @@ const DEFAULT_LAYOUT = {
   },
 };
 
-function loadLayout() {
+/** vr.json: { profiles: { driving: layout, watching: layout } } (since 0.23); before, one layout. */
+function readLayouts() {
   try {
-    const saved = JSON.parse(readFileSync(layoutPath, 'utf8'));
+    return JSON.parse(readFileSync(layoutPath, 'utf8')) ?? {};
+  } catch {
+    return {};
+  }
+}
+
+/** Layout of a profile; a vr.json from before 0.23 (one layout) counts for both profiles. */
+function loadLayout(profile) {
+  try {
+    const file = readLayouts();
+    const saved = file.profiles ? file.profiles[profile] ?? {} : file;
     const panels = {};
     for (const id of Object.keys(DEFAULT_LAYOUT.panels)) panels[id] = { ...DEFAULT_LAYOUT.panels[id], ...saved.panels?.[id] };
     return { ...DEFAULT_LAYOUT, ...saved, panels };
@@ -55,6 +66,8 @@ function loadLayout() {
 }
 
 let layout = null;
+/** Profile whose layout is in use (driving / watching). */
+let layoutProfile = 'watching';
 /**
  * Panels' origin in seated space from the coupled iRacing recenter (`alignToHead`), null =
  * SteamVR's seated origin. Not saved: iRacing starts without its recenter as well.
@@ -76,7 +89,10 @@ function log(msg) {
 
 function saveLayout() {
   mkdirSync(dataDir, { recursive: true });
-  writeFileSync(layoutPath, JSON.stringify(layout, null, 2));
+  const file = readLayouts();
+  // Old single layout: keep it for the other profile, which has not been changed yet.
+  const profiles = file.profiles ?? Object.fromEntries(['driving', 'watching'].map((p) => [p, file.panels ? file : undefined]).filter(([, l]) => l));
+  writeFileSync(layoutPath, JSON.stringify({ profiles: { ...profiles, [layoutProfile]: layout } }, null, 2));
 }
 
 // ---------------------------------------------------------------------------
@@ -416,11 +432,12 @@ function resetPanelAnchor() {
 // ---------------------------------------------------------------------------
 
 /** Starts rendering the panels and keeps (re)connecting to SteamVR while it runs. */
-async function startVr(changed = () => {}, panelIds = null) {
+async function startVr(changed = () => {}, panelIds = null, profile = 'watching') {
   if (running) return;
   running = true;
   onChange = changed;
-  layout = loadLayout();
+  layoutProfile = profile;
+  layout = loadLayout(profile);
   // Which panels: chosen in the StintView window; vr.json "enabled" can still switch one off.
   ids = Object.keys(layout.panels).filter((id) => layout.panels[id].enabled && (!panelIds || panelIds.includes(id)));
   selected = 0;
@@ -440,7 +457,7 @@ async function startVr(changed = () => {}, panelIds = null) {
   connectVr();
   updatePainting(); // also while still waiting for SteamVR
   retryTimer = setInterval(connectVr, RETRY_MS);
-  log(`started, layout: ${layoutPath}`);
+  log(`started, profile ${profile}, layout: ${layoutPath}`);
 }
 
 function stopVr() {

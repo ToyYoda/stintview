@@ -51,6 +51,15 @@ Nothing to do: StintView starts with Windows and runs in the notification area o
 
 As soon as you are in the car, your team sees your data. When you get out, StintView stops sending on its own.
 
+### Two set-ups: driving and watching
+
+StintView keeps two separate settings for the displays – one for **driving** (e.g. a few panels in VR) and one for **watching** (e.g. everything on the monitor). Each has its own **output** (monitor or VR), **panel selection**, **sizes**, **columns** and their **order**, **transparency** and panel **positions**.
+
+- **Automatic** (default): while you are in the car, "Driving" applies, otherwise "Watching". After you get out, StintView waits 5 seconds so a reset in the pits doesn't flip back and forth.
+- **Hold one:** in the StintView window (**Displays** tab, **Set-up** at the top) or in the icon's menu pick one of the two; **Automatic** switches back. The hotkey **Ctrl+Shift+P** switches to the other one and holds it (taken? then **Ctrl+Alt+P** – shown in the window).
+- **Setting up:** in the **Displays** tab pick the set-up at **Edit** (the green dot marks the active one). Everything below – output, moving, background, panels – applies to that one. **Move displays** shows the chosen one meanwhile, even if the other one is active.
+- On first start StintView copies your existing settings into both.
+
 ### Overlay on your monitor
 
 Switch **Show displays** on and choose **Output** „Monitor“ (default). In iRacing's graphics options, choose **borderless window** – in exclusive fullscreen the overlay is invisible. With **several monitors** (e.g. triple screens) you can drag the displays onto any of them.

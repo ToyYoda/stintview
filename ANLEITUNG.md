@@ -51,6 +51,15 @@ Nichts zu tun: StintView startet mit Windows und läuft im Infobereich der Taskl
 
 Sobald du im Auto sitzt, sieht dein Team deine Daten. Steigst du aus, hört StintView von selbst auf zu senden.
 
+### Zwei Konfigurationen: Fahren und Zuschauen
+
+StintView hat zwei getrennte Einstellungen für die Anzeigen – eine zum **Fahren** (z. B. wenige Panels in VR) und eine zum **Zuschauen** (z. B. alles am Monitor). Jede hat ihre eigene **Ausgabe** (Monitor oder VR), **Panelauswahl**, **Größen**, **Spalten** und deren **Reihenfolge**, **Transparenz** und **Positionen** der Panels.
+
+- **Automatisch** (Standard): Sitzt du im Auto, gilt „Fahren“, sonst „Zuschauen“. Nach dem Aussteigen wartet StintView 5 Sekunden, damit ein Reset in der Box nicht hin und her schaltet.
+- **Festhalten:** im StintView-Fenster (Reiter **Anzeigen**, oben bei **Konfiguration**) oder im Menü des Symbols eine der beiden wählen; **Automatisch** schaltet zurück. Das Kürzel **Strg+Umschalt+P** wechselt zur anderen und hält sie fest (belegt? dann **Strg+Alt+P** – steht im Fenster).
+- **Einstellen:** im Reiter **Anzeigen** bei **Bearbeiten** die Konfiguration wählen (der grüne Punkt zeigt die gerade aktive). Alles darunter – Ausgabe, Verschieben, Hintergrund, Panels – gilt für diese. **Anzeigen verschieben** zeigt dabei die gewählte, auch wenn gerade die andere aktiv ist.
+- Beim ersten Start übernimmt StintView deine bisherigen Einstellungen in beide.
+
 ### Overlay am Monitor
 
 Schalter **Anzeigen einblenden** an und bei **Ausgabe** „Monitor“ wählen (Standard). In iRacing unter Grafikoptionen **randloses Fenster (Borderless)** einstellen – im Exklusiv-Vollbild ist das Overlay unsichtbar. Mit **mehreren Monitoren** (z. B. Triple-Screens) lassen sich die Anzeigen auf jeden davon ziehen.

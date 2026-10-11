@@ -45,6 +45,15 @@ export interface ColumnOptions<C extends string> {
 }
 export type PanelOptions = StandingsOptions | DuelOptions | ColumnOptions<RelativeColumn> | ColumnOptions<ClassesColumn>;
 
+export type ProfileId = 'driving' | 'watching';
+/** One panel set-up: where (monitor or VR, one at a time), which panels, background opacity in percent. */
+export interface Profile {
+  output: 'monitor' | 'vr';
+  /** Per panel: shown, size in percent, panel-specific options. */
+  panels: Record<string, PanelSetting>;
+  opacity: number;
+}
+
 export interface PanelSetting {
   shown: boolean;
   size: number;
@@ -62,17 +71,17 @@ export interface AppState {
   configured: boolean;
   team: { teamName: string; memberName: string; serverUrl: string; inviteCode: string } | null;
   settings: {
-    /** Panels shown at all, and where: monitor overlay or VR (one at a time). */
-    overlay: boolean; output: 'monitor' | 'vr';
+    /** Panels shown at all. */
+    overlay: boolean;
     /** Start the displays only while the iRacing simulator runs. */
     onlyWithIracing: boolean;
     autostart: boolean; server: boolean; serverPort: number;
     /** UI language. */
     language: 'de' | 'en';
-    /** Per panel: shown, size in percent, panel-specific options. */
-    panels: Record<string, PanelSetting>;
-    /** Panel background opacity in percent, all panels. */
-    opacity: number;
+    /** Panel set-ups while driving and while watching (since 0.23). */
+    profiles: Record<ProfileId, Profile>;
+    /** 'auto' = by whether this PC's driver is in the car; or one profile held. */
+    profileMode: 'auto' | ProfileId;
     pitStop: { fillRate: number | null; tyreTime: number | null; regulation: 'auto' | 'standard' | 'imsa' | 'nec' | 'dtm' };
     /** Team messages to send; null = defaults in the UI language (see `radio`). */
     messages: { id: string; text: string; color: MessageColor }[] | null;
@@ -94,6 +103,10 @@ export interface AppState {
     overlay: boolean;
     editing: boolean;
     editHotkey: string | null;
+    /** Profile shown now, and the one 'auto' would choose. */
+    profile: ProfileId;
+    autoProfile: ProfileId;
+    profileHotkey: string | null;
   };
   autostartAvailable: boolean;
   cameraHotkeys: { incident: string | null; back: string | null };
@@ -127,11 +140,14 @@ declare global {
       onEditMode(cb: (edit: boolean, hotkey: string | null) => void): void;
       /** Main monitor inside the overlay window (CSS px); the window spans all monitors. */
       onOverlayArea?(cb: (main: { x: number; y: number; width: number; height: number }) => void): void;
-      setEditMode(on?: boolean): Promise<AppState>;
+      /** `profile`: show that profile while moving (from the StintView window). */
+      setEditMode(on?: boolean, profile?: ProfileId): Promise<AppState>;
       setInteractive(on: boolean): void;
       onPanels?(cb: (ids: string[]) => void): void;
       onOpacity?(cb: (value: number) => void): void;
       onPanelConfig?(cb: (cfg: PanelConfig) => void): void;
+      /** Profile shown on the monitor overlay; panel positions are kept per profile (since 0.23). */
+      onProfile?(cb: (profile: ProfileId) => void): void;
       /** Panel size in percent from the corner handle on the monitor overlay (edit mode). */
       setPanelSize?(id: string, size: number): Promise<void>;
       onLanguage?(cb: (lang: 'de' | 'en') => void): void;
