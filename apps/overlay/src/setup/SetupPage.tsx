@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { MESSAGE_COLORS, MESSAGE_MAX_LENGTH, type MessageColor } from '@stintview/protocol';
 import type { AppState, ClassesColumn, ColumnOptions, HotkeyGroup, PanelSetting, DuelOptions, RadioState, RelativeColumn, StandingsOptions } from '../feed.ts';
 import { setLang, t, useLang, type Lang } from '../i18n.ts';
@@ -646,31 +646,57 @@ function ColumnList<C extends string>({ all, options, onChange, labels = {} }: {
   all: C[]; options: ColumnOptions<C>; onChange(o: ColumnOptions<C>): void; labels?: Partial<Record<C, string>>;
 }) {
   const order = columnOrder(all, options);
-  // Column being dragged and the place it would drop at (shown as a line).
-  const [dragging, setDragging] = useState<C | null>(null);
-  const [over, setOver] = useState<number | null>(null);
-  const drop = (to: number) => {
-    if (!dragging) return;
-    const rest = order.filter((c) => c !== dragging);
-    const at = to > order.indexOf(dragging) ? to - 1 : to; // the dragged one left its old place
-    onChange({ ...options, order: [...rest.slice(0, at), dragging, ...rest.slice(at)] });
+  // Pointer events instead of HTML drag and drop: the browser's drag didn't start in the
+  // StintView window (Electron on Windows, 11.10.2026). The row follows the pointer; a line
+  // shows where it will land. Only a move of a few pixels starts dragging, so a click on
+  // the checkbox stays a click.
+  const list = useRef<HTMLUListElement>(null);
+  const [drag, setDrag] = useState<{ col: C; y0: number; dy: number; mids: number[]; moved: boolean } | null>(null);
+  const suppressClick = useRef(false);
+  /** Place it would drop at: index of the row it goes before (order.length = at the end). */
+  const target = (d: NonNullable<typeof drag>) => {
+    const from = order.indexOf(d.col);
+    const y = d.mids[from]! + d.dy;
+    const at = d.mids.findIndex((m, k) => k !== from && y < m);
+    return at < 0 ? order.length : at;
   };
-  const end = () => { setDragging(null); setOver(null); };
+  const finish = () => {
+    if (drag?.moved) {
+      const to = target(drag);
+      const rest = order.filter((c) => c !== drag.col);
+      const at = to > order.indexOf(drag.col) ? to - 1 : to; // the dragged one left its old place
+      onChange({ ...options, order: [...rest.slice(0, at), drag.col, ...rest.slice(at)] });
+      suppressClick.current = true; // the click after a drag must not toggle the checkbox
+    }
+    setDrag(null);
+  };
+  const over = drag?.moved ? target(drag) : null;
   return (
     <>
       <div className="options-title">{t('set.columns')} <span className="options-hint">{t('set.columnsDrag')}</span></div>
-      <ul className="column-list" onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(null); }}>
+      <ul className="column-list" ref={list}
+        onClickCapture={(e) => { if (suppressClick.current) { e.preventDefault(); e.stopPropagation(); suppressClick.current = false; } }}
+        // The pointer leaves the dragged row at once: follow it on the whole list (captured once moving).
+        onPointerMove={(e) => {
+          if (!drag) return;
+          if (!(e.buttons & 1)) { setDrag(null); return; } // released outside the list
+          const dy = e.clientY - drag.y0;
+          if (!drag.moved && Math.abs(dy) < 5) return;
+          if (!drag.moved) e.currentTarget.setPointerCapture(e.pointerId);
+          setDrag({ ...drag, dy, moved: true });
+        }}
+        onPointerUp={finish}
+        onPointerCancel={() => setDrag(null)}>
         {order.map((c, i) => (
-          <li key={c} draggable
-            className={[dragging === c ? 'dragging' : '', over === i ? 'drop-before' : '', over === order.length && i === order.length - 1 ? 'drop-after' : ''].join(' ')}
-            onDragStart={(e) => { setDragging(c); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', c); }}
-            onDragOver={(e) => {
-              e.preventDefault();
-              const r = e.currentTarget.getBoundingClientRect();
-              setOver(e.clientY > r.top + r.height / 2 ? i + 1 : i);
-            }}
-            onDrop={(e) => { e.preventDefault(); if (over !== null) drop(over); end(); }}
-            onDragEnd={end}>
+          <li key={c}
+            className={[drag?.moved && drag.col === c ? 'dragging' : '', over === i ? 'drop-before' : '', over === order.length && i === order.length - 1 ? 'drop-after' : ''].join(' ')}
+            style={drag?.moved && drag.col === c ? { transform: `translateY(${drag.dy}px)` } : undefined}
+            onPointerDown={(e) => {
+              if (e.button !== 0) return;
+              const rows = [...(list.current?.children ?? [])].map((el) => el.getBoundingClientRect());
+              setDrag({ col: c, y0: e.clientY, dy: 0, mids: rows.map((r) => r.top + r.height / 2), moved: false });
+              suppressClick.current = false;
+            }}>
             <span className="drag-handle" aria-hidden="true">⠿</span>
             <label>
               <input type="checkbox" checked={options.columns[c] ?? true}

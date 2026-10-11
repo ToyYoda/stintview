@@ -168,7 +168,8 @@ body.setup-body #root { height: auto; }
 .setup .column-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; max-width: 320px; }
 .setup .column-list li { display: flex; align-items: center; gap: 6px; padding: 3px 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.04); border-top: 2px solid transparent; border-bottom: 2px solid transparent; cursor: grab; }
 .setup .column-list li label { display: flex; align-items: center; gap: 6px; cursor: pointer; flex: 1; }
-.setup .column-list li.dragging { opacity: 0.4; }
+.setup .column-list li { touch-action: none; user-select: none; }
+.setup .column-list li.dragging { opacity: 0.85; position: relative; z-index: 2; cursor: grabbing; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5); background: rgba(255, 255, 255, 0.12); }
 .setup .column-list li.drop-before { border-top-color: var(--o-red); }
 .setup .column-list li.drop-after { border-bottom-color: var(--o-red); }
 .setup .drag-handle { color: var(--o-muted); font-size: 14px; line-height: 1; }
