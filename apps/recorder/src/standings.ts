@@ -35,6 +35,39 @@ export interface StandingsExtras {
   note?: (line: string) => void;
 }
 
+/** Fraction of the lap, 0..1. */
+const frac = (progress: number) => progress - Math.floor(progress);
+
+/** Physical offset on track in laps, −0.5..0.5 (+ = in front of us): positions only, no lap counts. */
+export function trackOffset(car: CarProgress, team: CarProgress): number {
+  const o = frac(car.progress) - frac(team.progress);
+  return o > 0.5 ? o - 1 : o <= -0.5 ? o + 1 : o;
+}
+
+/**
+ * Gap on track in seconds (+ = in front of us, the nearer way round, as in iRacing's Relative):
+ * the difference of iRacing's time estimates for the two spots (CarIdxEstTime), one estimated
+ * class lap (CarClassEstLapTime) added or taken off when the line lies between the cars. Uses
+ * positions only – neither lap counts nor lap times (up to 0.23.0 it went through the race gap
+ * and needed our last lap: empty before the first one, and a lap count off by one at the pits
+ * gave hundreds of seconds). Without estimates: offset × estimated lap.
+ */
+export function physicalGap(car: CarProgress, team: CarProgress): number | null {
+  const o = trackOffset(car, team);
+  const est = car.estTime, ownEst = team.estTime;
+  // Scale of the estimate (for crossing the line): our class's estimated lap, else our last lap.
+  const ownLap = team.estLap ?? team.lastLap ?? null;
+  if (est != null && ownEst != null && est >= 0 && ownEst >= 0 && ownLap) {
+    // Another class has another estimated lap: the car's spot on our scale.
+    const spot = car.estLap && team.estLap ? est * team.estLap / car.estLap : est;
+    const raw = spot - ownEst;
+    let dt = raw;
+    for (const c of [raw - ownLap, raw + ownLap]) if (Math.abs(c - o * ownLap) < Math.abs(dt - o * ownLap)) dt = c;
+    return dt;
+  }
+  return ownLap ? o * ownLap : null;
+}
+
 /**
  * Time gap from the team car to `car` along the track in seconds; positive = `car` is ahead.
  * Uses iRacing's per-car time estimate (`CarIdxEstTime`: time from the line to the car's spot
@@ -126,12 +159,29 @@ export function computeStandings(
       country: d?.country ?? null,
       lastLap: c.lastLap,
       isTeam,
-      gap: isTeam ? 0 : trackGap(c, team, lapRef, extras.note),
+      // Same race lap: the gap on track (wish 11.10.2026, as iRacing's Relative); else the race gap.
+      gap: isTeam ? 0 : Math.trunc(c.progress - team.progress) === 0 ? sameLapGap(c, team, lapRef, extras.note) : trackGap(c, team, lapRef),
       lapsGap: isTeam ? 0 : Math.trunc(c.progress - team.progress),
       tyreLaps: extras.tyreLaps?.(c.carIdx) ?? null,
       inPit: c.onPitRoad ?? false,
     };
   });
+}
+
+/**
+ * Gap to a class neighbour on the same race lap: on track. Logged when the race gap says
+ * something quite different (lap count and position don't match, e.g. at the pits).
+ */
+function sameLapGap(c: CarProgress, team: CarProgress, lapRef: number | null, note?: (line: string) => void): number | null {
+  const gap = physicalGap(c, team);
+  if (note && gap !== null) {
+    const race = trackGap(c, team, lapRef);
+    if (race !== null && Math.abs(race - gap) > 30) {
+      note(`car ${c.carIdx}: same race lap, on track ${gap.toFixed(1)} s, race gap ${race.toFixed(1)} s – car ${c.progress.toFixed(4)} est ${c.estTime?.toFixed(1)}, `
+        + `us ${team.progress.toFixed(4)} est ${team.estTime?.toFixed(1)}, est lap ${team.estLap?.toFixed(1) ?? '–'}`);
+    }
+  }
+  return gap;
 }
 
 /**
@@ -173,9 +223,7 @@ function physicalRow(
   tyreLaps: (carIdx: number) => number | null,
 ): StandingRow {
   const d = info.get(c.carIdx);
-  const g = trackGap(c, team, lapRef);
-  // Physical gap on track: race gap without the whole laps.
-  const gap = g !== null && lapRef ? g - laps * lapRef : lapRef ? o * lapRef : null;
+  const gap = physicalGap(c, team);
   return {
     pos: 0, carIdx: c.carIdx, number: d?.number ?? '?', name: d?.name ?? '', country: d?.country ?? null,
     lastLap: c.lastLap, isTeam: false, gap, lapsGap: laps, tyreLaps: tyreLaps(c.carIdx), inPit: false,

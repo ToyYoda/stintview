@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { countryCode } from './country.ts';
-import { bestProjection, betweenRows, classBestStandings, classStandings, computeBestStandings, relativeRows, computeStandings, isRaceSession, lappingRows, officialBestLaps, parseSessions, PitStopTracker, trackGap, type CarInfo, type CarProgress } from './standings.ts';
+import { bestProjection, betweenRows, classBestStandings, physicalGap, classStandings, computeBestStandings, relativeRows, computeStandings, isRaceSession, lappingRows, officialBestLaps, parseSessions, PitStopTracker, trackGap, type CarInfo, type CarProgress } from './standings.ts';
 
 const info = new Map<number, CarInfo>(
   Array.from({ length: 20 }, (_, i) => [i, { number: String(i + 1).padStart(2, '0'), name: `Driver ${i}` }]),
@@ -104,6 +104,32 @@ describe('trackGap (whole laps)', () => {
   it('falls back to distance × lap time without estimates, null without lap time', () => {
     expect(trackGap(car(5.6, null), car(5.5, null), 100)).toBeCloseTo(10);
     expect(trackGap(car(5.6, null), car(5.5, null), null)).toBeNull();
+  });
+});
+
+describe('gap on track (physicalGap)', () => {
+  const est = (carIdx: number, progress: number, estTime: number, lastLap: number | null = null): CarProgress =>
+    ({ carIdx, progress, lastLap, classId: 0, estTime, estLap: 465 });
+
+  it('needs no lap time: works before our first lap', () => {
+    expect(physicalGap(est(1, 0.53, 250), est(0, 0.5, 236))).toBeCloseTo(14);
+  });
+
+  it('ignores lap counts: a car right behind us whose count is a lap ahead (pits) stays right behind', () => {
+    // last km of the lap: we at 0.95, the car at 0.947 but its count says one lap more
+    expect(physicalGap(est(1, 31.947, 440), est(0, 30.95, 441.5, 470))).toBeCloseTo(-1.5);
+  });
+
+  it('across the line: one estimated lap added', () => {
+    expect(physicalGap(est(1, 6.005, 2), est(0, 5.99, 460.5))).toBeCloseTo(6.5);
+  });
+
+  it('duel: a class neighbour on the same race lap shows the gap on track', () => {
+    // count a lap more but 0.3 % behind on track (same race lap by the numbers: 0.997)
+    const rows = computeStandings([est(0, 30.95, 441.5, 470), est(1, 31.947, 440)], 0, info);
+    const r = rows.find((x) => x.carIdx === 1)!;
+    expect(r.lapsGap).toBe(0);
+    expect(r.gap).toBeCloseTo(-1.5); // up to 0.23.0: about +468 s
   });
 });
 
