@@ -2,6 +2,15 @@
 
 Alle veröffentlichten Versionen, neueste zuerst. Installer und Updates: [GitHub Releases](https://github.com/ToyYoda/stintview/releases) – die App aktualisiert sich selbst.
 
+## 0.25.0 – 12.10.2026
+
+- **Weniger Last für iRacing:** StintView braucht deutlich weniger Rechenleistung – im Test etwa ein Viertel von vorher. Das soll iRacing wieder mehr fps lassen, vor allem am Monitor.
+  - Das Eingaben-Panel zeichnet höchstens 30-mal pro Sekunde, statt mit jedem Bild des Monitors (bei 240 Hz waren das 240-mal).
+  - Keine Animationen mehr in den Panels: Der Nähe-Balken im Duell springt jetzt, statt zu gleiten. „Gelb voraus“ blinkt weiter.
+  - Alle Panels nutzen gemeinsam eine Verbindung zum Team-Server, und jedes bekommt nur die Daten, die es anzeigt.
+  - Die Session-Daten aus iRacing werden nur noch einmal statt sechsmal ausgewertet – das vermeidet kurze Lastspitzen bei großen Feldern.
+- Einstellungen wie Transparenz und Größe kommen beim Start sicher in jedem Panel an.
+
 ## 0.24.1 – 11.10.2026
 
 - **Stint:** zeigt jetzt, die wievielte Runde seit dem Boxenstopp gerade gefahren wird – die erste Runde nach dem Stopp ist „1“ (vorher die abgeschlossenen Runden, eine zu wenig).
