@@ -121,6 +121,19 @@ export function trackGap(
 }
 
 /**
+ * The car the panels are about: this PC's car (also while watching it from outside the car), or –
+ * for a spectator without a car of their own on track – the car iRacing's camera shows (since
+ * 0.24.1: watching a race with nobody of the team connected, the panels stayed empty).
+ */
+export function focusCar(f: Frame, notRacing: (carIdx: number) => boolean = () => false): number {
+  const player = f.num('PlayerCarIdx');
+  const onTrack = (i: number) => Number.isInteger(i) && i >= 0 && !notRacing(i) && f.num('CarIdxLapDistPct', i) >= 0;
+  if (onTrack(player)) return player;
+  const cam = f.has('CamCarIdx') ? f.num('CamCarIdx') : -1;
+  return onTrack(cam) ? cam : player;
+}
+
+/**
  * Lap time to convert distances and whole laps: the car's last lap, before its first one iRacing's
  * estimated lap of its class (gaps stayed empty until we had completed a lap, 11.10.2026).
  */
@@ -655,7 +668,8 @@ export class StandingsTracker {
    * then main.ts hands them to this PC's displays only, which show them while nobody in the
    * team drives (after qualifying the standings kept still, 11.10.2026).
    */
-  onFrame(f: Frame): Standings | null {
+  /** `driving`: this PC's user is in the car – only then the own tyre odometer counts. */
+  onFrame(f: Frame, driving = true): Standings | null {
     const sessionNum = f.has('SessionNum') ? f.num('SessionNum') : 0;
     if (sessionNum !== this.sessionNum) {
       this.pits.reset();
@@ -671,9 +685,10 @@ export class StandingsTracker {
     const bestMode = !isRaceSession(session?.type) && f.has('CarIdxBestLapTime');
     if (t - this.lastSent < (bestMode ? SEND_EVERY_BEST_S : SEND_EVERY_S) && t >= this.lastSent) return null;
     this.lastSent = t;
-    const teamIdx = f.num('PlayerCarIdx');
+    const teamIdx = focusCar(f, (idx) => this.info.get(idx)?.notRacing ?? false);
     const laps = new Map(cars.map((c) => [c.carIdx, Math.floor(c.progress)]));
-    const ownTyres = this.ownTyreLaps(f);
+    // The tyre odometer is the player's own car: only while driving it.
+    const ownTyres = driving && teamIdx === f.num('PlayerCarIdx') ? this.ownTyreLaps(f) : null;
     const tyreLaps = (idx: number) => (idx === teamIdx && ownTyres !== null ? ownTyres : this.pits.laps(idx, laps.get(idx) ?? 0));
     const lapRef = lapRefOf(cars.find((c) => c.carIdx === teamIdx));
     // Relative panel: on track, in every session.

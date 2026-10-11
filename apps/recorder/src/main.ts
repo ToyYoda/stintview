@@ -147,7 +147,7 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
       recorder.onFrame(f);
       // Also while not driving (pit stops are tracked, and this PC's displays get the standings
       // while nobody in the team drives); only the driver sends them to the team.
-      const table = standings.onFrame(f);
+      const table = standings.onFrame(f, recorder.isDriving);
       if (table) {
         if (recorder.isDriving) send(table);
         else report({ t: 'telemetry', msg: table });
@@ -155,8 +155,12 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
       const plan = pit.onFrame(f, recorder.isDriving); // learns from stops also while not driving
       if (plan) send(plan);
       spectator?.onFrame(f, recorder.isDriving);
+      // Also while watching (around the focus car): then only for this PC's displays.
       const warning = hazard?.onFrame(f, recorder.isDriving);
-      if (warning) send(warning);
+      if (warning) {
+        if (recorder.isDriving) send(warning);
+        else report({ t: 'telemetry', msg: warning });
+      }
     },
     (yaml) => {
       recorder.onSessionInfo(yaml);

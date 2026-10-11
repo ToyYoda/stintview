@@ -21,10 +21,11 @@ DriverInfo:
 interface Car { pct: number; surface?: number }
 
 /** Minimal Frame stand-in: team car 0 plus other cars, positions as lap fraction. */
-function frame(t: number, cars: Car[], onPitRoad = false): Frame {
+function frame(t: number, cars: Car[], onPitRoad = false, player = 0, cam?: number): Frame {
   const vars: Record<string, number | number[]> = {
     SessionTime: t,
-    PlayerCarIdx: 0,
+    PlayerCarIdx: player,
+    ...(cam === undefined ? {} : { CamCarIdx: cam }),
     OnPitRoad: onPitRoad ? 1 : 0,
     CarIdxLapDistPct: cars.map((c) => c.pct),
     CarIdxTrackSurface: cars.map((c) => c.surface ?? 3),
@@ -108,5 +109,17 @@ describe('HazardDetector', () => {
     expect(run(d, 0, 2, () => ({ pct: 0.1 + 600 / L }))[0]).toMatchObject({ active: true });
     expect(d.onSessionInfo(YAML.replace('SessionID: 1', 'SessionID: 3'))).toMatchObject({ t: 'hazard', active: false });
     expect(d.onSessionInfo(YAML.replace('SessionID: 1', 'SessionID: 3'))).toBeNull();
+  });
+
+  it('while watching (not driving): warns around the car on camera, if there is no own car on track', () => {
+    const d = new HazardDetector();
+    d.onSessionInfo(YAML);
+    const out: Hazard[] = [];
+    // spectator: own entry 5 is not on track (no such car in the frame), the camera shows car 0
+    for (let t = 0; t < 2; t += 1 / 60) {
+      const msg = d.onFrame(frame(t, [{ pct: (0.1 + (t * 60) / L) % 1 }, { pct: 0.1 + 600 / L }], false, 5, 0), false);
+      if (msg) out.push(msg);
+    }
+    expect(out[0]).toMatchObject({ active: true, carIdx: 1 });
   });
 });

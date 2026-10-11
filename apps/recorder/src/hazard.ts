@@ -1,6 +1,7 @@
 import type { Hazard } from '@stintview/protocol';
 import type { Frame } from './irsdk/layout.ts';
 import { CarTracker, parseSessionCars, type IncidentCandidate, type IncidentOptions, type SessionCars } from './spectator.ts';
+import { focusCar } from './standings.ts';
 
 /**
  * Stricter than the camera search: this raises "Unfall voraus" for the whole team, so
@@ -48,6 +49,10 @@ export class HazardDetector {
     return this.message(this.lastSentTime, false);
   }
 
+  /** Last frame: driving or not, and the car checked around. */
+  private wasDriving = true;
+  private focus = -1;
+
   reset() {
     this.cars.reset();
     this.streak = null;
@@ -55,18 +60,26 @@ export class HazardDetector {
     this.lastSent = -Infinity;
   }
 
-  /** Returns a message to send, or null. `driving` = the local user is in the car. */
+  /**
+   * Returns a message to send, or null. `driving` = the local user is in the car. While not
+   * driving (since 0.24.1) the same check runs around the focus car – this PC's car, or for a
+   * spectator the one on camera –, a switch between the two starts over.
+   */
   onFrame(f: Frame, driving: boolean): Hazard | null {
-    if (!driving) {
+    const notRacing = (i: number) => this.session.drivers.get(i)?.notRacing ?? false;
+    const teamIdx = driving ? f.num('PlayerCarIdx') : focusCar(f, notRacing);
+    if (driving !== this.wasDriving || teamIdx !== this.focus) {
       const wasActive = this.current !== null;
+      this.wasDriving = driving;
+      this.focus = teamIdx;
       this.reset();
-      return wasActive ? this.message(f.num('SessionTime'), false) : null;
+      if (wasActive) return this.message(f.num('SessionTime'), false);
     }
     if (!this.cars.update(f)) return this.resend(f.num('SessionTime'));
     const t = f.num('SessionTime');
-    const teamIdx = f.num('PlayerCarIdx');
     // In the pit lane there's nothing to warn about.
-    const hit = f.bool('OnPitRoad') ? null : this.cars.find(teamIdx, this.session.trackLength, HAZARD_OPTIONS);
+    const inPits = driving ? f.bool('OnPitRoad') : f.num('CarIdxOnPitRoad', teamIdx) === 1;
+    const hit = inPits ? null : this.cars.find(teamIdx, this.session.trackLength, HAZARD_OPTIONS);
 
     if (hit) {
       this.streak = this.streak?.carIdx === hit.carIdx ? { carIdx: hit.carIdx, count: this.streak.count + 1 } : { carIdx: hit.carIdx, count: 1 };

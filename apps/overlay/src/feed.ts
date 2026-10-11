@@ -463,7 +463,9 @@ export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
       ...own, conn: team.conn, error: team.error, teamName: team.teamName, messages: team.messages, local: true, otherSession,
       teamDriver: team.active?.driverName && team.active.driverName !== ownDriver ? team.active.driverName : null,
     }
-    : !team.active?.driverName && own.standings && Date.now() - own.lastData < OWN_STANDINGS_FRESH_MS ? { ...team, standings: own.standings }
+    // Same for the incident warning, which this PC's recorder also checks while watching.
+    : !team.active?.driverName && own.standings && Date.now() - own.lastData < OWN_STANDINGS_FRESH_MS
+      ? { ...team, standings: own.standings, hazard: own.hazard, hazardAt: own.hazardAt }
     : team;
   return { state, inputs };
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { countryCode } from './country.ts';
-import { bestProjection, betweenRows, classBestStandings, physicalGap, classStandings, computeBestStandings, relativeRows, computeStandings, isRaceSession, lappingRows, officialBestLaps, parseSessions, PitStopTracker, trackGap, type CarInfo, type CarProgress } from './standings.ts';
+import { bestProjection, betweenRows, classBestStandings, focusCar, physicalGap, classStandings, computeBestStandings, relativeRows, computeStandings, isRaceSession, lappingRows, officialBestLaps, parseSessions, PitStopTracker, trackGap, type CarInfo, type CarProgress } from './standings.ts';
 
 const info = new Map<number, CarInfo>(
   Array.from({ length: 20 }, (_, i) => [i, { number: String(i + 1).padStart(2, '0'), name: `Driver ${i}` }]),
@@ -384,5 +384,20 @@ describe('Relative and class standings', () => {
     const classes = classBestStandings(field, 0, info);
     expect(classes[0]!.rows.map((r) => [r.carIdx, r.gap])).toEqual([[1, 0], [0, 1]]);
     expect(classes[1]!.rows.map((r) => r.carIdx)).toEqual([4]); // no time: not listed
+  });
+});
+
+describe('focusCar', () => {
+  const f = (vars: Record<string, number | number[]>) => ({
+    num: (n: string, i = 0) => { const v = vars[n]; return Array.isArray(v) ? v[i]! : (v ?? NaN); },
+    has: (n: string) => n in vars,
+  }) as never;
+
+  it('own car when it is on track, else the car on camera', () => {
+    expect(focusCar(f({ PlayerCarIdx: 1, CamCarIdx: 2, CarIdxLapDistPct: [0.1, 0.2, 0.3] }))).toBe(1);
+    // spectator: own entry not on track (pct −1)
+    expect(focusCar(f({ PlayerCarIdx: 1, CamCarIdx: 2, CarIdxLapDistPct: [0.1, -1, 0.3] }))).toBe(2);
+    // own entry is a spectator slot (not racing)
+    expect(focusCar(f({ PlayerCarIdx: 0, CamCarIdx: 2, CarIdxLapDistPct: [0.1, 0.2, 0.3] }), (i) => i === 0)).toBe(2);
   });
 });
