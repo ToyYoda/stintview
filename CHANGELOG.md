@@ -2,6 +2,14 @@
 
 Alle veröffentlichten Versionen, neueste zuerst. Installer und Updates: [GitHub Releases](https://github.com/ToyYoda/stintview/releases) – die App aktualisiert sich selbst.
 
+## 0.23.1 – 11.10.2026
+
+- **Relative repariert:** Autos, die noch nicht über die Startlinie gefahren waren (Out-Lap aus der Box, vor dem Start), fehlten – auch das eigene, deshalb anfangs „Noch keine Daten“, später Autos weiter vorn statt der nächsten. Jetzt sind alle dabei.
+- **Abstand auf der Strecke** kommt jetzt nur aus den Positionen der Autos – ohne Rundenzähler und Rundenzeit. Er steht damit schon in der ersten Runde und kann an der Box nicht mehr um eine Runde danebenliegen.
+- **Duell und Positions-Panel:** Auf derselben Rennrunde zeigen sie jetzt den Abstand auf der Strecke wie iRacings Relative – Ausreißer wie „über 300 s“ für ein Auto direkt hinter dir sind damit weg. Auf einer anderen Runde weiter „+1 R“.
+- Nachzügler (blau) und Überrunder (rot) im Relative nur noch im Rennen.
+- Die Werte kommen vom PC des Fahrers – sie wirken, sobald dessen StintView 0.23.1 hat.
+
 ## 0.23.0 – 11.10.2026
 
 - **Zwei Konfigurationen: Fahren und Zuschauen.** Als Fahrer auf das Nötigste reduzieren, als Spotter mehr sehen – jede Konfiguration hat ihre eigene Ausgabe (Monitor oder VR), Panelauswahl, Größen, Spalten und deren Reihenfolge, Transparenz und Positionen der Panels.
