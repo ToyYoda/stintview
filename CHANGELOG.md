@@ -2,6 +2,14 @@
 
 Alle veröffentlichten Versionen, neueste zuerst. Installer und Updates: [GitHub Releases](https://github.com/ToyYoda/stintview/releases) – die App aktualisiert sich selbst.
 
+## 0.22.0 – 11.10.2026
+
+- **Neues Panel „Relative“:** die je 5 Autos vor und hinter dir auf der Strecke – alle Klassen, auch in der Box. Ein schmaler Balken in der Klassenfarbe zeigt die Klasse, dazu Position in der Klasse, Nummer, Marke, Flagge, Team (nur in Teamrennen), Fahrer, iRating, Safety Rating und fett der Abstand auf der Strecke: grün vor dir, rot hinter dir. Autos eine Runde oder mehr zurück stehen in blauen Zeilen, Autos eine Runde oder mehr voraus in roten.
+- **Neues Panel „Wertung“:** die Wertung nach Klassen, schnellste Klasse zuerst, mit Klassennamen in der Klassenfarbe. In deiner Klasse P1–3 und die Autos um dich herum, in den anderen Klassen P1–3. Mit Rückstand auf den Klassenführenden, schnellster Runde (lila = Klassenbeste), letzter Runde (grün = persönliche Bestzeit), Stint und Reifen.
+- Beide Panels im StintView-Fenster unter **Anzeigen** einschalten. Die Daten kommen vom PC des Fahrers – sie erscheinen, sobald dessen StintView 0.22 hat.
+- **Alle Schrift in den Panels ist jetzt weiß** – keine graue Schrift mehr.
+- Das Pace Car taucht in keiner Liste mehr auf.
+
 ## 0.21.1 – 11.10.2026
 
 - **Ruckeln in VR behoben:** Mit gekoppeltem Recenter-Knopf am Lenkrad las StintView jede Meldung des Lenkrads mit (bis zu 1000 pro Sekunde) – das kostete viel Rechenzeit und ließ iRacing ruckeln. Jetzt fragt StintView nur noch den Knopf ab, kaum messbar. Außerdem läuft das nur noch, solange die VR-Anzeigen laufen.
