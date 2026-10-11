@@ -68,11 +68,11 @@ NEC.forEach(([className, classColor, classSpeed, count, makes], k) => {
   for (let i = 0; i < count; i++, idx++) {
     const lap = 470 + k * 25; // slower classes: longer laps
     // GT3: our car (index 8 in the class) at 30.50 laps; the others spread around it.
-    // Leader a lap up and right behind us on track (red in the Relative), P2/P3 close to it.
-    // Other classes: their leaders a lap down just in front of us (blue), the rest spread out.
+    // GT3: P1–P3 a lap up, close together, just in front of us on track (red in the Relative);
+    // the rest around us. Other classes: a lap down, spread just ahead of us (blue).
     const progress = k === 0
-      ? (i === 0 ? 31.493 : i < 3 ? 30.9 - i * 0.004 : 30.5 + (8 - i) * 0.012)
-      : (i === 0 ? 29.5 + k * 0.004 : 30.5 - k * 0.37 - i * 0.05);
+      ? (i < 3 ? 31.52 - i * 0.006 : 30.5 + (8 - i) * 0.012)
+      : 29.5 + 0.004 + k * 0.009 - i * 0.004;
     const carIdx = k === 0 && i === 8 ? 0 : idx + 1;
     necField.push({ carIdx, progress, lastLap: lap + i * 0.4 + (i % 3) * 0.2, bestLap: lap - 3 + i * 0.35, classId: k + 1, onPitRoad: k === 0 && i === 13 });
     necInfo.set(carIdx, {

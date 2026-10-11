@@ -2,6 +2,7 @@
  * Dev tool: pretends to be the driving recorder and raises "Unfall voraus" for ~15 s,
  * so the overlay banner can be checked without a live race.
  * Usage: tsx src/dev/fake-hazard.ts   (uses the normal config / STINTVIEW_CONFIG)
+ * For website shots: STINTVIEW_DEMO_DRIVER / _TRACK / _CAR set the names in the header.
  */
 import WebSocket from 'ws';
 import { PROTOCOL_VERSION, pack, type ClientMessage } from '@stintview/protocol';
@@ -12,13 +13,16 @@ if (!config) throw new Error('no config');
 const ws = new WebSocket(wsUrl(config.serverUrl));
 const send = (m: ClientMessage) => ws.send(pack(m));
 const session = '999/999';
+const driver = process.env.STINTVIEW_DEMO_DRIVER ?? 'Test Fahrer';
+const track = process.env.STINTVIEW_DEMO_TRACK ?? 'Teststrecke';
+const car = process.env.STINTVIEW_DEMO_CAR ?? 'Testauto';
 
 ws.on('open', async () => {
   ws.send(pack({ t: 'hello', v: PROTOCOL_VERSION, token: config.token, role: 'recorder' }));
   await new Promise((r) => setTimeout(r, 300));
-  send({ t: 'driving', driving: true, driverName: 'Test Fahrer', session });
+  send({ t: 'driving', driving: true, driverName: driver, session });
   send({
-    t: 'session', track: 'Teststrecke', car: 'Testauto', driverName: 'Test Fahrer', teamName: 'Test',
+    t: 'session', track, car, driverName: driver, teamName: 'Test',
     sessionType: 'Race', carIdx: 0, carNumber: 7, sessionId: session,
   });
   for (let i = 0; i < 30; i++) {
@@ -40,6 +44,6 @@ ws.on('open', async () => {
     });
     await new Promise((r) => setTimeout(r, 500));
   }
-  send({ t: 'driving', driving: false, driverName: 'Test Fahrer', session });
+  send({ t: 'driving', driving: false, driverName: driver, session });
   setTimeout(() => ws.close(), 300);
 });
