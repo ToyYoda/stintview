@@ -1,6 +1,6 @@
-import { parse } from 'yaml';
 import type { Frame } from './irsdk/layout.ts';
 import { CamFocus, switchCamera } from './irsdk/broadcast.ts';
+import { parseSessionYaml } from './session.ts';
 
 /** irsdk_TrkLoc */
 const TrkLoc = { NotInWorld: -1, OffTrack: 0, InPitStall: 1, ApproachingPits: 2, OnTrack: 3 } as const;
@@ -113,10 +113,7 @@ export interface SessionCars {
 
 /** Car numbers/names, camera group and track length from the session YAML. */
 export function parseSessionCars(text: string): SessionCars {
-  let y: Yaml = {};
-  try {
-    y = parse(text, { strict: false, uniqueKeys: false }) ?? {};
-  } catch { /* keep defaults */ }
+  const y = parseSessionYaml<Yaml>(text);
   const drivers: SessionCars['drivers'] = new Map();
   for (const d of y.DriverInfo?.Drivers ?? []) {
     if (d.CarIdx === undefined) continue;

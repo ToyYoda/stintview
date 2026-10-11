@@ -43,12 +43,17 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 
 /* Single-widget pages for VR: fills the panel; opacity as set for VR. */
 .single { display: inline-block; width: max-content; padding: 4px; }
-.single .panel { backdrop-filter: none; }
+/*
+ * Panel pages (monitor windows, VR): no CSS transitions or animations – each would repaint the
+ * window at the monitor's full refresh rate (or upload to SteamVR) while it runs, over iRacing.
+ */
+.panel-host *, .panel-host *::before, .panel-host *::after,
+.single *, .single *::before, .single *::after { transition: none !important; animation: none !important; }
 .single.selected .panel { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
 
 .panel {
   background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
-  padding: 8px 10px; backdrop-filter: blur(4px);
+  padding: 8px 10px;
 }
 .title { font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; color: var(--muted); margin-bottom: 6px; display: flex; justify-content: space-between; gap: 12px; }
 .hint { text-transform: none; letter-spacing: 0; font-weight: 400; }
@@ -67,8 +72,8 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .cam-btn:disabled { background: #3a3a3a; color: #fff; cursor: default; }
 .cam-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .cam-flag { background: #ffd400; color: #000; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 10px; border-radius: 3px; }
-.cam-row.yellow.live .cam-flag { animation: cam-blink 0.8s steps(2, jump-none) infinite; }
-@keyframes cam-blink { 50% { opacity: 0.45; } }
+/* Blinks by re-render twice a second (CameraBar), not a CSS animation (see .panel-host). */
+.cam-flag.dim { opacity: 0.45; }
 .cam-btn { font: 700 13px system-ui, 'Segoe UI', sans-serif; background: #d10f0f; color: #fff; border: 0; border-radius: 4px; padding: 5px 12px; cursor: pointer; }
 .cam-btn:hover { background: #ec2323; }
 .cam-key { font: 600 12px var(--mono); color: var(--text); background: rgba(255, 255, 255, 0.1); padding: 3px 8px; border-radius: 3px; }
@@ -247,7 +252,7 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .duel-gap.right { align-items: flex-start; }
 .duel-bar { width: 100%; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); display: flex; }
 .duel-gap.left .duel-bar { justify-content: flex-end; }
-.duel-bar-fill { height: 100%; border-radius: 3px; background: rgba(255, 255, 255, 0.35); transition: width 0.9s linear; }
+.duel-bar-fill { height: 100%; border-radius: 3px; background: rgba(255, 255, 255, 0.35); }
 .duel-bar-fill.attack { background: var(--warn); }
 .duel-bar-fill.defend { background: var(--bad); }
 .duel-bar-fill.far { background: rgba(255, 255, 255, 0.2); }

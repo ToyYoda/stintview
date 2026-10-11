@@ -1,5 +1,6 @@
 // Bundles the recorder and the relay server into single CommonJS files that the desktop
-// app runs as Electron utility processes – so users don't need Node.js installed.
+// app runs as Electron utility processes – so users don't need Node.js installed – and the
+// display pages' team connection, which the app's main process loads (since 0.25).
 import { build } from 'esbuild';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,6 +12,7 @@ await build({
   entryPoints: {
     recorder: join(apps, 'recorder', 'src', 'main.ts'),
     server: join(apps, 'server', 'src', 'main.ts'),
+    'team-feed': join(apps, 'recorder', 'src', 'team-feed.ts'),
   },
   outdir: join(here, '..', 'dist-bundles'),
   bundle: true,

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   PROTOCOL_VERSION, pack, unpack,
   type ActiveDriver, type ClientMessage, type Fuel, type InputSample, type Inputs, type ServerMessage,
-  type Hazard, type MessageColor, type Pitplan, type SessionInfo, type Standings, type Status, type TeamMessage, type Telemetry, type Tyres, type Weather,
+  type Hazard, type MessageColor, type Snapshot, type Pitplan, type SessionInfo, type Standings, type Status, type TeamMessage, type Telemetry, type Tyres, type Weather,
 } from '@stintview/protocol';
 
 /** A team message as shown; `rx` = local time it arrived (live messages only, not from the snapshot). */
@@ -154,10 +154,17 @@ declare global {
       /** Panel size in percent from the corner handle on the monitor overlay (edit mode). */
       setPanelSize?(id: string, size: number): Promise<void>;
       onLanguage?(cb: (lang: 'de' | 'en') => void): void;
-      setTeamCar(team: { carIdx: number; carNumber: number; sessionId: string }): void;
-      /** This PC's own recorder (no team server needed): live messages and the latest per type. */
+      /**
+       * Display data from the app (since 0.25 one team connection there): only the telemetry types
+       * listed (null = all); resolves with everything so far – the team's (null = no team) and this PC's.
+       */
+      subscribeFeed?(types: readonly Telemetry['t'][] | null): Promise<{
+        team: { state: FeedConnMessage; snapshot: Snapshot } | null; local: ClientMessage[]; prefer: boolean;
+      }>;
+      /** The team relay's messages (welcome/error come as connection state). */
+      onFeed?(cb: (m: ServerMessage | FeedConnMessage) => void): void;
+      /** This PC's own recorder (no team server needed): live messages. */
       onLocal?(cb: (m: ClientMessage) => void): void;
-      getLocalSnapshot?(): Promise<{ messages: ClientMessage[]; prefer: boolean }>;
       /** true while the team streams another iRacing session: show this PC's own data. */
       onLocalPrefer?(cb: (on: boolean) => void): void;
       /** Team messages through this PC's recorder connection (desktop app, since 0.20). */
@@ -256,6 +263,9 @@ export class InputBuffer {
 }
 
 export type ConnState = 'no-config' | 'connecting' | 'connected' | 'error';
+
+/** The app's team connection state (see apps/recorder/src/team-feed.ts). */
+export interface FeedConnMessage { t: 'feed-conn'; conn: ConnState; error: string | null; teamName: string }
 
 export interface FeedState {
   /** Connection to the team server (also while showing this PC's own data). */
@@ -362,7 +372,29 @@ function addMessage(s: FeedState, m: TeamMessage): FeedState {
   return { ...s, messages: [...s.messages.filter((x) => x.id !== m.id), { ...m, rx: Date.now() }].slice(-10) };
 }
 
-export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
+/** A team relay message (or the app's connection state) into the state; inputs go elsewhere. */
+function applyTeam(s: FeedState, m: ServerMessage | FeedConnMessage): FeedState {
+  switch (m.t) {
+    case 'feed-conn': return { ...s, conn: m.conn, error: m.error, teamName: m.teamName };
+    case 'welcome': return { ...s, conn: 'connected', error: null, teamName: m.teamName };
+    case 'error': return { ...s, conn: 'error', error: m.message };
+    case 'active': return { ...s, active: m };
+    case 'snapshot': {
+      // Reconnected: keep the arrival time of a message already shown (else it would vanish early).
+      const messages = (m.messages ?? s.messages).map((x) => s.messages.find((y) => y.id === x.id && y.at === x.at) ?? x);
+      return m.telemetry.reduce(applyTelemetry, { ...s, active: m.active, messages });
+    }
+    case 'message': return addMessage(s, m);
+    case 'standby': return s; // recorder-only
+    default: return applyTelemetry(s, m);
+  }
+}
+
+/**
+ * `types`: the telemetry types the page shows (null = all). In the desktop app the data comes
+ * through the app, which sends only those; in a browser the page connects to the relay itself.
+ */
+export function useTeamFeed(types: readonly Telemetry['t'][] | null = null): { state: FeedState; inputs: InputBuffer } {
   const [team, setTeam] = useState<FeedState>(initial);
   const [own, setOwn] = useState<FeedState>(initial);
   const [otherSession, setOtherSession] = useState(false);
@@ -378,9 +410,16 @@ export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
     inputs.clear(); // switched between team and own data
   }, [local, inputs]);
 
+  /** A team message: input samples only from the source on display. */
+  const onTeam = useRef((m: ServerMessage | FeedConnMessage) => {
+    if (m.t === 'inputs') return showLocal.current ? undefined : inputs.push(m);
+    if (m.t === 'active' && !m.driverName) inputs.clear();
+    setTeam((s) => applyTeam(s, m));
+  }).current;
+
   useEffect(() => {
     const api = window.stintview;
-    if (!api?.onLocal) return;
+    if (!api?.onLocal || !api.subscribeFeed || !api.onFeed) return;
     api.onLocal((m) => {
       if (m.t === 'inputs') {
         if (showLocal.current) inputs.push(m);
@@ -391,13 +430,17 @@ export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
     });
     api.onLocalPrefer?.(setOtherSession);
     api.onTeamMessage?.((m) => setTeam((s) => addMessage(s, m)));
-    api.getLocalSnapshot?.().then((snap) => {
-      setOwn((s) => snap.messages.reduce(applyLocal, s));
-      setOtherSession(snap.prefer);
+    api.onFeed(onTeam);
+    api.subscribeFeed(types).then(({ team, local, prefer }) => {
+      setTeam((s) => (team ? applyTeam(applyTeam(s, team.state), team.snapshot) : { ...s, conn: 'no-config' }));
+      setOwn((s) => local.reduce(applyLocal, s));
+      setOtherSession(prefer);
     }).catch(() => {});
-  }, [inputs]);
+  }, [inputs]); // once per page
 
+  // Browser (OpenKneeboard, development): the page's own connection to the relay.
   useEffect(() => {
+    if (window.stintview?.subscribeFeed) return;
     let ws: WebSocket | null = null;
     let stopped = false;
     let retry = 1000;
@@ -417,28 +460,8 @@ export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
       ws.onopen = () => ws!.send(pack({ t: 'hello', v: PROTOCOL_VERSION, token: config.token, role: 'overlay', features: ['messages'] }));
       ws.onmessage = (ev) => {
         const m = unpack<ServerMessage>(ev.data as ArrayBuffer);
-        if (m.t === 'inputs') return showLocal.current ? undefined : inputs.push(m);
-        // Lets the desktop app (hotkeys) know which car to jump back to.
-        const teamCar = (x: SessionInfo) => window.stintview?.setTeamCar?.({ carIdx: x.carIdx, carNumber: x.carNumber, sessionId: x.sessionId });
-        if (m.t === 'session') teamCar(m);
-        if (m.t === 'snapshot') m.telemetry.forEach((x) => x.t === 'session' && teamCar(x));
-        setTeam((s) => {
-          switch (m.t) {
-            case 'welcome': retry = 1000; return { ...s, conn: 'connected', error: null, teamName: m.teamName };
-            case 'error': return { ...s, conn: 'error', error: m.message };
-            case 'active':
-              if (!m.driverName) inputs.clear();
-              return { ...s, active: m };
-            case 'snapshot': {
-              // Reconnected: keep the arrival time of a message already shown (else it would vanish early).
-              const messages = (m.messages ?? s.messages).map((x) => s.messages.find((y) => y.id === x.id && y.at === x.at) ?? x);
-              return m.telemetry.reduce(applyTelemetry, { ...s, active: m.active, messages });
-            }
-            case 'message': return addMessage(s, m);
-            case 'standby': return s; // recorder-only
-            default: return applyTelemetry(s, m);
-          }
-        });
+        if (m.t === 'welcome') retry = 1000;
+        onTeam(m);
       };
       ws.onclose = () => {
         if (stopped) return;
@@ -453,7 +476,7 @@ export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
       clearTimeout(timer);
       ws?.close();
     };
-  }, [inputs]);
+  }, [onTeam]);
 
   // Own data with the team connection's state (for the header) and the team messages.
   // Nobody in the team drives (e.g. after qualifying): the standings from this PC's own iRacing,

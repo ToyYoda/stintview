@@ -24,15 +24,17 @@ contextBridge.exposeInMainWorld('stintview', {
   setPanelSize: (id, size) => ipcRenderer.invoke('app:panel-size', id, size),
   // UI language ('de' | 'en')
   onLanguage: (cb) => ipcRenderer.on('language', (_e, l) => cb(l)),
-  // This PC's own telemetry (displays without a team server): live messages, latest per type
+  // Display data (since 0.25 one connection in the app): subscribe with the telemetry types the
+  // panel shows (null = all) – resolves with everything so far; then the team relay's messages
+  // and this PC's own recorder's (displays without a team server), only those types
+  subscribeFeed: (types) => ipcRenderer.invoke('feed:subscribe', types),
+  onFeed: (cb) => ipcRenderer.on('feed', (_e, m) => cb(m)),
   onLocal: (cb) => ipcRenderer.on('local', (_e, m) => cb(m)),
-  getLocalSnapshot: () => ipcRenderer.invoke('local:snapshot'),
   // true while the team streams another iRacing session: show this PC's own data
   onLocalPrefer: (cb) => ipcRenderer.on('local-prefer', (_e, on) => cb(on)),
   // Team messages through this PC's recorder (arrive before the page's own connection)
   onTeamMessage: (cb) => ipcRenderer.on('team-message', (_e, m) => cb(m)),
   // Spectator camera
-  setTeamCar: (team) => ipcRenderer.send('app:team-car', team),
   setHazard: (carIdx) => ipcRenderer.send('app:hazard', carIdx),
   camera: (action, targetCarIdx) => ipcRenderer.invoke('app:camera', action, targetCarIdx),
   getCameraInfo: () => ipcRenderer.invoke('app:camera-info'),

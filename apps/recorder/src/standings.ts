@@ -1,6 +1,6 @@
 import type { ClassStandings, StandingRow, Standings } from '@stintview/protocol';
-import { parse } from 'yaml';
 import type { Frame } from './irsdk/layout.ts';
+import { parseSessionYaml } from './session.ts';
 
 export interface CarProgress {
   carIdx: number;
@@ -578,10 +578,7 @@ export interface SessionResults {
  */
 export function parseSessions(text: string): Map<number, SessionResults> {
   type Pos = { Position?: number; CarIdx?: number; FastestTime?: number };
-  let y: { SessionInfo?: { Sessions?: { SessionNum?: number; SessionType?: string; SessionLaps?: number | string; ResultsPositions?: Pos[] | null }[] } } = {};
-  try {
-    y = parse(text, { strict: false, uniqueKeys: false, maxAliasCount: -1 }) ?? {};
-  } catch { /* none */ }
+  const y = parseSessionYaml<{ SessionInfo?: { Sessions?: { SessionNum?: number; SessionType?: string; SessionLaps?: number | string; ResultsPositions?: Pos[] | null }[] } }>(text);
   return new Map((y.SessionInfo?.Sessions ?? []).filter((s) => s.SessionNum !== undefined).map((s) => [s.SessionNum!, {
     type: s.SessionType ?? '',
     // "unlimited" for timed sessions.

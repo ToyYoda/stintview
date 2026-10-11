@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import type { Telemetry } from '@stintview/protocol';
 import { isPracticeOrQuali, useTeamFeed } from './feed.ts';
 import { FuelWidget } from './widgets/FuelWidget.tsx';
 import { HeaderWidget } from './widgets/HeaderWidget.tsx';
@@ -35,6 +36,32 @@ const DEFAULT_POSITIONS: Positions = {
   relative: { x: 40, y: 640 },
   classes: { x: 860, y: 40 },
 };
+/**
+ * Telemetry each panel shows: in the desktop app a panel page gets only these (and who drives,
+ * the session, team messages) – fewer messages, fewer re-renders per window.
+ */
+const FEED_TYPES: Record<WidgetId, Telemetry['t'][]> = {
+  header: ['status', 'hazard'],
+  inputs: ['inputs'],
+  fuel: ['fuel', 'status'],
+  tyres: ['tyres', 'status'],
+  weather: ['weather'],
+  standings: ['standings'],
+  duel: ['standings'],
+  relative: ['standings'],
+  classes: ['standings'],
+  pitstop: ['pitplan', 'standings'],
+  messages: [],
+  radio: [],
+};
+
+/** `#/panel/<id>`, `#/widget/<id>`: that panel's types; the banner none; all widgets: everything. */
+function feedTypes(hash: string): Telemetry['t'][] | null {
+  const id = /^#\/(?:panel|widget)\/(\w+)/.exec(hash)?.[1];
+  if (id && id in FEED_TYPES) return FEED_TYPES[id as WidgetId];
+  return hash.startsWith('#/banner') ? [] : null;
+}
+
 const STORAGE_KEY = 'stintview.positions';
 /** Positions per profile (since 0.23); the one key from before counts for both until moved. */
 const storageKey = (profile: string | null) => (profile ? `${STORAGE_KEY}.${profile}` : STORAGE_KEY);
@@ -56,7 +83,7 @@ function loadPositions(profile: string | null): Positions {
  */
 export function App() {
   useLang(); // re-render all widgets when the language changes
-  const { state, inputs } = useTeamFeed();
+  const { state, inputs } = useTeamFeed(feedTypes(location.hash));
   const [route, setRoute] = useState(location.hash);
   // Browser: always movable. Electron: toggled by hotkey (desktop) or panel selection (VR).
   const [edit, setEdit] = useState(!window.stintview && !/^#\/(widget|panel)\//.test(location.hash));

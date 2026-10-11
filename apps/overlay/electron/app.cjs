@@ -10,7 +10,7 @@ const {
   editHotkey, editing, onOverlayChange, overlayRunning, editHotkeyInfo, setEditMode, setOverlayLanguage, setOverlayOpacity, setOverlayPanelConfig, setOverlayPanels, setOverlayProfile, startOverlay, stopOverlay, toggleEdit,
 } = require('./overlay-window.cjs');
 const { PRELOAD, loadRoute } = require('./renderer.cjs');
-const { cameraCommand, cameraHotkeyInfo, cameraInfo, onRecorderMessage, setHazardCar, setTeamCar, startCamera, stopCamera } = require('./camera.cjs');
+const { cameraCommand, cameraHotkeyInfo, cameraInfo, onRecorderMessage, setHazardCar, startCamera, stopCamera } = require('./camera.cjs');
 const { alignToHead, recenterVr, resetPanelAnchor, setVrLanguage, setVrOpacity, setVrPanelConfig, startVr, stopVr, vrHotkeyInfo, vrStatus } = require('./vr.cjs');
 const { displayKey, hotkeyGroups } = require('./hotkeys.cjs');
 const { cancelLearnRecenter, learnRecenter, watchRecenter } = require('./rawinput.cjs');
@@ -18,6 +18,7 @@ const { messageHotkeyInfo, radioState, sendMessage, setDriving, setMessages, sta
 const { checkNow, installNow, setupUpdates, updateInfo, updateLabel } = require('./updates.cjs');
 const { setLanguage, t } = require('./i18n.cjs');
 const { brand } = require('./brand.cjs');
+const feed = require('./feed.cjs');
 
 const BUNDLES = path.join(__dirname, '..', 'dist-bundles');
 const ICON = path.join(__dirname, 'icons', brand.icons, 'tray.png');
@@ -226,39 +227,14 @@ async function openPlannerFromMenu() {
 let runningVrPanels = '';
 
 // ---------------------------------------------------------------------------
-// Own telemetry for the displays on this PC (used there without a team server)
+// Data for the display pages: team relay and this PC's own recorder (feed.cjs)
 // ---------------------------------------------------------------------------
 
-/** Latest message per type (not inputs), for display pages that open later. */
-const localLatest = new Map();
-/** The team streams another iRacing session: the displays show this PC's own data instead. */
-let otherSession = false;
-
-function setOtherSession(on) {
-  if (on === otherSession) return;
-  otherSession = on;
-  for (const win of BrowserWindow.getAllWindows()) {
-    if (win !== setupWin && !win.isDestroyed()) win.webContents.send('local-prefer', on);
-  }
-}
-
-function onLocalTelemetry(msg) {
-  if (msg.t === 'session') {
-    // Another session: the old laps, standings etc. don't belong to it.
-    const prev = localLatest.get('session');
-    if (prev && (prev.sessionId !== msg.sessionId || prev.sessionType !== msg.sessionType)) localLatest.clear();
-  }
-  if (msg.t !== 'inputs' && msg.t !== 'send-message') localLatest.set(msg.t, msg);
-  // Monitor overlay and VR panel pages; not the StintView window.
-  for (const win of BrowserWindow.getAllWindows()) {
-    if (win !== setupWin && !win.isDestroyed()) win.webContents.send('local', msg);
-  }
-}
-
-ipcMain.handle('local:snapshot', () => ({ messages: [...localLatest.values()], prefer: otherSession }));
+feed.init({ loadConfig });
 
 /** Team joined or left: the display pages connect again with the new access (or none). */
 function reloadDisplays() {
+  feed.restartTeamFeed();
   for (const win of BrowserWindow.getAllWindows()) {
     if (win !== setupWin && !win.isDestroyed()) win.webContents.reload();
   }
@@ -266,7 +242,7 @@ function reloadDisplays() {
 
 function startRecorder() {
   recorder?.stop();
-  localLatest.clear();
+  feed.clearLocal();
   // Also without a team: the displays then show this PC's own sessions.
   let needsPitSettings = true;
   // Tests without iRacing: STINTVIEW_REPLAY=<file.ibt>, STINTVIEW_REPLAY_OPTS="--speed 10 --start 60".
@@ -274,8 +250,8 @@ function startRecorder() {
     ? ['replay', process.env.STINTVIEW_REPLAY, ...(process.env.STINTVIEW_REPLAY_OPTS ?? '').split(' ').filter(Boolean)]
     : ['run'];
   recorder = supervise('recorder', 'recorder.cjs', args, { STINTVIEW_CONFIG: configPath() }, (m) => {
-    if (m.t === 'telemetry') return onLocalTelemetry(m.msg); // many per second: no refresh
-    if (m.t === 'other-session') setOtherSession(m.on);
+    if (m.t === 'telemetry') return feed.onLocalTelemetry(m.msg); // many per second: no refresh
+    if (m.t === 'other-session') feed.setOtherSession(m.on);
     // (Re)started process: hand it the manual pit stop values with its first message.
     if (m.t === 'exit') needsPitSettings = true;
     else if (needsPitSettings && recorder?.post({ t: 'pit-settings', pit: settings.pitStop })) needsPitSettings = false;
@@ -295,9 +271,9 @@ function startRecorder() {
           : m.text.startsWith('server error') ? 'error' : 'offline';
     }
     if (m.t === 'exit') {
-      setOtherSession(false);
+      feed.setOtherSession(false);
       // Displays fall back to the team's data (they show our own while we drive).
-      if (localLatest.get('driving')?.driving) onLocalTelemetry({ t: 'driving', driving: false, driverName: '', session: '' });
+      if (feed.localDriving()) feed.onLocalTelemetry({ t: 'driving', driving: false, driverName: '', session: '' });
       Object.assign(status, { iracing: false, inCar: false, server: 'offline' });
       setDriving(false);
       setAutoProfile(false);
@@ -306,10 +282,7 @@ function startRecorder() {
     if (m.t === 'camera-state' || m.t === 'camera-result') return onRecorderMessage(m);
     // Team messages via the recorder's connection: on time even when a display page's own
     // connection lags behind the telemetry (driver's PC under load, race 09.10.2026).
-    if (m.t === 'team-message') {
-      for (const win of BrowserWindow.getAllWindows()) if (win !== setupWin && !win.isDestroyed()) win.webContents.send('team-message', m.msg);
-      return;
-    }
+    if (m.t === 'team-message') return feed.onTeamMessage(m.msg);
     if (m.t === 'laps') lapCounts = { total: m.total, unsent: m.unsent };
     refresh();
   });
@@ -496,7 +469,7 @@ function statusLine() {
   if (status.server === 'error') return t('status.server', { text: status.serverText.replace(/^server error: /, '') });
   if (status.server === 'offline') return t('status.offline');
   const team = config.teamName;
-  if (otherSession) return t('status.otherSession', { team });
+  if (feed.otherSession()) return t('status.otherSession', { team });
   if (!status.iracing) return t('status.noIracing', { team });
   if (status.inCar) return status.server === 'standby' ? t('status.standby', { team }) : t('status.driving', { team });
   return t('status.ready', { team });
@@ -597,7 +570,7 @@ function appState() {
     configured: Boolean(config),
     team: config ? { teamName: config.teamName, memberName: config.memberName, serverUrl: config.serverUrl, inviteCode: config.inviteCode } : null,
     settings,
-    status: { ...status, otherSession, profile: activeProfile(), autoProfile, profileHotkey: displayKey(profileHotkey), line: statusLine(), waitingForIracing: waitingForSim(), vr: vrStatus(), overlay: overlayRunning(), editing: editing(), editHotkey: editHotkey() },
+    status: { ...status, otherSession: feed.otherSession(), profile: activeProfile(), autoProfile, profileHotkey: displayKey(profileHotkey), line: statusLine(), waitingForIracing: waitingForSim(), vr: vrStatus(), overlay: overlayRunning(), editing: editing(), editHotkey: editHotkey() },
     autostartAvailable: app.isPackaged,
     cameraHotkeys: cameraInfo().hotkeys,
     pitImport,
@@ -693,8 +666,7 @@ ipcMain.handle('app:edit', (_e, on, profile) => {
   return appState();
 });
 
-// Spectator camera: renderers report the team car and trigger jumps (same as the hotkeys).
-ipcMain.on('app:team-car', (_e, team) => setTeamCar(team));
+// Spectator camera: jumps from the panels (same as the hotkeys); the team car comes from feed.cjs.
 ipcMain.on('app:hazard', (_e, carIdx) => setHazardCar(Number.isInteger(carIdx) ? carIdx : null));
 ipcMain.handle('app:camera', (_e, action, target) =>
   cameraCommand(action === 'back' ? 'back' : 'incident', Number.isInteger(target) ? target : undefined));

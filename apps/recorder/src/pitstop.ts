@@ -1,9 +1,9 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { parse } from 'yaml';
 import type { Pitplan, RejoinCar } from '@stintview/protocol';
 import type { Frame } from './irsdk/layout.ts';
 import { configPath } from './config.ts';
+import { parseSessionYaml } from './session.ts';
 import { readProgress, trackGap, type CarInfo, type CarProgress } from './standings.ts';
 
 // ---------------------------------------------------------------------------
@@ -449,10 +449,7 @@ interface Yaml {
 }
 
 export function parsePitSession(text: string): PitSession {
-  let y: Yaml = {};
-  try {
-    y = parse(text, { strict: false, uniqueKeys: false, maxAliasCount: -1 }) ?? {};
-  } catch { /* defaults */ }
+  const y = parseSessionYaml<Yaml>(text);
   const di = y.DriverInfo ?? {};
   const me = di.Drivers?.find((d) => d.CarIdx === di.DriverCarIdx);
   const lapEst = new Map<number, number>();

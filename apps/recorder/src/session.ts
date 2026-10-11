@@ -1,5 +1,26 @@
 import { parse } from 'yaml';
 
+let lastText: string | null = null;
+let lastYaml: unknown = {};
+
+/**
+ * iRacing's session info YAML, parsed once per update and shared (read-only!) by everyone who
+ * reads it: ~50 ms for a 60-car field, and recorder, standings, pit planner, camera and incident
+ * warning each parsed it again – ~0.3 s of CPU in one go on every update.
+ */
+export function parseSessionYaml<T extends object>(text: string): T {
+  if (text !== lastText) {
+    try {
+      // iRacing YAML is occasionally not strictly valid (e.g. unquoted special characters in names).
+      lastYaml = parse(text, { strict: false, uniqueKeys: false, maxAliasCount: -1 }) ?? {};
+    } catch {
+      lastYaml = {};
+    }
+    lastText = text;
+  }
+  return lastYaml as T;
+}
+
 export interface SessionMeta {
   track: string;
   /** Lap times for the stint planner: iRacing TrackID, name with layout, CarID. */
@@ -40,13 +61,7 @@ interface Yaml {
 
 /** Extracts what the recorder needs from iRacing's session info YAML. */
 export function parseSession(text: string): SessionMeta {
-  let y: Yaml = {};
-  try {
-    // iRacing YAML is occasionally not strictly valid (e.g. unquoted special characters in names).
-    y = parse(text, { strict: false, uniqueKeys: false, maxAliasCount: -1 }) ?? {};
-  } catch {
-    y = {};
-  }
+  const y = parseSessionYaml<Yaml>(text);
   const di = y.DriverInfo ?? {};
   const carIdx = di.DriverCarIdx ?? -1;
   const me = di.Drivers?.find((d) => d.UserID === di.DriverUserID);

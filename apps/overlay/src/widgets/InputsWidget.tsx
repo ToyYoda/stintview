@@ -6,6 +6,11 @@ const WIDTH = 420;
 const HEIGHT = 150;
 const TRACE_SECONDS = 5;
 const TRACE_W = 300;
+/**
+ * At most this many drawings a second: the trace moves on every animation frame, which on a
+ * 144 Hz monitor meant 144 repaints of the overlay window over iRacing (VR: also capped by the app).
+ */
+const MAX_FPS = 30;
 const COLORS = { throttle: '#3ddc84', brake: '#ff4d4d', steer: '#ffffff', grid: 'rgba(255,255,255,0.12)', text: '#ffffff', muted: '#ffffff' };
 
 /** Live steering, throttle and brake: scrolling trace, pedal bars and a steering wheel. */
@@ -20,12 +25,16 @@ export function InputsWidget({ inputs }: { inputs: InputBuffer }) {
     ctx.scale(dpr, dpr);
     let raf = 0;
     let drawn = '';
-    const draw = () => {
+    let drawnAt = 0;
+    const draw = (now = performance.now()) => {
       raf = requestAnimationFrame(draw);
+      // 2 ms slack: on a 60 Hz monitor every second frame (33.4 ms), not every third when frames jitter.
+      if (now - drawnAt < 1000 / MAX_FPS - 2) return;
       // Only when something changed: every drawn frame is a texture upload in VR.
       const key = `${inputs.playhead() ?? t('inputs.none')}|${inputs.times.length}`;
       if (key === drawn) return;
       drawn = key;
+      drawnAt = now;
       render(ctx, inputs);
     };
     draw();

@@ -108,7 +108,7 @@ export function CameraBar({ state, interactive }: { state: FeedState; interactiv
       )}
       {yellow && (
         <div className="cam-row yellow live">
-          <span className="cam-flag">{hazard ? t('cam.incidentAhead') : t('cam.yellowAhead')}</span>
+          <span className={Math.floor(now / 500) % 2 ? 'cam-flag dim' : 'cam-flag'}>{hazard ? t('cam.incidentAhead') : t('cam.yellowAhead')}</span>
           {hazard && <span className="cam-hint">#{hazard.carNumber} {hazard.driverName} · {hazard.distance} m · {hazard.reason === 'offtrack' ? t('cam.offtrack') : t('cam.stopped')}</span>}
         </div>
       )}

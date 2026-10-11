@@ -16,8 +16,6 @@ const FPS = Number(process.env.STINTVIEW_VR_FPS ?? 30);
 // fluid; the other panels change a few times per second at most.
 const SLOW_FPS = Math.min(FPS, 10);
 const panelFps = (id) => (id === 'inputs' ? FPS : SLOW_FPS);
-// CSS transitions (e.g. the duel closeness bar) would repaint at full rate all the time.
-const VR_CSS = '*, *::before, *::after { transition: none !important; }';
 const ZOOM = 2; // render at 2x for sharp text in the headset
 const RETRY_MS = 5000;
 const layoutPath = path.join(dataDir, 'vr.json');
@@ -148,7 +146,6 @@ async function createPanelWindow(id) {
 
   win.webContents.on('paint', (_e, _dirty, image) => pushFrame(id, image));
   win.webContents.on('did-finish-load', () => {
-    win.webContents.insertCSS(VR_CSS).catch(() => {});
     win.webContents.send('opacity', vrOpacity);
     win.webContents.send('panel-config', vrPanelConfig);
     win.webContents.send('language', vrLanguage);
