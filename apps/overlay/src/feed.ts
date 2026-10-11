@@ -344,6 +344,9 @@ function applyLocal(s: FeedState, m: ClientMessage): FeedState {
  * teammate streams to the team from the same session), while the team server isn't connected or
  * the team streams another iRacing session than this PC.
  */
+/** This PC's standings count while nobody in the team drives – as long as they keep coming (iRacing open). */
+const OWN_STANDINGS_FRESH_MS = 10_000;
+
 /** Messages already received (id + server time: ids start over when the server restarts). */
 const seenMessages = new Set<string>();
 
@@ -453,11 +456,14 @@ export function useTeamFeed(): { state: FeedState; inputs: InputBuffer } {
   }, [inputs]);
 
   // Own data with the team connection's state (for the header) and the team messages.
+  // Nobody in the team drives (e.g. after qualifying): the standings from this PC's own iRacing,
+  // which its recorder keeps working out while watching (since 0.24.1); the team has none then.
   const state = local
     ? {
       ...own, conn: team.conn, error: team.error, teamName: team.teamName, messages: team.messages, local: true, otherSession,
       teamDriver: team.active?.driverName && team.active.driverName !== ownDriver ? team.active.driverName : null,
     }
+    : !team.active?.driverName && own.standings && Date.now() - own.lastData < OWN_STANDINGS_FRESH_MS ? { ...team, standings: own.standings }
     : team;
   return { state, inputs };
 }

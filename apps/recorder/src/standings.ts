@@ -650,7 +650,12 @@ export class StandingsTracker {
     this.sessions = sessions;
   }
 
-  onFrame(f: Frame, driving: boolean): Standings | null {
+  /**
+   * Standings about once a second – also while this PC's user is not in the car (since 0.24.1):
+   * then main.ts hands them to this PC's displays only, which show them while nobody in the
+   * team drives (after qualifying the standings kept still, 11.10.2026).
+   */
+  onFrame(f: Frame): Standings | null {
     const sessionNum = f.has('SessionNum') ? f.num('SessionNum') : 0;
     if (sessionNum !== this.sessionNum) {
       this.pits.reset();
@@ -660,7 +665,6 @@ export class StandingsTracker {
     // Pace car and spectators are not in any standings.
     const cars = readProgress(f, (idx) => this.info.get(idx)?.estLap ?? null).filter((c) => !this.info.get(c.carIdx)?.notRacing);
     this.pits.update(cars.map((c) => ({ carIdx: c.carIdx, laps: Math.floor(c.progress), onPitRoad: c.onPitRoad ?? false })));
-    if (!driving) return null;
 
     const t = f.num('SessionTime');
     const session = this.sessions.get(sessionNum);
@@ -676,7 +680,8 @@ export class StandingsTracker {
     const relative = this.decorate(f, relativeRows(cars, teamIdx, this.info, lapRef, 5, tyreLaps, !bestMode));
     // iRacing says ~604800 s for "unlimited".
     const remain = f.has('SessionTimeRemain') ? f.num('SessionTimeRemain') : -1;
-    const lapNow = f.has('Lap') ? f.num('Lap') : -1;
+    // The team car's lap – also while watching (Lap is the player's own, only while driving).
+    const lapNow = f.has('CarIdxLap') ? f.num('CarIdxLap', teamIdx) : f.has('Lap') ? f.num('Lap') : -1;
     const clock = {
       lap: lapNow >= 0 ? lapNow : null, lapsTotal: session?.laps ?? null,
       timeRemain: remain >= 0 && remain < 100_000 ? remain : null,
