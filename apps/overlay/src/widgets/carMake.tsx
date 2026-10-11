@@ -4,8 +4,11 @@ import {
   siToyota, siVolkswagen, siVolvo,
 } from 'simple-icons';
 
-/** Emblem paths: Simple Icons (CC0, one colour, 24×24). Brands it has no icon for get a short text. */
-type Icon = { path: string };
+/**
+ * Emblem paths: Simple Icons (CC0, one colour, 24×24, with the brand's colour `hex`). Brands it
+ * has no icon for get a short text.
+ */
+type Icon = { path: string; hex: string };
 
 /** Make from iRacing's car name, tried in order (first word(s) of CarScreenName). */
 const MAKES: { re: RegExp; name: string; icon?: Icon }[] = [
@@ -47,15 +50,26 @@ export function carMake(car: string): { name: string; icon: Icon | null; short: 
   return { name: first, icon: null, short: first.slice(0, 3).toUpperCase() };
 }
 
-/** Emblem (in the text colour) or a short name, with the full car name as tooltip. */
+/** Very light brand colours (Renault, Opel yellow) go on a dark badge, all others on a light one. */
+function badge(hex: string) {
+  const n = parseInt(hex, 16);
+  return ((n >> 16) & 255) * 0.299 + ((n >> 8) & 255) * 0.587 + (n & 255) * 0.114 > 170 ? 'dark' : 'light';
+}
+
+/**
+ * Emblem in the brand's colour on a small badge (since 0.22.1; before in the text colour),
+ * or a short name; the full car name as tooltip.
+ */
 export function CarMake({ car }: { car: string }) {
   const make = carMake(car);
   if (!make.short) return null;
   return make.icon ? (
-    <svg className="car-make" viewBox="0 0 24 24" role="img" aria-label={make.name}>
-      <title>{car}</title>
-      <path d={make.icon.path} fill="currentColor" />
-    </svg>
+    <span className={`car-badge ${badge(make.icon.hex)}`}>
+      <svg className="car-make" viewBox="0 0 24 24" role="img" aria-label={make.name}>
+        <title>{car}</title>
+        <path d={make.icon.path} fill={`#${make.icon.hex}`} />
+      </svg>
+    </span>
   ) : (
     <span className="car-make-text" title={car}>{make.short}</span>
   );
