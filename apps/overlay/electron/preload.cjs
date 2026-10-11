@@ -7,6 +7,10 @@ contextBridge.exposeInMainWorld('stintview', {
   setEditMode: (on, profile) => ipcRenderer.invoke('app:edit', on, profile),
   // Clickable buttons in the otherwise click-through overlay
   setInteractive: (on) => ipcRenderer.send('overlay:interactive', on),
+  // Monitor overlay: one window per panel (since 0.24) – the page reports its size; positions kept
+  // in the page up to 0.23 are handed to the app once
+  reportSize: (w, h) => ipcRenderer.send('overlay:size', w, h),
+  sendLegacyPositions: (saved) => ipcRenderer.send('overlay:legacy-positions', saved),
   onPanels: (cb) => ipcRenderer.on('panels', (_e, ids) => cb(ids)),
   // Where the main monitor lies in the overlay window, which covers all monitors
   onOverlayArea: (cb) => ipcRenderer.on('overlay-area', (_e, main) => cb(main)),

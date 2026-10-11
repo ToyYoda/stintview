@@ -143,6 +143,9 @@ declare global {
       /** `profile`: show that profile while moving (from the StintView window). */
       setEditMode(on?: boolean, profile?: ProfileId): Promise<AppState>;
       setInteractive(on: boolean): void;
+      /** Monitor overlay panel windows (since 0.24): content size in CSS px; 0 = nothing to show. */
+      reportSize?(w: number, h: number): void;
+      sendLegacyPositions?(saved: Record<string, string | null>): void;
       onPanels?(cb: (ids: string[]) => void): void;
       onOpacity?(cb: (value: number) => void): void;
       onPanelConfig?(cb: (cfg: PanelConfig) => void): void;

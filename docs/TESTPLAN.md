@@ -201,6 +201,8 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 
 | # | Wer | Schritt | Erwartet | Ergebnis |
 |---|---|---|---|---|
+| 5.1g | alle (Triple-Screens) | iRacing mit Overlay am Monitor, Bildrate (z. B. iRacing-Leistungsanzeige) mit und ohne „Anzeigen einblenden“ vergleichen | mit Anzeigen kaum weniger fps als ohne (vor 0.24: nur 60 fps) | |
+| 5.1h | alle | Anzeigen verschieben: ein Panel mit der Maus ziehen, Fertig, StintView neu starten | Panel folgt der Maus flüssig, bleibt nach Neustart an der neuen Stelle; die anderen Panels bleiben, wo sie waren | |
 | 5.1b | alle | mit Triple-Screens (oder zweitem Monitor): Anzeigen verschieben, ein Panel auf den linken und eins auf den rechten Monitor ziehen, Fertig, StintView neu starten | Panels lassen sich auf alle Monitore ziehen und bleiben dort; Panels auf dem Hauptmonitor bleiben, wo sie waren | |
 | 5.1 | alle | StintView-Fenster → **Anzeigen verschieben** | gelbes Banner im Overlay, Anzeigen lassen sich ziehen, **Fertig** beendet | |
 | 5.1c | alle | Anzeigen verschieben, gelben Griff unten rechts an einem Panel ziehen, Fertig | Panel wird größer/kleiner (50–200 %); im StintView-Fenster steht die neue Größe beim Panel; bleibt nach Neustart | |

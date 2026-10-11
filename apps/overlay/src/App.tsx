@@ -14,6 +14,7 @@ import { RadioWidget } from './widgets/RadioWidget.tsx';
 import type { ClassesColumn, ColumnOptions, DuelOptions, PanelConfig, RelativeColumn, StandingsOptions } from './feed.ts';
 import { setLang, t, useLang } from './i18n.ts';
 import { PitWidget } from './widgets/PitWidget.tsx';
+import { EditBanner, MonitorPanel } from './MonitorPanel.tsx';
 
 type WidgetId = 'header' | 'inputs' | 'fuel' | 'tyres' | 'weather' | 'standings' | 'duel' | 'relative' | 'classes' | 'pitstop' | 'messages' | 'radio';
 type Positions = Record<WidgetId, { x: number; y: number }>;
@@ -48,15 +49,17 @@ function loadPositions(profile: string | null): Positions {
 }
 
 /**
- * `#/` – all widgets on a transparent full-screen overlay (Electron).
+ * `#/panel/<id>` – one panel in its own small window: the monitor overlay (since 0.24).
+ * `#/banner` – the banner while moving panels.
  * `#/widget/<id>` – a single widget, for VR panels (SteamVR overlay / OpenKneeboard).
+ * `#/` – all widgets on one page (browser, development).
  */
 export function App() {
   useLang(); // re-render all widgets when the language changes
   const { state, inputs } = useTeamFeed();
   const [route, setRoute] = useState(location.hash);
   // Browser: always movable. Electron: toggled by hotkey (desktop) or panel selection (VR).
-  const [edit, setEdit] = useState(!window.stintview && !location.hash.startsWith('#/widget/'));
+  const [edit, setEdit] = useState(!window.stintview && !/^#\/(widget|panel)\//.test(location.hash));
   // Profile shown (driving / watching, from the app); null in a browser.
   const [profile, setProfile] = useState<string | null>(null);
   const [positions, setPositions] = useState(() => loadPositions(null));
@@ -105,6 +108,20 @@ export function App() {
     radio: <RadioWidget interactive={Boolean(window.stintview) && !location.hash.startsWith('#/widget/')} />,
   };
 
+  if (route.startsWith('#/banner')) return <EditBanner />;
+  const panel = /^#\/panel\/(\w+)/.exec(route)?.[1] as WidgetId | undefined;
+  if (panel && panel in widgets) {
+    return (
+      <MonitorPanel edit={edit} scale={config?.[panel]?.scale ?? 1}
+        onResized={(scale) => {
+          // Saved as the panel's size in the settings; comes back as panel config.
+          setConfig((c) => (c?.[panel] ? { ...c, [panel]: { ...c[panel], scale } } : c));
+          window.stintview?.setPanelSize?.(panel, Math.round(scale * 100));
+        }}>
+        {widgets[panel]}
+      </MonitorPanel>
+    );
+  }
   const single = /^#\/widget\/(\w+)/.exec(route)?.[1] as WidgetId | undefined;
   if (single && single in widgets) return <div className={edit ? 'single selected' : 'single'}>{widgets[single]}</div>;
 
