@@ -101,7 +101,9 @@ export class CarTracker {
 
 export interface SessionCars {
   /** number = CarNumberRaw (camera commands), label = CarNumber as displayed ("07"). */
-  drivers: Map<number, { number: number; label: string; name: string; flair?: string; team?: string | null; car?: string | null; irating?: number | null; license?: { text: string; color: string } | null; estLap?: number | null }>;
+  drivers: Map<number, { number: number; label: string; name: string; flair?: string; team?: string | null; car?: string | null; irating?: number | null; license?: { text: string; color: string } | null; estLap?: number | null;
+    /** Class: short name, colour "#rrggbb", relative speed (higher = faster class). */ className?: string; classColor?: string; classSpeed?: number;
+    /** Pace car or spectator: not a competitor. */ notRacing?: boolean }>;
   /** Tyre compound names by TireIndex (CarIdxTireCompound), e.g. ["Hard", "Wet"]. */
   tires: string[];
   farChaseGroup: number;
@@ -127,6 +129,10 @@ export function parseSessionCars(text: string): SessionCars {
       irating: typeof d.IRating === 'number' && d.IRating > 0 ? d.IRating : null,
       license: d.LicString ? { text: String(d.LicString), color: licenseColor(d.LicColor) } : null,
       estLap: Number(d.CarClassEstLapTime) > 0 ? Number(d.CarClassEstLapTime) : null,
+      className: d.CarClassShortName ? String(d.CarClassShortName) : '',
+      classColor: licenseColor(d.CarClassColor),
+      classSpeed: Number(d.CarClassRelSpeed) || 0,
+      notRacing: d.CarIsPaceCar === 1 || d.IsSpectator === 1,
     });
   }
   const tires: string[] = [];
@@ -159,6 +165,7 @@ export interface CameraResult { t: 'camera-result'; ok: boolean; text: string; c
 interface DriverRow {
   CarIdx?: number; CarNumberRaw?: number; CarNumber?: string | number; UserName?: string; TeamName?: string; FlairName?: string;
   IRating?: number; LicString?: string; LicColor?: string | number; CarScreenName?: string; CarClassEstLapTime?: number;
+  CarClassShortName?: string; CarClassColor?: string | number; CarClassRelSpeed?: number; CarIsPaceCar?: number; IsSpectator?: number;
 }
 
 /** iRacing's LicColor ("0xfc0706", or a number after YAML parsing) -> "#fc0706". */

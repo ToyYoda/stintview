@@ -551,7 +551,7 @@ function PlannerCard({ state, onState }: { state: AppState; onState(s: AppState)
   );
 }
 
-const PANEL_IDS = ['header', 'inputs', 'fuel', 'tyres', 'weather', 'standings', 'duel', 'pitstop', 'messages', 'radio'] as const;
+const PANEL_IDS = ['header', 'inputs', 'fuel', 'tyres', 'weather', 'standings', 'duel', 'relative', 'classes', 'pitstop', 'messages', 'radio'] as const;
 
 /**
  * Every panel: on/off in the header, and when opened its size and panel-specific options.

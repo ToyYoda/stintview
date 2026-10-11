@@ -122,26 +122,26 @@ export function StandingsWidget({ standings, options }: { standings: Standings |
   );
 }
 
-function lapTime(s: number) {
+export function lapTime(s: number) {
   const m = Math.floor(s / 60);
   return `${m}:${(s - m * 60).toFixed(3).padStart(6, '0')}`;
 }
 
 /** iRating compact: 2431 -> "2.4k". */
-function rating(ir: number | null | undefined) {
+export function rating(ir: number | null | undefined) {
   if (!ir) return '–';
   return ir >= 1000 ? `${(ir / 1000).toFixed(1)}k` : String(ir);
 }
 
 /** Licence class and safety rating ("A 3.45") on iRacing's licence colour. */
-function License({ text, color }: { text: string; color: string }) {
+export function License({ text, color }: { text: string; color: string }) {
   const n = parseInt(color.slice(1), 16);
   const light = ((n >> 16) & 255) * 0.299 + ((n >> 8) & 255) * 0.587 + (n & 255) * 0.114 > 150;
   return <span className="st-lic" style={{ background: color, color: light ? '#111' : '#fff' }}>{text}</span>;
 }
 
 /** Tyre compound as one letter in its usual colour: Soft red, Medium yellow, Hard white, Wet blue. */
-function Compound({ name }: { name: string }) {
+export function Compound({ name }: { name: string }) {
   const kind = /wet|rain/i.test(name) ? 'wet' : /soft/i.test(name) ? 'soft' : /medium/i.test(name) ? 'medium' : /hard/i.test(name) ? 'hard' : 'other';
   const letter = { wet: 'W', soft: 'S', medium: 'M', hard: 'H', other: name.slice(0, 1).toUpperCase() }[kind];
   return <span className={`st-compound-chip ${kind}`} title={name}>{letter}</span>;

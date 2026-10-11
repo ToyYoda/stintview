@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { countryCode } from './country.ts';
-import { bestProjection, betweenRows, computeBestStandings, computeStandings, isRaceSession, lappingRows, officialBestLaps, parseSessions, PitStopTracker, trackGap, type CarInfo, type CarProgress } from './standings.ts';
+import { bestProjection, betweenRows, classBestStandings, classStandings, computeBestStandings, relativeRows, computeStandings, isRaceSession, lappingRows, officialBestLaps, parseSessions, PitStopTracker, trackGap, type CarInfo, type CarProgress } from './standings.ts';
 
 const info = new Map<number, CarInfo>(
   Array.from({ length: 20 }, (_, i) => [i, { number: String(i + 1).padStart(2, '0'), name: `Driver ${i}` }]),
@@ -289,5 +289,55 @@ describe('practice and qualifying: projection of the lap in progress', () => {
 
   it('no time at all yet: last, nothing to compare', () => {
     expect(bestProjection([best(0, null), best(1, 100)], 0, info, null)).toMatchObject({ pos: 2, target: null, needed: null });
+  });
+});
+
+describe('Relative and class standings', () => {
+  // GT3 (class 1, faster) and GT4 (class 2); we are car 0 (GT3) at 5.50 laps
+  const at = (carIdx: number, progress: number, classId: number, bestLap: number | null = null): CarProgress =>
+    ({ carIdx, progress, lastLap: 100, bestLap, classId });
+  const cars = [
+    at(0, 5.5, 1, 99), at(1, 5.52, 1, 98), at(2, 5.6, 1, 97.5), at(3, 6.3, 1, 97), // 3: a lap up, 0.2 behind on track
+    at(4, 4.53, 2, 110), at(5, 5.45, 1, 99.5), at(6, 4.0, 2, 109), at(7, 5.2, 2, 111), // 4: a lap down, 0.03 ahead on track
+  ];
+  const info = new Map<number, CarInfo>(cars.map((c) => [c.carIdx, {
+    number: String(c.carIdx), name: `D${c.carIdx}`, className: c.classId === 1 ? 'GT3' : 'GT4',
+    classColor: c.classId === 1 ? '#ffda59' : '#ff5888', classSpeed: c.classId === 1 ? 90 : 70,
+  }]));
+
+  it('relative: nearest in front and behind on track, front first, any class, lap status', () => {
+    const rows = relativeRows(cars, 0, info, 100, 2);
+    expect(rows.map((r) => r.carIdx)).toEqual([4, 1, 0, 5, 3]);
+    expect(rows.find((r) => r.carIdx === 4)).toMatchObject({ lap: 'backmarker', pos: 2 }); // GT4 P2 a lap down
+    expect(rows.find((r) => r.carIdx === 3)).toMatchObject({ lap: 'lapper', pos: 1 });
+    expect(rows.find((r) => r.carIdx === 0)).toMatchObject({ isTeam: true, gap: 0, pos: 4 }); // GT3: 3, 2, 1, us
+    expect(rows.find((r) => r.carIdx === 1)!.gap).toBeCloseTo(2);
+    expect(rows.find((r) => r.carIdx === 5)!.gap).toBeCloseTo(-5);
+  });
+
+  it('class standings: fastest class first, gap to the class leader in s or laps', () => {
+    const classes = classStandings(cars, 0, info, () => null, 1, 1);
+    expect(classes.map((c) => [c.name, c.own, c.best])).toEqual([['GT3', true, 97], ['GT4', false, 109]]);
+    const gt3 = classes[0]!.rows;
+    expect(gt3.map((r) => [r.pos, r.carIdx])).toEqual([[1, 3], [3, 1], [4, 0], [5, 5]]); // P1 + us (P4) ± 1
+    expect(gt3[1]!.lapsGap).toBe(0); // 0.78 laps behind the leader: a time
+    expect(gt3[1]!.gap).toBeCloseTo(78);
+    const gt4 = classes[1]!.rows;
+    expect(gt4.map((r) => r.carIdx)).toEqual([7]);
+  });
+
+  it('class standings: whole laps behind the leader', () => {
+    const classes = classStandings([at(0, 5.5, 1), at(1, 7.6, 1)], 0, info);
+    expect(classes[0]!.rows.find((r) => r.carIdx === 0)).toMatchObject({ gap: null, lapsGap: -2 });
+  });
+
+  it('class standings in qualifying: by best lap, gap = best − leader', () => {
+    const field = [
+      { carIdx: 0, best: 99, lastLap: 99, classId: 1 }, { carIdx: 1, best: 98, lastLap: 98, classId: 1 },
+      { carIdx: 4, best: 110, lastLap: 110, classId: 2 }, { carIdx: 6, best: null, lastLap: null, classId: 2 },
+    ];
+    const classes = classBestStandings(field, 0, info);
+    expect(classes[0]!.rows.map((r) => [r.carIdx, r.gap])).toEqual([[1, 0], [0, 1]]);
+    expect(classes[1]!.rows.map((r) => r.carIdx)).toEqual([4]); // no time: not listed
   });
 });

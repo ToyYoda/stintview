@@ -1,4 +1,4 @@
-import type { StandingRow, Standings } from '@stintview/protocol';
+import type { ClassStandings, StandingRow, Standings } from '@stintview/protocol';
 import { parse } from 'yaml';
 import type { Frame } from './irsdk/layout.ts';
 
@@ -8,6 +8,8 @@ export interface CarProgress {
   progress: number;
   /** Last lap time in seconds, null if none yet. */
   lastLap: number | null;
+  /** Best lap time in seconds (CarIdxBestLapTime), null if none yet. */
+  bestLap?: number | null;
   classId: number;
   /** iRacing's estimate of the time from the start/finish line to the car's current spot, null if unknown. */
   estTime?: number | null;
@@ -20,6 +22,8 @@ export interface CarInfo {
   number: string; name: string; /** ISO code for the flag, e.g. "de". */ country?: string | null;
   team?: string | null; car?: string | null; irating?: number | null; license?: { text: string; color: string } | null;
   /** CarClassEstLapTime in seconds. */ estLap?: number | null;
+  /** Class short name, colour "#rrggbb", relative speed (higher = faster); pace car / spectator. */
+  className?: string; classColor?: string; classSpeed?: number; notRacing?: boolean;
 }
 
 export interface StandingsExtras {
@@ -169,6 +173,128 @@ function physicalRow(
   };
 }
 
+/** Position of each car in its class by running order on track (carIdx -> position). */
+export function classPositions(cars: CarProgress[]): Map<number, number> {
+  const out = new Map<number, number>();
+  const byClass = new Map<number, CarProgress[]>();
+  for (const c of cars) byClass.set(c.classId, [...(byClass.get(c.classId) ?? []), c]);
+  for (const field of byClass.values()) {
+    field.sort((a, b) => b.progress - a.progress).forEach((c, i) => out.set(c.carIdx, i + 1));
+  }
+  return out;
+}
+
+/**
+ * Relative panel: the `n` cars nearest in front of and behind us on track – any class, also in
+ * the pits – and our own row, front first. pos = position in the car's class; gap = seconds on
+ * track (+ in front); lap = 'backmarker' a lap or more down on us, 'lapper' a lap or more up.
+ */
+export function relativeRows(
+  cars: CarProgress[], teamIdx: number, info: Map<number, CarInfo>, lapRef: number | null, n = 5,
+  tyreLaps: (carIdx: number) => number | null = () => null,
+): StandingRow[] {
+  const team = cars.find((c) => c.carIdx === teamIdx);
+  if (!team) return [];
+  const pos = classPositions(cars);
+  const near = cars.filter((c) => c.carIdx !== teamIdx).map((c) => {
+    const diff = c.progress - team.progress;
+    const laps = Math.round(diff);
+    return { c, o: diff - laps, laps }; // o: physical offset in laps, -0.5..0.5
+  });
+  const ahead = near.filter((x) => x.o > 0).sort((a, b) => a.o - b.o).slice(0, n).reverse();
+  const behind = near.filter((x) => x.o <= 0).sort((a, b) => b.o - a.o).slice(0, n);
+  const row = (x: { c: CarProgress; o: number; laps: number }): StandingRow => ({
+    ...physicalRow(x.c, team, x.o, x.laps, info, lapRef, tyreLaps),
+    pos: pos.get(x.c.carIdx) ?? 0, inPit: x.c.onPitRoad ?? false,
+    ...(x.laps < 0 ? { lap: 'backmarker' as const } : x.laps > 0 ? { lap: 'lapper' as const } : {}),
+  });
+  const d = info.get(teamIdx);
+  const own: StandingRow = {
+    pos: pos.get(teamIdx) ?? 0, carIdx: teamIdx, number: d?.number ?? '?', name: d?.name ?? '', country: d?.country ?? null,
+    lastLap: team.lastLap, isTeam: true, gap: 0, lapsGap: 0, tyreLaps: tyreLaps(teamIdx), inPit: team.onPitRoad ?? false,
+  };
+  return [...ahead.map(row), own, ...behind.map(row)];
+}
+
+/** Fastest class first (iRacing's relative speed), then by class id. */
+function classOrder(info: Map<number, CarInfo>, cars: { carIdx: number; classId: number }[]) {
+  const speed = new Map<number, number>();
+  for (const c of cars) if (!speed.has(c.classId)) speed.set(c.classId, info.get(c.carIdx)?.classSpeed ?? 0);
+  return [...speed.keys()].sort((a, b) => speed.get(b)! - speed.get(a)! || a - b);
+}
+
+/** Rows to list in a class: P1–P`top`, and around us in our own class. */
+function listed(count: number, at: number, top: number, around: number) {
+  const want = new Set<number>();
+  for (let i = 0; i < Math.min(top, count); i++) want.add(i);
+  if (at >= 0) for (let i = Math.max(0, at - around); i <= Math.min(count - 1, at + around); i++) want.add(i);
+  return [...want].sort((a, b) => a - b);
+}
+
+function classHeader(classId: number, member: number | undefined, info: Map<number, CarInfo>) {
+  const d = member === undefined ? undefined : info.get(member);
+  return { classId, name: d?.className || `Class ${classId}`, color: d?.classColor ?? '#888888' };
+}
+
+/**
+ * Class standings panel in the race: every class (fastest first) by running order on track,
+ * P1–P`top`, in our class also `around` cars ahead of / behind us. gap = seconds behind the
+ * class leader on track, or lapsGap = −whole laps behind (gap null then).
+ */
+export function classStandings(
+  cars: CarProgress[], teamIdx: number, info: Map<number, CarInfo>,
+  tyreLaps: (carIdx: number) => number | null = () => null, top = 3, around = 3,
+): ClassStandings[] {
+  const team = cars.find((c) => c.carIdx === teamIdx);
+  return classOrder(info, cars).map((classId) => {
+    const field = cars.filter((c) => c.classId === classId).sort((a, b) => b.progress - a.progress);
+    const leader = field[0]!;
+    const own = team?.classId === classId;
+    const at = own ? field.findIndex((c) => c.carIdx === teamIdx) : -1;
+    const best = field.reduce<number | null>((m, c) => (c.bestLap && (m === null || c.bestLap < m) ? c.bestLap : m), null);
+    const rows = listed(field.length, at, top, around).map((i): StandingRow => {
+      const c = field[i]!;
+      const d = info.get(c.carIdx);
+      const down = i === 0 ? 0 : Math.max(0, Math.floor(leader.progress - c.progress));
+      return {
+        pos: i + 1, carIdx: c.carIdx, number: d?.number ?? '?', name: d?.name ?? '', country: d?.country ?? null,
+        lastLap: c.lastLap, bestLap: c.bestLap ?? null, isTeam: c.carIdx === teamIdx,
+        gap: i === 0 ? 0 : down >= 1 ? null : trackGap(leader, c, c.lastLap ?? leader.lastLap),
+        lapsGap: down ? -down : 0, tyreLaps: tyreLaps(c.carIdx), inPit: c.onPitRoad ?? false,
+      };
+    });
+    return { ...classHeader(classId, leader.carIdx, info), own, best, rows };
+  });
+}
+
+/**
+ * Class standings in practice/qualifying: every class by best lap (iRacing's official order
+ * when there is one), gap = best − the class leader's best. Cars without a time last.
+ */
+export function classBestStandings(
+  cars: BestLap[], teamIdx: number, info: Map<number, CarInfo>,
+  tyreLaps: (carIdx: number) => number | null = () => null, top = 3, around = 3,
+): ClassStandings[] {
+  const key = (c: BestLap) => (c.best === null ? Infinity : c.order ?? c.best);
+  return classOrder(info, cars).map((classId) => {
+    const field = cars.filter((c) => c.classId === classId && (c.best !== null || c.carIdx === teamIdx))
+      .sort((a, b) => key(a) - key(b) || a.carIdx - b.carIdx);
+    const own = field.some((c) => c.carIdx === teamIdx);
+    const at = field.findIndex((c) => c.carIdx === teamIdx);
+    const lead = field[0]?.best ?? null;
+    const rows = listed(field.length, at, top, around).map((i): StandingRow => {
+      const c = field[i]!;
+      const d = info.get(c.carIdx);
+      return {
+        pos: i + 1, carIdx: c.carIdx, number: d?.number ?? '?', name: d?.name ?? '', country: d?.country ?? null,
+        lastLap: c.lastLap, bestLap: c.best, isTeam: c.carIdx === teamIdx,
+        gap: c.best !== null && lead !== null ? c.best - lead : null, lapsGap: 0, tyreLaps: tyreLaps(c.carIdx), inPit: false,
+      };
+    });
+    return { ...classHeader(classId, field[0]?.carIdx ?? cars.find((c) => c.classId === classId)?.carIdx, info), own, best: lead, rows };
+  }).filter((c) => c.rows.length > 0);
+}
+
 /**
  * Duel panel: cars on track between us and our class neighbours (in front of / behind us in
  * the running order) that are on a different lap than us – cars we are lapping and cars
@@ -215,11 +341,13 @@ export function readProgress(f: Frame, estLap: (carIdx: number) => number | null
     const laps = f.num('CarIdxLapCompleted', i);
     if (!(pct >= 0) || !(laps >= 0)) continue;
     const last = f.has('CarIdxLastLapTime') ? f.num('CarIdxLastLapTime', i) : -1;
+    const best = f.has('CarIdxBestLapTime') ? f.num('CarIdxBestLapTime', i) : -1;
     const est = hasEst ? f.num('CarIdxEstTime', i) : -1;
     out.push({
       carIdx: i,
       progress: laps + pct,
       lastLap: last > 0 ? last : null,
+      bestLap: best > 0 ? best : null,
       classId: f.has('CarIdxClass') ? f.num('CarIdxClass', i) : 0,
       estTime: est >= 0 ? est : null,
       estLap: estLap(i),
@@ -436,7 +564,10 @@ export class StandingsTracker {
     return rows.map((r) => {
       const d = this.info.get(r.carIdx);
       const idx = hasCompound ? f.num('CarIdxTireCompound', r.carIdx) : -1;
-      return { ...r, team: d?.team ?? null, car: d?.car ?? null, compound: idx >= 0 ? this.tires[idx] ?? null : null, irating: d?.irating ?? null, license: d?.license ?? null };
+      return {
+        ...r, team: d?.team ?? null, car: d?.car ?? null, compound: idx >= 0 ? this.tires[idx] ?? null : null,
+        irating: d?.irating ?? null, license: d?.license ?? null, classColor: d?.classColor ?? null,
+      };
     });
   }
 
@@ -451,7 +582,8 @@ export class StandingsTracker {
       this.noted = 0;
       this.sessionNum = sessionNum;
     }
-    const cars = readProgress(f, (idx) => this.info.get(idx)?.estLap ?? null);
+    // Pace car and spectators are not in any standings.
+    const cars = readProgress(f, (idx) => this.info.get(idx)?.estLap ?? null).filter((c) => !this.info.get(c.carIdx)?.notRacing);
     this.pits.update(cars.map((c) => ({ carIdx: c.carIdx, laps: Math.floor(c.progress), onPitRoad: c.onPitRoad ?? false })));
     if (!driving) return null;
 
@@ -464,22 +596,27 @@ export class StandingsTracker {
     const laps = new Map(cars.map((c) => [c.carIdx, Math.floor(c.progress)]));
     const ownTyres = this.ownTyreLaps(f);
     const tyreLaps = (idx: number) => (idx === teamIdx && ownTyres !== null ? ownTyres : this.pits.laps(idx, laps.get(idx) ?? 0));
+    const lapRef = cars.find((c) => c.carIdx === teamIdx)?.lastLap ?? null;
+    // Relative panel: on track, in every session.
+    const relative = this.decorate(f, relativeRows(cars, teamIdx, this.info, lapRef, 5, tyreLaps));
+    const decorateClasses = (cs: ClassStandings[]) => cs.map((c) => ({ ...c, rows: this.decorate(f, c.rows) }));
     if (bestMode) {
       // iRacing's official ranking (valid laps only) once the session has results, telemetry until then.
-      const telemetry = readBestLaps(f);
+      const telemetry = readBestLaps(f).filter((c) => !this.info.get(c.carIdx)?.notRacing);
       const field = session!.results.length ? officialBestLaps(telemetry, session!.results) : telemetry;
       const best = this.decorate(f, computeBestStandings(field, teamIdx, this.info, 3, 3, tyreLaps));
       const projection = bestProjection(field, teamIdx, this.info, projectedLap(f)) ?? undefined;
-      return best.length ? { t: 'standings', sessionTime: t, rows: best, mode: 'best', session: sessionLabel(session!.type), projection } : null;
+      const classes = decorateClasses(classBestStandings(field, teamIdx, this.info, tyreLaps));
+      return best.length ? { t: 'standings', sessionTime: t, rows: best, mode: 'best', session: sessionLabel(session!.type), projection, relative, classes } : null;
     }
     const rows = this.decorate(f, computeStandings(cars, teamIdx, this.info, 3, 3, { tyreLaps, note: this.note }));
-    const lapRef = cars.find((c) => c.carIdx === teamIdx)?.lastLap ?? null;
+    const classes = decorateClasses(classStandings(cars, teamIdx, this.info, tyreLaps));
     const lapping = this.decorate(f, lappingRows(cars, teamIdx, this.info, lapRef, tyreLaps));
     const us = rows.find((r) => r.isTeam);
     const neighbour = (d: number) => (us ? rows.find((r) => r.pos === us.pos + d)?.carIdx ?? null : null);
     const between = betweenRows(cars, teamIdx, neighbour(-1), neighbour(1), this.info, lapRef, 3, tyreLaps);
     // Chips in the duel line show the number only: no need for the extra fields there.
-    return rows.length ? { t: 'standings', sessionTime: t, rows, lapping, between, mode: 'race' } : null;
+    return rows.length ? { t: 'standings', sessionTime: t, rows, lapping, between, mode: 'race', relative, classes } : null;
   }
 
   /** Own car: exact, from the distance the tyres have run since they were fitted (newest tyre). */

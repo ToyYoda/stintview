@@ -28,6 +28,9 @@ const PANEL_DEFAULTS = {
   },
   // Added later: off by default, so it does not suddenly appear on existing overlays.
   duel: { shown: false, size: 100, options: { traffic: true } },
+  // Since 0.22: Relative (cars around us on track, all classes) and standings by class.
+  relative: { shown: false, size: 100 },
+  classes: { shown: false, size: 100 },
   pitstop: { shown: true, size: 100 },
   // Team messages: received ones (everyone) and buttons to send (hidden while you drive).
   messages: { shown: false, size: 100 },

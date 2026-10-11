@@ -238,6 +238,28 @@ export interface StandingRow {
   irating?: number | null;
   /** Current driver's licence: iRacing's "A 3.45" and the licence colour "#rrggbb". Since 0.19. */
   license?: { text: string; color: string } | null;
+  /** iRacing's colour of the car's class "#rrggbb" (CarClassColor). Since 0.22, Relative and class standings. */
+  classColor?: string | null;
+}
+
+/** One class in the class standings (since 0.22): fastest class first. */
+export interface ClassStandings {
+  classId: number;
+  /** iRacing's short class name, e.g. "NECGT3 2026". */
+  name: string;
+  /** "#rrggbb" */
+  color: string;
+  /** The team car's class. */
+  own: boolean;
+  /** Fastest lap in the class so far (all its cars, also those not listed), null if none. */
+  best: number | null;
+  /**
+   * Race: running order, P1–P3, and in our class also three cars ahead of / behind us.
+   * gap = seconds behind the class leader (0 = leader, null = unknown), lapsGap = −laps behind
+   * the leader (then gap is null). Practice/qualifying: by best lap, gap = best − leader's best.
+   * bestLap and lastLap as iRacing has them.
+   */
+  rows: StandingRow[];
 }
 
 /** P1–P3 and the cars around the team car, about once per second. Additive, no version bump. */
@@ -270,6 +292,15 @@ export interface Standings {
    * target = the next car to beat from there, needed = seconds still to find on it.
    */
   projection?: { lapTime: number | null; pos: number; target: StandingRow | null; needed: number | null };
+  /**
+   * Relative panel (since 0.22): the 5 cars nearest in front of and behind us on track, any class,
+   * also in the pits, and our own row; in order on track, front first. pos = position in the
+   * car's class, gap = seconds on track (+ in front), lap = 'backmarker' when a lap or more
+   * down on us, 'lapper' when a lap or more up.
+   */
+  relative?: StandingRow[];
+  /** Class standings panel (since 0.22): every class, fastest first. */
+  classes?: ClassStandings[];
 }
 
 /** A car around us after the stop (all classes: traffic matters regardless of class). */

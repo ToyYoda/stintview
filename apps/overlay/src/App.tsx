@@ -7,13 +7,15 @@ import { TyresWidget } from './widgets/TyresWidget.tsx';
 import { WeatherWidget } from './widgets/WeatherWidget.tsx';
 import { StandingsWidget } from './widgets/StandingsWidget.tsx';
 import { DuelWidget } from './widgets/DuelWidget.tsx';
+import { RelativeWidget } from './widgets/RelativeWidget.tsx';
+import { ClassStandingsWidget } from './widgets/ClassStandingsWidget.tsx';
 import { MessagesWidget } from './widgets/MessagesWidget.tsx';
 import { RadioWidget } from './widgets/RadioWidget.tsx';
 import type { DuelOptions, PanelConfig, StandingsOptions } from './feed.ts';
 import { setLang, t, useLang } from './i18n.ts';
 import { PitWidget } from './widgets/PitWidget.tsx';
 
-type WidgetId = 'header' | 'inputs' | 'fuel' | 'tyres' | 'weather' | 'standings' | 'duel' | 'pitstop' | 'messages' | 'radio';
+type WidgetId = 'header' | 'inputs' | 'fuel' | 'tyres' | 'weather' | 'standings' | 'duel' | 'relative' | 'classes' | 'pitstop' | 'messages' | 'radio';
 type Positions = Record<WidgetId, { x: number; y: number }>;
 
 // Side by side on a 1920 px wide screen (panels are ~320 px, inputs ~440, standings ~500 wide).
@@ -28,6 +30,9 @@ const DEFAULT_POSITIONS: Positions = {
   weather: { x: 1060, y: 480 },
   pitstop: { x: 1420, y: 600 }, // below standings, which grows to ~450 px with lapping rows
   duel: { x: 700, y: 860 },
+  // Off by default: where they show up when switched on (move them as needed).
+  relative: { x: 40, y: 640 },
+  classes: { x: 860, y: 40 },
 };
 const STORAGE_KEY = 'stintview.positions';
 
@@ -84,6 +89,8 @@ export function App() {
     weather: <WeatherWidget weather={state.weather} />,
     standings: <StandingsWidget standings={state.standings} options={config?.standings?.options as StandingsOptions | null | undefined} />,
     duel: <DuelWidget standings={state.standings} options={config?.duel?.options as DuelOptions | null | undefined} />,
+    relative: <RelativeWidget standings={state.standings} />,
+    classes: <ClassStandingsWidget standings={state.standings} />,
     // Not shown in practice/qualifying, except while moving panels (so it can be placed).
     pitstop: isPracticeOrQuali(state) && !edit ? null : <PitWidget plan={state.pitplan} />,
     // Empty without a current message; a placeholder while moving panels, so it can be placed.

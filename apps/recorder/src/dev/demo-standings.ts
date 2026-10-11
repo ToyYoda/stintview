@@ -6,7 +6,7 @@
 import WebSocket from 'ws';
 import { PROTOCOL_VERSION, pack, type ClientMessage, type StandingRow } from '@stintview/protocol';
 import { loadConfig, wsUrl } from '../config.ts';
-import { bestProjection, computeBestStandings, type BestLap, type CarInfo } from '../standings.ts';
+import { bestProjection, classBestStandings, classStandings, computeBestStandings, relativeRows, type BestLap, type CarInfo, type CarProgress } from '../standings.ts';
 
 const config = loadConfig();
 if (!config) throw new Error('no config');
@@ -48,6 +48,47 @@ const QUALI_INFO = new Map<number, CarInfo>(DEMO.map(([, number, country, name],
 QUALI_INFO.set(10, { number: '23', name: 'Anna Lind', country: 'se' });
 QUALI_INFO.set(11, { number: '9', name: 'Pablo Ruiz', country: 'es' });
 
+// Relative and standings by class: a multi-class field like the NEC (we are car 0, GT3, P9).
+const NEC: [string, string, number, number, string[]][] = [
+  // class, colour, relative speed, cars, makes
+  ['NECGT3 2026', '#ffda59', 90, 16, ['Mercedes-AMG GT3 2020', 'Porsche 911 GT3 R (992)', 'Ferrari 296 GT3', 'BMW M4 GT3 EVO', 'Audi R8 LMS EVO II GT3']],
+  ['NECPCup 2026', '#33ceff', 80, 4, ['Porsche 911 GT3 Cup (992)']],
+  ['NECGT4 2026', '#ff5888', 70, 2, ['BMW M4 G82 GT4 EVO']],
+  ['NECTCR 2026', '#ae6bff', 60, 2, ['Audi RS 3 LMS TCR']],
+  ['NEC M2 Cup', '#53ff77', 50, 3, ['BMW M2 CS Racing']],
+];
+const FIRST = ['Kai', 'Jan', 'Rik', 'Lea', 'Tim', 'Ole', 'Mats', 'Finn', 'Nils', 'Paul', 'Emil', 'Lars', 'Ben', 'Tom', 'Max', 'Jonas', 'Leon', 'Erik', 'Sven', 'Hugo', 'Noah', 'Luca', 'Anton', 'Felix', 'Moritz', 'Elias', 'Theo'];
+const LAST = ['Hofmann', 'Albers', 'Akkeren', 'Posado', 'Usmanov', 'Kipp', 'Behring', 'Dickson', 'Parren', 'Grouwels', 'Kreisel', 'Kauzinger', 'Kimmer', 'Lee', 'Cabrera', 'Lamberti', 'Macdonald', 'Vosylius', 'Brandt', 'Gruber', 'Rossi', 'Keller', 'Cole', 'Martin', 'Weber', 'Dubois', 'Lind'];
+const COUNTRIES = ['de', 'ca', 'nl', 'fr', 'kz', 'de', 'de', 'gb', 'be', 'nl', 'de', 'de', 'de', 'gb-wls', 'es', 'it', 'gb-sct', 'lt'];
+const necField: CarProgress[] = [];
+const necInfo = new Map<number, CarInfo>();
+const necExtra = new Map<number, Partial<StandingRow>>();
+let idx = 0;
+NEC.forEach(([className, classColor, classSpeed, count, makes], k) => {
+  for (let i = 0; i < count; i++, idx++) {
+    const lap = 470 + k * 25; // slower classes: longer laps
+    // GT3: our car (index 8 in the class) at 30.50 laps; the others spread around it.
+    // Leader a lap up and right behind us on track (red in the Relative), P2/P3 close to it.
+    // Other classes: their leaders a lap down just in front of us (blue), the rest spread out.
+    const progress = k === 0
+      ? (i === 0 ? 31.493 : i < 3 ? 30.9 - i * 0.004 : 30.5 + (8 - i) * 0.012)
+      : (i === 0 ? 29.5 + k * 0.004 : 30.5 - k * 0.37 - i * 0.05);
+    const carIdx = k === 0 && i === 8 ? 0 : idx + 1;
+    necField.push({ carIdx, progress, lastLap: lap + i * 0.4 + (i % 3) * 0.2, bestLap: lap - 3 + i * 0.35, classId: k + 1, onPitRoad: k === 0 && i === 13 });
+    necInfo.set(carIdx, {
+      number: String(k === 0 && i === 8 ? 60 : 3 + idx * 7 % 180), name: carIdx === 0 ? 'S. Behring' : `${FIRST[idx % FIRST.length]![0]}. ${LAST[idx % LAST.length]}`,
+      country: COUNTRIES[idx % COUNTRIES.length], className, classColor, classSpeed,
+    });
+    necExtra.set(carIdx, {
+      team: carIdx === 0 ? 'Outcast Endurance' : `${LAST[(idx + 5) % LAST.length]} Racing`, car: makes[i % makes.length]!,
+      irating: 1300 + (idx * 733) % 4200, license: { text: `${'ABCD'[idx % 4]} ${(1.5 + (idx * 0.37) % 3).toFixed(2)}`, color: ['#0153db', '#00c702', '#feec04', '#fc8a27'][idx % 4]! },
+      compound: i === 5 ? 'Wet' : 'Hard', classColor,
+    });
+  }
+});
+const necRow = (r: StandingRow): StandingRow => ({ ...r, ...necExtra.get(r.carIdx) });
+const necBest: BestLap[] = necField.map((c) => ({ carIdx: c.carIdx, best: c.bestLap ?? null, lastLap: c.lastLap, classId: c.classId }));
+
 ws.on('open', async () => {
   ws.send(pack({ t: 'hello', v: PROTOCOL_VERSION, token: config.token, role: 'recorder' }));
   await new Promise((r) => setTimeout(r, 300));
@@ -88,11 +129,19 @@ ws.on('open', async () => {
       send({
         t: 'standings', sessionTime: 5000 + i / 2, mode: 'best', session: 'Qualifying',
         rows: computeBestStandings(QUALI, 6, QUALI_INFO).map((r) => ({ ...r, ...extra(r.carIdx) })), projection: bestProjection(QUALI, 6, QUALI_INFO, lapTime) ?? undefined,
+        relative: relativeRows(necField, 0, necInfo, 470, 5).map(necRow),
+        classes: classBestStandings(necBest, 0, necInfo).map((c) => ({ ...c, rows: c.rows.map(necRow) })),
       });
     } else {
       // Duel trend: we close in on #19 (about 2 s per lap), #88 drops back.
       const moving = rows.map((r) => (r.pos === 8 ? { ...r, gap: 2.9 - i * 0.002 } : r.pos === 10 ? { ...r, gap: -0.8 - i * 0.001 } : r));
-      send({ t: 'standings', sessionTime: 5000 + i / 2, rows: moving, lapping, between });
+      // Relative and class standings from the recorder's own functions over the NEC-like field.
+      const field = necField.map((c) => ({ ...c, progress: c.progress + (c.carIdx % 3 - 1) * i * 0.00002 }));
+      send({
+        t: 'standings', sessionTime: 5000 + i / 2, rows: moving, lapping, between,
+        relative: relativeRows(field, 0, necInfo, 470, 5, (c) => (c * 7) % 23).map(necRow),
+        classes: classStandings(field, 0, necInfo, (c) => (c * 7) % 23).map((c) => ({ ...c, rows: c.rows.map(necRow) })),
+      });
     }
     send({
       t: 'pitplan', sessionTime: 5000 + i / 2, fuel: 86, fuelTime: 34.4, tyres: 4, tyreTime: 16, repair: 0, optRepair: 0,
