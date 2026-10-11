@@ -2,6 +2,15 @@
 
 Alle veröffentlichten Versionen, neueste zuerst. Installer und Updates: [GitHub Releases](https://github.com/ToyYoda/stintview/releases) – die App aktualisiert sich selbst.
 
+## 0.23.0 – 11.10.2026
+
+- **Zwei Konfigurationen: Fahren und Zuschauen.** Als Fahrer auf das Nötigste reduzieren, als Spotter mehr sehen – jede Konfiguration hat ihre eigene Ausgabe (Monitor oder VR), Panelauswahl, Größen, Spalten und deren Reihenfolge, Transparenz und Positionen der Panels.
+  - **Automatisch:** im Auto gilt „Fahren“, sonst „Zuschauen“ (nach dem Aussteigen mit 5 s Verzögerung, damit ein Reset in der Box nicht hin und her schaltet).
+  - **Festhalten:** im StintView-Fenster (Reiter Anzeigen, oben bei Konfiguration), im Menü des Symbols oder mit **Strg+Umschalt+P** (wechselt zur anderen und hält sie fest).
+  - **Einstellen:** im Reiter Anzeigen bei „Bearbeiten“ die Konfiguration wählen – alles darunter gilt für diese; „Anzeigen verschieben“ zeigt dabei die gewählte.
+  - Deine bisherigen Einstellungen werden beim ersten Start in beide übernommen.
+- Der **Stintplaner** ist vorerst aus der App ausgeblendet – er wird noch überarbeitet.
+
 ## 0.22.1 – 11.10.2026
 
 - **Spalten auswählen und verschieben – jetzt auch in Relative und Wertung:** im StintView-Fenster unter **Anzeigen** das Panel aufklappen, Spalten an- oder abhaken und die Reihenfolge am Griff ⠿ ziehen – wie beim Positions-Panel.
