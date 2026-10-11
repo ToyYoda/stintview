@@ -3,8 +3,9 @@
   --panel-alpha: 0.78;
   --panel: rgba(12, 14, 18, var(--panel-alpha));
   --border: rgba(255, 255, 255, 0.1);
-  --text: #e8e8e8;
-  --muted: #8a93a0;
+  /* All text white, also secondary text (wish 11.10.2026: no grey text on the panels). */
+  --text: #ffffff;
+  --muted: #ffffff;
   --accent: #ffb000;
   --ok: #3ddc84;
   --warn: #ffb000;
@@ -57,7 +58,7 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .camera-bar { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
 .cam-actions { display: flex; gap: 8px; }
 .cam-actions .cam-btn { min-width: 110px; }
-.cam-btn:disabled { background: #3a3a3a; color: #8a8a8a; cursor: default; }
+.cam-btn:disabled { background: #3a3a3a; color: #fff; cursor: default; }
 .cam-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .cam-flag { background: #ffd400; color: #000; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 10px; border-radius: 3px; }
 .cam-row.yellow.live .cam-flag { animation: cam-blink 0.8s steps(2, jump-none) infinite; }
@@ -130,13 +131,13 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .st-lic { display: inline-block; font-family: var(--mono); font-size: 11px; font-weight: 700; padding: 0 4px; border-radius: 3px; white-space: nowrap; }
 .st-compound { text-align: center; width: 30px; }
 .st-team { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 0.9em; }
-.st-make { width: 28px; text-align: center; color: #e8e8e8; }
+.st-make { width: 28px; text-align: center; color: #fff; }
 .car-make { width: 22px; height: 22px; vertical-align: middle; display: inline-block; }
 .car-make-text { font-size: 9.5px; font-weight: 700; letter-spacing: 0.02em; color: var(--muted); }
 .st-compound-chip { display: inline-block; width: 18px; height: 18px; line-height: 15px; border-radius: 50%; border: 2px solid; font-size: 10.5px; font-weight: 800; text-align: center; }
 .st-compound-chip.soft { border-color: #ff4d4d; color: #ff4d4d; }
 .st-compound-chip.medium { border-color: #ffd23f; color: #ffd23f; }
-.st-compound-chip.hard, .st-compound-chip.other { border-color: #e8e8e8; color: #e8e8e8; }
+.st-compound-chip.hard, .st-compound-chip.other { border-color: #fff; color: #fff; }
 .st-compound-chip.wet { border-color: #4da3ff; color: #4da3ff; }
 .st-delta.slower { color: var(--bad); }
 .st-delta.faster { color: var(--ok); }
@@ -146,7 +147,7 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .pit-total { display: flex; align-items: baseline; gap: 10px; }
 .pit-total .big { white-space: nowrap; flex: none; }
 .pit-parts { color: var(--muted); font-size: 12px; display: flex; flex-direction: column; }
-.pit-note { font-size: 10.5px; opacity: 0.85; }
+.pit-note { font-size: 10.5px; }
 .pit-service { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12.5px; margin: 4px 0 8px; }
 .pit-service .muted, .pit-verdict .muted { color: var(--muted); }
 .pit-service .warn { color: var(--warn); }
@@ -245,7 +246,7 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 .color-green { --msg: var(--ok); }
 .color-blue { --msg: var(--cold); }
 .color-purple { --msg: #b07cff; }
-.color-white { --msg: #e8e8e8; }
+.color-white { --msg: #fff; }
 
 /* Messages panel: the current message, large, for 10 s */
 .msg-panel { width: 360px; display: flex; flex-direction: column; gap: 4px; }
@@ -280,8 +281,8 @@ body { color: var(--text); font: 13px/1.3 system-ui, 'Segoe UI', sans-serif; use
 [data-brand="backseat"] {
   --panel: rgba(17, 18, 20, var(--panel-alpha));
   --border: rgba(242, 242, 238, 0.1);
-  --text: #f2f2ee;
-  --muted: #a9abaf;
+  --text: #ffffff;
+  --muted: #ffffff;
   --accent: #ffd60a;
   --warn: #ffd60a;
   --bad: #ff3b30;

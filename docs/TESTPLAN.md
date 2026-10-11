@@ -137,7 +137,7 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 |---|---|---|---|---|
 | 4b.1 | Z | Anzeige **Position** beobachten, während A überholt/überholt wird | Reihenfolge ändert sich sofort beim Überholen (nicht erst an der Ziellinie); P1–3 + 3 vor/hinter A | |
 | 4b.2 | Z | Δ-Spalte nach einer Runde | rot/+ bei Autos, die schneller waren als A, grün/− bei langsameren; A's Zeile zeigt A's letzte Rundenzeit | |
-| 4b.4 | Z | Spalte **Abstand** mit iRacings Relative (F3) vergleichen | ± ca. 0,5 s gleich; überrundete Autos als „−1 R“ (blau); unter 1 s gelb (vor A) / rot (hinter A), über 3 s grau | |
+| 4b.4 | Z | Spalte **Abstand** mit iRacings Relative (F3) vergleichen | ± ca. 0,5 s gleich; überrundete Autos als „−1 R“ (blau); unter 1 s gelb (vor A) / rot (hinter A), über 3 s ohne Kachel; alle Texte weiß, keine graue Schrift | |
 | 4b.5 | Z | Spalte **Reifen** nach einem Boxenstopp eines Gegners bzw. von A | Gegner: zählt ab Boxenausfahrt ab 0; „Box“ während er in der Boxengasse ist; A's Zeile springt nach Reifenwechsel auf 0 | |
 | 4b.6 | Z | Flaggen vor den Namen mit iRacings Fahrerliste vergleichen | gleiche Länder; Fahrer ohne Land („Global“) ohne Flagge | |
 | 4b.6b | alle | Positions-Panel im Rennen: Spalten Automarke, Team, iR, SR, Reifen | im Teamrennen Teamnamen wie in iRacing, in einem Rennen ohne Teams keine Spalte „Team“; Embleme passen zu den Autos (Mercedes = AMG, Dallara/Ligier als Kürzel); iRating und Lizenz („A 3.45“, Lizenzfarbe) passen zu iRacings Fahrerliste; Reifen H/W bzw. S/M wie im Auto (nach einem Wechsel auf Regenreifen W in Blau); Spalten in den Panel-Einstellungen abwählbar | |

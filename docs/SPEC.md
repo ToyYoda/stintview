@@ -161,6 +161,8 @@ Sonstiges: Der Shared-Memory-Bereich existiert auch, wenn nur die iRacing-UI lä
 - Getestet auf Bigscreen Beyond 2e: flackerfrei, ~32 Uploads/s. Quest ohne SteamVR: nicht unterstützt (Alternative OpenKneeboard mit `#/widget/<id>`).
 - Platzierung per Tastatur: Strg+Umschalt+V (Panel wählen), +Pfeile, +Bild↑/↓, +Plus/Minus, +H.
 
+**Schrift in den Panels (seit 0.21.2, Wunsch 11.10.2026):** alle Texte weiß, auch Nebentexte (Titel, Spaltenköpfe, Einheiten, Hinweise, Teamnamen, Abstand > 3 s) – `--text` und `--muted` in `styles.css` beide `#fff` (auch Backseat Racer), Eingaben-Diagramm ebenso. Hervorhebung nur noch über Farbe (gelb/rot/grün/blau), Größe und Fettdruck; graue Flächen (Box-Runden-Balken, deaktivierte Knöpfe) bleiben.
+
 ## 7. Bedienung Monitor-Overlay
 
 - iRacing muss im **randlosen Fenster** laufen.

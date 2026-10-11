@@ -6,7 +6,7 @@ const WIDTH = 420;
 const HEIGHT = 150;
 const TRACE_SECONDS = 5;
 const TRACE_W = 300;
-const COLORS = { throttle: '#3ddc84', brake: '#ff4d4d', steer: '#e8e8e8', grid: 'rgba(255,255,255,0.12)', text: '#e8e8e8', muted: '#8a93a0' };
+const COLORS = { throttle: '#3ddc84', brake: '#ff4d4d', steer: '#ffffff', grid: 'rgba(255,255,255,0.12)', text: '#ffffff', muted: '#ffffff' };
 
 /** Live steering, throttle and brake: scrolling trace, pedal bars and a steering wheel. */
 export function InputsWidget({ inputs }: { inputs: InputBuffer }) {
