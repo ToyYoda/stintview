@@ -2,6 +2,11 @@
 
 Alle veröffentlichten Versionen, neueste zuerst. Installer und Updates: [GitHub Releases](https://github.com/ToyYoda/stintview/releases) – die App aktualisiert sich selbst.
 
+## 0.24.0 – 11.10.2026
+
+- **Monitor-Overlay schneller – vor allem mit Triple-Screens:** Jedes Panel hat jetzt sein eigenes kleines Fenster statt eines großen Fensters über alle Monitore. Das große Fenster konnte iRacing ausbremsen (mit Triple-Screens z. B. nur 60 fps). Panels ohne Inhalt verschwinden ganz.
+- Verschieben und Größe ändern wie gewohnt über „Anzeigen verschieben“: das Panel mit der Maus ziehen, die Größe am gelben Griff unten rechts, oben auf „Fertig“ klicken. Deine bisherigen Positionen werden übernommen.
+
 ## 0.23.1 – 11.10.2026
 
 - **Relative repariert:** Autos, die noch nicht über die Startlinie gefahren waren (Out-Lap aus der Box, vor dem Start), fehlten – auch das eigene, deshalb anfangs „Noch keine Daten“, später Autos weiter vorn statt der nächsten. Jetzt sind alle dabei.
