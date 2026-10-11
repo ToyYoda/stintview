@@ -315,6 +315,19 @@ describe('Relative and class standings', () => {
     expect(rows.find((r) => r.carIdx === 5)!.gap).toBeCloseTo(-5);
   });
 
+  it('relative: a car not over the start line yet is placed by track position only, no lap status', () => {
+    // as live on 11.10.2026: we just past the line (lap 0, 0.006), car 9 with lap count −1 at
+    // 0.91 – 9.6 % of a lap behind us on track, not a lap up
+    const field = [at(0, 0.006, 1), { ...at(9, 0.91, 1), notStarted: true }];
+    const r = relativeRows(field, 0, info, 100, 5).find((x) => x.carIdx === 9)!;
+    expect(r.lap).toBeUndefined();
+    expect(r.gap).toBeCloseTo(-9.6);
+  });
+
+  it('relative: no lap status outside races', () => {
+    expect(relativeRows(cars, 0, info, 100, 2, () => null, false).some((r) => r.lap)).toBe(false);
+  });
+
   it('class standings: fastest class first, gap to the class leader in s or laps', () => {
     const classes = classStandings(cars, 0, info, () => null, 1, 1);
     expect(classes.map((c) => [c.name, c.own, c.best])).toEqual([['GT3', true, 97], ['GT4', false, 109]]);

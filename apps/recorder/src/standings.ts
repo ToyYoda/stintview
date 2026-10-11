@@ -10,6 +10,8 @@ export interface CarProgress {
   lastLap: number | null;
   /** Best lap time in seconds (CarIdxBestLapTime), null if none yet. */
   bestLap?: number | null;
+  /** Lap count still −1: not over the start line yet (out of the pits, before the start). */
+  notStarted?: boolean;
   classId: number;
   /** iRacing's estimate of the time from the start/finish line to the car's current spot, null if unknown. */
   estTime?: number | null;
@@ -86,6 +88,14 @@ export function trackGap(
 }
 
 /**
+ * Lap time to convert distances and whole laps: the car's last lap, before its first one iRacing's
+ * estimated lap of its class (gaps stayed empty until we had completed a lap, 11.10.2026).
+ */
+export function lapRefOf(c: CarProgress | undefined): number | null {
+  return c?.lastLap ?? c?.estLap ?? null;
+}
+
+/**
  * Running order on track (not iRacing's once-per-lap official position), within the team
  * car's class when there are several classes. Returns P1–P`top` plus `around` cars ahead of
  * and behind the team car, without duplicates, in position order.
@@ -103,7 +113,7 @@ export function computeStandings(
   const wanted = new Set<number>();
   for (let i = 0; i < Math.min(top, field.length); i++) wanted.add(i);
   for (let i = Math.max(0, at - around); i <= Math.min(field.length - 1, at + around); i++) wanted.add(i);
-  const lapRef = team.lastLap;
+  const lapRef = lapRefOf(team);
   return [...wanted].sort((a, b) => a - b).map((i) => {
     const c = field[i]!;
     const d = info.get(c.carIdx);
@@ -187,11 +197,13 @@ export function classPositions(cars: CarProgress[]): Map<number, number> {
 /**
  * Relative panel: the `n` cars nearest in front of and behind us on track – any class, also in
  * the pits – and our own row, front first. pos = position in the car's class; gap = seconds on
- * track (+ in front); lap = 'backmarker' a lap or more down on us, 'lapper' a lap or more up.
+ * track (+ in front); in races lap = 'backmarker' a lap or more down on us, 'lapper' a lap or
+ * more up (practice/qualifying: no lap status – everyone drives a different number of laps).
+ * A car (or we) not over the start line yet has no comparable lap count: only its place on track counts.
  */
 export function relativeRows(
   cars: CarProgress[], teamIdx: number, info: Map<number, CarInfo>, lapRef: number | null, n = 5,
-  tyreLaps: (carIdx: number) => number | null = () => null,
+  tyreLaps: (carIdx: number) => number | null = () => null, race = true,
 ): StandingRow[] {
   const team = cars.find((c) => c.carIdx === teamIdx);
   if (!team) return [];
@@ -199,14 +211,17 @@ export function relativeRows(
   const near = cars.filter((c) => c.carIdx !== teamIdx).map((c) => {
     const diff = c.progress - team.progress;
     const laps = Math.round(diff);
-    return { c, o: diff - laps, laps }; // o: physical offset in laps, -0.5..0.5
+    const o = diff - laps; // physical offset in laps, -0.5..0.5
+    // Lap count not comparable: the car as if on our lap, at its place on track.
+    if (c.notStarted || team.notStarted) return { c: { ...c, progress: team.progress + o }, o, laps: 0 };
+    return { c, o, laps };
   });
   const ahead = near.filter((x) => x.o > 0).sort((a, b) => a.o - b.o).slice(0, n).reverse();
   const behind = near.filter((x) => x.o <= 0).sort((a, b) => b.o - a.o).slice(0, n);
   const row = (x: { c: CarProgress; o: number; laps: number }): StandingRow => ({
     ...physicalRow(x.c, team, x.o, x.laps, info, lapRef, tyreLaps),
     pos: pos.get(x.c.carIdx) ?? 0, inPit: x.c.onPitRoad ?? false,
-    ...(x.laps < 0 ? { lap: 'backmarker' as const } : x.laps > 0 ? { lap: 'lapper' as const } : {}),
+    ...(race && x.laps < 0 ? { lap: 'backmarker' as const } : race && x.laps > 0 ? { lap: 'lapper' as const } : {}),
   });
   const d = info.get(teamIdx);
   const own: StandingRow = {
@@ -259,7 +274,7 @@ export function classStandings(
       return {
         pos: i + 1, carIdx: c.carIdx, number: d?.number ?? '?', name: d?.name ?? '', country: d?.country ?? null,
         lastLap: c.lastLap, bestLap: c.bestLap ?? null, isTeam: c.carIdx === teamIdx,
-        gap: i === 0 ? 0 : down >= 1 ? null : trackGap(leader, c, c.lastLap ?? leader.lastLap),
+        gap: i === 0 ? 0 : down >= 1 ? null : trackGap(leader, c, lapRefOf(c) ?? lapRefOf(leader)),
         lapsGap: down ? -down : 0, tyreLaps: tyreLaps(c.carIdx), inPit: c.onPitRoad ?? false,
       };
     });
@@ -339,13 +354,17 @@ export function readProgress(f: Frame, estLap: (carIdx: number) => number | null
   for (let i = 0; i < n; i++) {
     const pct = f.num('CarIdxLapDistPct', i);
     const laps = f.num('CarIdxLapCompleted', i);
-    if (!(pct >= 0) || !(laps >= 0)) continue;
+    // Not in the world: pct −1. Lap count −1 = not over the start line yet (race start, out of the
+    // pits): counts as lap 0 – these cars were left out before (Relative showed cars further
+    // ahead instead of the nearest ones, 11.10.2026).
+    if (!(pct >= 0) || !(laps >= -1)) continue;
     const last = f.has('CarIdxLastLapTime') ? f.num('CarIdxLastLapTime', i) : -1;
     const best = f.has('CarIdxBestLapTime') ? f.num('CarIdxBestLapTime', i) : -1;
     const est = hasEst ? f.num('CarIdxEstTime', i) : -1;
     out.push({
       carIdx: i,
-      progress: laps + pct,
+      progress: Math.max(0, laps) + pct,
+      notStarted: laps < 0,
       lastLap: last > 0 ? last : null,
       bestLap: best > 0 ? best : null,
       classId: f.has('CarIdxClass') ? f.num('CarIdxClass', i) : 0,
@@ -596,9 +615,9 @@ export class StandingsTracker {
     const laps = new Map(cars.map((c) => [c.carIdx, Math.floor(c.progress)]));
     const ownTyres = this.ownTyreLaps(f);
     const tyreLaps = (idx: number) => (idx === teamIdx && ownTyres !== null ? ownTyres : this.pits.laps(idx, laps.get(idx) ?? 0));
-    const lapRef = cars.find((c) => c.carIdx === teamIdx)?.lastLap ?? null;
+    const lapRef = lapRefOf(cars.find((c) => c.carIdx === teamIdx));
     // Relative panel: on track, in every session.
-    const relative = this.decorate(f, relativeRows(cars, teamIdx, this.info, lapRef, 5, tyreLaps));
+    const relative = this.decorate(f, relativeRows(cars, teamIdx, this.info, lapRef, 5, tyreLaps, !bestMode));
     const decorateClasses = (cs: ClassStandings[]) => cs.map((c) => ({ ...c, rows: this.decorate(f, c.rows) }));
     if (bestMode) {
       // iRacing's official ranking (valid laps only) once the session has results, telemetry until then.
