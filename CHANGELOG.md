@@ -2,6 +2,13 @@
 
 Alle veröffentlichten Versionen, neueste zuerst. Installer und Updates: [GitHub Releases](https://github.com/ToyYoda/stintview/releases) – die App aktualisiert sich selbst.
 
+## 0.22.1 – 11.10.2026
+
+- **Spalten auswählen und verschieben – jetzt auch in Relative und Wertung:** im StintView-Fenster unter **Anzeigen** das Panel aufklappen, Spalten an- oder abhaken und die Reihenfolge am Griff ⠿ ziehen – wie beim Positions-Panel.
+- **Ziehen der Spalten repariert:** Die Reihenfolge ließ sich mit der Maus nicht ändern – die Zeile kam beim Ziehen nicht mit (auch beim Positions-Panel). Jetzt folgt sie dem Mauszeiger, eine rote Linie zeigt, wo sie landet.
+- **Positions-Panel: Klassenfarbe** als schmaler Balken direkt nach der Position – hilfreich bei Nachzüglern und Überrundern aus anderen Klassen. Wer die Spalten schon umsortiert hat, findet sie ebenfalls hinter der Position.
+- Website: Bild des Positions-Panels mit der neuen Spalte.
+
 ## 0.22.0 – 11.10.2026
 
 - **Neues Panel „Relative“:** die je 5 Autos vor und hinter dir auf der Strecke – alle Klassen, auch in der Box. Ein schmaler Balken in der Klassenfarbe zeigt die Klasse, dazu Position in der Klasse, Nummer, Marke, Flagge, Team (nur in Teamrennen), Fahrer, iRating, Safety Rating und fett der Abstand auf der Strecke: grün vor dir, rot hinter dir. Autos eine Runde oder mehr zurück stehen in blauen Zeilen, Autos eine Runde oder mehr voraus in roten.
