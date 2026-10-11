@@ -2,6 +2,14 @@
 
 Alle veröffentlichten Versionen, neueste zuerst. Installer und Updates: [GitHub Releases](https://github.com/ToyYoda/stintview/releases) – die App aktualisiert sich selbst.
 
+## 0.24.1 – 11.10.2026
+
+- **Stint:** zeigt jetzt, die wievielte Runde seit dem Boxenstopp gerade gefahren wird – die erste Runde nach dem Stopp ist „1“ (vorher die abgeschlossenen Runden, eine zu wenig).
+- **Boxenstopp-Panel:** Die Zeit für die Boxengasse schwankt während des Rennens nicht mehr. Autos, die in der Box auftauchen (Zurücksetzen, Start aus der Boxengasse), lieferten viel zu kurze Messwerte; die zählen nicht mehr, auch schon gespeicherte nicht.
+- **Wertung:** zeigt jetzt alle Fahrer jeder Klasse.
+- **Relative und Positions-Panel:** neue Zeile unten mit der Runde („Runde 12 von 30“ bei Rennen über eine Rundenzahl) und der verbleibenden Zeit der Session.
+- **Ohne Fahrer im Team** – z. B. nach dem Qualifying oder beim Zuschauen – rechnet dein eigenes iRacing Wertung, Position, Relative, Duell und „Unfall voraus“ weiter. Bist du im Rennen nicht eingeschrieben, folgen die Anzeigen dem Auto, das deine iRacing-Kamera zeigt. Sprit, Reifen und Boxenstopp gibt es weiterhin nur vom Fahrer.
+
 ## 0.24.0 – 11.10.2026
 
 - **Monitor-Overlay schneller – vor allem mit Triple-Screens:** Jedes Panel hat jetzt sein eigenes kleines Fenster statt eines großen Fensters über alle Monitore. Das große Fenster konnte iRacing ausbremsen (mit Triple-Screens z. B. nur 60 fps). Panels ohne Inhalt verschwinden ganz.
