@@ -13,7 +13,7 @@ const settingsPath = path.join(dataDir, 'app.json');
 const logDir = path.join(dataDir, 'logs');
 
 /** Columns of the Position panel that can be switched off. */
-const STANDINGS_COLUMNS = ['pos', 'num', 'flag', 'make', 'name', 'team', 'irating', 'sr', 'best', 'gap', 'tyre', 'compound', 'delta'];
+const STANDINGS_COLUMNS = ['pos', 'class', 'num', 'flag', 'make', 'name', 'team', 'irating', 'sr', 'best', 'gap', 'tyre', 'compound', 'delta'];
 /** Columns of the Relative and class standings panels (since 0.22.1: selectable and movable as well). */
 const RELATIVE_COLUMNS = ['class', 'pos', 'num', 'make', 'flag', 'team', 'name', 'irating', 'sr', 'gap'];
 const CLASSES_COLUMNS = ['pos', 'class', 'gap', 'num', 'make', 'team', 'flag', 'name', 'irating', 'sr', 'fastest', 'last', 'tyre', 'compound'];
@@ -168,12 +168,20 @@ function cleanPanels(p, legacyOutput = 'monitor') {
   return out;
 }
 
-/** Shown columns and their order; known columns in the saved order, new ones appended in their default order. */
+/**
+ * Shown columns and their order: known columns in the saved order; a column the saved order
+ * doesn't have yet (added in a newer version) goes right after the column it follows by default.
+ */
 function cleanColumns(list, o, d) {
   const columns = {};
   for (const c of list) columns[c] = typeof o?.columns?.[c] === 'boolean' ? o.columns[c] : d.columns[c];
-  const saved = Array.isArray(o?.order) ? o.order.filter((c) => list.includes(c)) : [];
-  return { columns, order: [...new Set([...saved, ...list])] };
+  const order = Array.isArray(o?.order) ? [...new Set(o.order.filter((c) => list.includes(c)))] : [];
+  list.forEach((c, i) => {
+    if (order.includes(c)) return;
+    const after = i === 0 ? -1 : order.indexOf(list[i - 1]);
+    order.splice(after + 1, 0, c);
+  });
+  return { columns, order };
 }
 
 function cleanOptions(id, o) {
