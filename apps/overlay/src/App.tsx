@@ -11,7 +11,7 @@ import { RelativeWidget } from './widgets/RelativeWidget.tsx';
 import { ClassStandingsWidget } from './widgets/ClassStandingsWidget.tsx';
 import { MessagesWidget } from './widgets/MessagesWidget.tsx';
 import { RadioWidget } from './widgets/RadioWidget.tsx';
-import type { DuelOptions, PanelConfig, StandingsOptions } from './feed.ts';
+import type { ClassesColumn, ColumnOptions, DuelOptions, PanelConfig, RelativeColumn, StandingsOptions } from './feed.ts';
 import { setLang, t, useLang } from './i18n.ts';
 import { PitWidget } from './widgets/PitWidget.tsx';
 
@@ -89,8 +89,8 @@ export function App() {
     weather: <WeatherWidget weather={state.weather} />,
     standings: <StandingsWidget standings={state.standings} options={config?.standings?.options as StandingsOptions | null | undefined} />,
     duel: <DuelWidget standings={state.standings} options={config?.duel?.options as DuelOptions | null | undefined} />,
-    relative: <RelativeWidget standings={state.standings} />,
-    classes: <ClassStandingsWidget standings={state.standings} />,
+    relative: <RelativeWidget standings={state.standings} options={config?.relative?.options as ColumnOptions<RelativeColumn> | null | undefined} />,
+    classes: <ClassStandingsWidget standings={state.standings} options={config?.classes?.options as ColumnOptions<ClassesColumn> | null | undefined} />,
     // Not shown in practice/qualifying, except while moving panels (so it can be placed).
     pitstop: isPracticeOrQuali(state) && !edit ? null : <PitWidget plan={state.pitplan} />,
     // Empty without a current message; a placeholder while moving panels, so it can be placed.

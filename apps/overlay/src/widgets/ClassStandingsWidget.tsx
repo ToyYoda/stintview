@@ -1,80 +1,93 @@
+import type { ReactNode } from 'react';
 import type { ClassStandings, StandingRow, Standings } from '@stintview/protocol';
 import { t } from '../i18n.ts';
 import { Flag } from './gaps.tsx';
 import { CarMake } from './carMake.tsx';
-import { ClassBar } from './RelativeWidget.tsx';
+import { ClassBar, columnOrder } from './RelativeWidget.tsx';
 import { Compound, lapTime, License, rating } from './StandingsWidget.tsx';
+import type { ClassesColumn, ColumnOptions } from '../feed.ts';
+
+/** Default column order; the StintView window can change it and switch columns off. */
+export const CLASSES_COLUMNS: ClassesColumn[] = ['pos', 'class', 'gap', 'num', 'make', 'team', 'flag', 'name', 'irating', 'sr', 'fastest', 'last', 'tyre', 'compound'];
+
+/** Column headings (empty for the narrow ones). */
+const HEAD: Record<ClassesColumn, string> = {
+  pos: 'st.col.pos', class: '', gap: 'cls.col.gap', num: 'st.col.num', make: '', team: 'st.col.team', flag: '',
+  name: 'st.col.name', irating: 'st.col.irating', sr: 'st.col.sr', fastest: 'cls.col.fastest', last: 'cls.col.last',
+  tyre: 'st.col.tyre', compound: 'st.col.compound',
+};
 
 /**
  * Standings by class (fastest class first): P1–P3 of every class, in ours also the cars around
  * us. Gap = behind the class leader (seconds on the same lap, else laps). Fastest lap purple
  * when it is the class's best, last lap green when it is that driver's best. Stint = laps
  * since the last pit stop. Practice/qualifying: by best lap, gap = best − the leader's best.
- * Team column only in team races.
+ * Team column only in team races. Columns can be switched off and moved in the StintView window.
  */
-export function ClassStandingsWidget({ standings }: { standings: Standings | null }) {
+export function ClassStandingsWidget({ standings, options }: { standings: Standings | null; options?: ColumnOptions<ClassesColumn> | null }) {
   const classes = standings?.classes ?? [];
   const best = standings?.mode === 'best';
   const teamRace = classes.some((c) => c.rows.some((r) => r.team));
+  // Stint only in races; team only in team races.
+  const cols = columnOrder(CLASSES_COLUMNS, options)
+    .filter((c) => (options?.columns[c] ?? true) && (c !== 'team' || teamRace) && (c !== 'tyre' || !best));
   return (
     <div className="panel standings classes">
       <div className="title">
         {best ? t('cls.bestTitle', { session: t(`st.session.${standings?.session ?? 'Training'}`) }) : t('cls.title')}
-        {!best && <span className="hint">{t('st.tyreHint')}</span>}
+        {cols.includes('tyre') && <span className="hint">{t('st.tyreHint')}</span>}
       </div>
       {classes.length === 0 ? (
         <div className="label">{t('st.noData')}</div>
       ) : (
         // One table for all classes, so the columns line up.
         <table>
-          {classes.map((c) => <ClassRows key={c.classId} cls={c} best={best} teamRace={teamRace} />)}
+          {classes.map((c) => <ClassRows key={c.classId} cls={c} best={best} cols={cols} />)}
         </table>
       )}
     </div>
   );
 }
 
-function ClassRows({ cls, best, teamRace }: { cls: ClassStandings; best: boolean; teamRace: boolean }) {
-  const cols = 12 + (teamRace ? 1 : 0) + (best ? 0 : 1);
+function ClassRows({ cls, best, cols }: { cls: ClassStandings; best: boolean; cols: ClassesColumn[] }) {
   return (
     <tbody>
       <tr className="cls-head-row">
-        <td colSpan={cols} style={{ borderColor: cls.color }}>
+        <td colSpan={cols.length} style={{ borderColor: cls.color }}>
           <span className="cls-name" style={{ background: cls.color, color: textOn(cls.color) }}>{cls.name}</span>
         </td>
       </tr>
       <tr className="cls-cols">
-        <th className="th-pos">{t('st.col.pos')}</th><th />
-        <th className="th-gap">{t('cls.col.gap')}</th>
-        <th className="th-num">{t('st.col.num')}</th><th /><th />
-        {teamRace && <th className="th-team">{t('st.col.team')}</th>}
-        <th className="th-name">{t('st.col.name')}</th>
-        <th>{t('st.col.irating')}</th><th className="th-sr">{t('st.col.sr')}</th>
-        <th>{t('cls.col.fastest')}</th><th>{t('cls.col.last')}</th>
-        {!best && <th>{t('st.col.tyre')}</th>}
-        <th className="th-compound">{t('st.col.compound')}</th>
+        {cols.map((c) => <th key={c} className={`th-${c}`}>{HEAD[c] ? t(HEAD[c]) : ''}</th>)}
       </tr>
-      {cls.rows.map((r, i) => (
-        <tr key={r.carIdx} className={[r.isTeam ? 'team' : '', i > 0 && r.pos !== cls.rows[i - 1]!.pos + 1 ? 'gap' : ''].join(' ')}>
-          <td className="st-pos">{r.pos}</td>
-          <ClassBar color={r.classColor ?? cls.color} />
-          <td className="cls-gap">{gapToLeader(r, best)}</td>
-          <td className="st-num">#{r.number}</td>
-          <td className="st-make">{r.car ? <CarMake car={r.car} /> : ''}</td>
-          <td className="st-flag-cell"><Flag country={r.country} /></td>
-          {teamRace && <td className="st-team">{r.team ?? ''}</td>}
-          <td className="st-name">
-            {r.name}
-            {r.inPit && <span className="st-lap-tag">{t('st.box')}</span>}
-          </td>
-          <td className="st-ir">{rating(r.irating)}</td>
-          <td className="st-sr">{r.license ? <License {...r.license} /> : '–'}</td>
-          <td className={`cls-lap${r.bestLap && r.bestLap === cls.best ? ' class-best' : ''}`}>{r.bestLap ? lapTime(r.bestLap) : '–'}</td>
-          <td className={`cls-lap${r.lastLap && r.lastLap === r.bestLap ? ' personal-best' : ''}`}>{r.lastLap ? lapTime(r.lastLap) : '–'}</td>
-          {!best && <td className="st-tyre">{r.inPit ? t('st.box') : r.tyreLaps ?? '–'}</td>}
-          <td className="st-compound">{r.compound ? <Compound name={r.compound} /> : '–'}</td>
-        </tr>
-      ))}
+      {cls.rows.map((r, i) => {
+        const cells: Record<ClassesColumn, ReactNode> = {
+          pos: <td key="pos" className="st-pos">{r.pos}</td>,
+          class: <ClassBar key="class" color={r.classColor ?? cls.color} />,
+          gap: <td key="gap" className="cls-gap">{gapToLeader(r, best)}</td>,
+          num: <td key="num" className="st-num">#{r.number}</td>,
+          make: <td key="make" className="st-make">{r.car ? <CarMake car={r.car} /> : ''}</td>,
+          team: <td key="team" className="st-team">{r.team ?? ''}</td>,
+          flag: <td key="flag" className="st-flag-cell"><Flag country={r.country} /></td>,
+          name: (
+            <td key="name" className="st-name">
+              {r.name}
+              {r.inPit && <span className="st-lap-tag">{t('st.box')}</span>}
+            </td>
+          ),
+          irating: <td key="irating" className="st-ir">{rating(r.irating)}</td>,
+          sr: <td key="sr" className="st-sr">{r.license ? <License {...r.license} /> : '–'}</td>,
+          fastest: <td key="fastest" className={`cls-lap${r.bestLap && r.bestLap === cls.best ? ' class-best' : ''}`}>{r.bestLap ? lapTime(r.bestLap) : '–'}</td>,
+          last: <td key="last" className={`cls-lap${r.lastLap && r.lastLap === r.bestLap ? ' personal-best' : ''}`}>{r.lastLap ? lapTime(r.lastLap) : '–'}</td>,
+          tyre: <td key="tyre" className="st-tyre">{r.inPit ? t('st.box') : r.tyreLaps ?? '–'}</td>,
+          compound: <td key="compound" className="st-compound">{r.compound ? <Compound name={r.compound} /> : '–'}</td>,
+        };
+        return (
+          <tr key={r.carIdx} className={[r.isTeam ? 'team' : '', i > 0 && r.pos !== cls.rows[i - 1]!.pos + 1 ? 'gap' : ''].join(' ')}>
+            {cols.map((c) => cells[c])}
+          </tr>
+        );
+      })}
     </tbody>
   );
 }

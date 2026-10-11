@@ -1,9 +1,11 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { MESSAGE_COLORS, MESSAGE_MAX_LENGTH, type MessageColor } from '@stintview/protocol';
-import type { AppState, HotkeyGroup, PanelSetting, DuelOptions, RadioState, StandingsColumn, StandingsOptions } from '../feed.ts';
+import type { AppState, ClassesColumn, ColumnOptions, HotkeyGroup, PanelSetting, DuelOptions, RadioState, RelativeColumn, StandingsOptions } from '../feed.ts';
 import { setLang, t, useLang, type Lang } from '../i18n.ts';
 import { brand } from '../brand.ts';
 import { STANDINGS_COLUMNS } from '../widgets/StandingsWidget.tsx';
+import { columnOrder, RELATIVE_COLUMNS } from '../widgets/RelativeWidget.tsx';
+import { CLASSES_COLUMNS } from '../widgets/ClassStandingsWidget.tsx';
 import logoUrl from '../assets/logo-light.webp';
 import wordmarkUrl from '../assets/wordmark-light.webp';
 import './setup.css';
@@ -616,6 +618,18 @@ function PanelList({ panels, onChange }: {
               <Slider label={t('set.size')} value={p.size} min={50} max={200} step={5} onCommit={(size) => update(id, { size })} />
               {id === 'standings' && p.options && <StandingsOptionsForm options={p.options as StandingsOptions} onChange={(options) => update(id, { options })} />}
               {id === 'duel' && p.options && <DuelOptionsForm options={p.options as DuelOptions} onChange={(options) => update(id, { options })} />}
+              {id === 'relative' && p.options && (
+                <div className="panel-options">
+                  <ColumnList all={RELATIVE_COLUMNS} options={p.options as ColumnOptions<RelativeColumn>} onChange={(options) => update(id, { options })}
+                    labels={{ gap: 'set.col.trackGap', pos: 'set.col.classPos' }} />
+                </div>
+              )}
+              {id === 'classes' && p.options && (
+                <div className="panel-options">
+                  <ColumnList all={CLASSES_COLUMNS} options={p.options as ColumnOptions<ClassesColumn>} onChange={(options) => update(id, { options })}
+                    labels={{ gap: 'set.col.leaderGap', pos: 'set.col.classPos' }} />
+                </div>
+              )}
             </div>
           </details>
         );
@@ -624,10 +638,16 @@ function PanelList({ panels, onChange }: {
   );
 }
 
-function StandingsOptionsForm({ options, onChange }: { options: StandingsOptions; onChange(o: StandingsOptions): void }) {
-  const order = [...(options.order ?? []), ...STANDINGS_COLUMNS].filter((c, i, a) => STANDINGS_COLUMNS.includes(c) && a.indexOf(c) === i);
+/**
+ * Columns of a panel: switch each on/off, change the order by dragging (handle ⠿).
+ * `labels`: text key per column where it differs from the shared `set.col.<column>`.
+ */
+function ColumnList<C extends string>({ all, options, onChange, labels = {} }: {
+  all: C[]; options: ColumnOptions<C>; onChange(o: ColumnOptions<C>): void; labels?: Partial<Record<C, string>>;
+}) {
+  const order = columnOrder(all, options);
   // Column being dragged and the place it would drop at (shown as a line).
-  const [dragging, setDragging] = useState<StandingsColumn | null>(null);
+  const [dragging, setDragging] = useState<C | null>(null);
   const [over, setOver] = useState<number | null>(null);
   const drop = (to: number) => {
     if (!dragging) return;
@@ -637,7 +657,7 @@ function StandingsOptionsForm({ options, onChange }: { options: StandingsOptions
   };
   const end = () => { setDragging(null); setOver(null); };
   return (
-    <div className="panel-options">
+    <>
       <div className="options-title">{t('set.columns')} <span className="options-hint">{t('set.columnsDrag')}</span></div>
       <ul className="column-list" onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(null); }}>
         {order.map((c, i) => (
@@ -655,11 +675,19 @@ function StandingsOptionsForm({ options, onChange }: { options: StandingsOptions
             <label>
               <input type="checkbox" checked={options.columns[c] ?? true}
                 onChange={() => onChange({ ...options, columns: { ...options.columns, [c]: !(options.columns[c] ?? true) } })} />
-              {t(`set.col.${c}`)}
+              {t(labels[c] ?? `set.col.${c}`)}
             </label>
           </li>
         ))}
       </ul>
+    </>
+  );
+}
+
+function StandingsOptionsForm({ options, onChange }: { options: StandingsOptions; onChange(o: StandingsOptions): void }) {
+  return (
+    <div className="panel-options">
+      <ColumnList all={STANDINGS_COLUMNS} options={options} onChange={(o) => onChange({ ...options, ...o })} />
       <label className="option-line">
         <input type="checkbox" checked={options.duel} onChange={() => onChange({ ...options, duel: !options.duel })} />
         {t('set.duel')}

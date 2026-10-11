@@ -14,6 +14,12 @@ const logDir = path.join(dataDir, 'logs');
 
 /** Columns of the Position panel that can be switched off. */
 const STANDINGS_COLUMNS = ['pos', 'num', 'flag', 'make', 'name', 'team', 'irating', 'sr', 'best', 'gap', 'tyre', 'compound', 'delta'];
+/** Columns of the Relative and class standings panels (since 0.22.1: selectable and movable as well). */
+const RELATIVE_COLUMNS = ['class', 'pos', 'num', 'make', 'flag', 'team', 'name', 'irating', 'sr', 'gap'];
+const CLASSES_COLUMNS = ['pos', 'class', 'gap', 'num', 'make', 'team', 'flag', 'name', 'irating', 'sr', 'fastest', 'last', 'tyre', 'compound'];
+/** Columns per panel with column options. */
+const PANEL_COLUMNS = { standings: STANDINGS_COLUMNS, relative: RELATIVE_COLUMNS, classes: CLASSES_COLUMNS };
+const allColumns = (list) => ({ columns: Object.fromEntries(list.map((c) => [c, true])), order: list });
 
 /** Per panel: shown or not, size in percent of the normal size, panel-specific options. */
 const PANEL_DEFAULTS = {
@@ -24,13 +30,13 @@ const PANEL_DEFAULTS = {
   weather: { shown: true, size: 100 },
   standings: {
     shown: true, size: 100,
-    options: { columns: Object.fromEntries(STANDINGS_COLUMNS.map((c) => [c, true])), order: STANDINGS_COLUMNS, lapping: true, duel: true },
+    options: { ...allColumns(STANDINGS_COLUMNS), lapping: true, duel: true },
   },
   // Added later: off by default, so it does not suddenly appear on existing overlays.
   duel: { shown: false, size: 100, options: { traffic: true } },
   // Since 0.22: Relative (cars around us on track, all classes) and standings by class.
-  relative: { shown: false, size: 100 },
-  classes: { shown: false, size: 100 },
+  relative: { shown: false, size: 100, options: allColumns(RELATIVE_COLUMNS) },
+  classes: { shown: false, size: 100, options: allColumns(CLASSES_COLUMNS) },
   pitstop: { shown: true, size: 100 },
   // Team messages: received ones (everyone) and buttons to send (hidden while you drive).
   messages: { shown: false, size: 100 },
@@ -162,17 +168,21 @@ function cleanPanels(p, legacyOutput = 'monitor') {
   return out;
 }
 
+/** Shown columns and their order; known columns in the saved order, new ones appended in their default order. */
+function cleanColumns(list, o, d) {
+  const columns = {};
+  for (const c of list) columns[c] = typeof o?.columns?.[c] === 'boolean' ? o.columns[c] : d.columns[c];
+  const saved = Array.isArray(o?.order) ? o.order.filter((c) => list.includes(c)) : [];
+  return { columns, order: [...new Set([...saved, ...list])] };
+}
+
 function cleanOptions(id, o) {
   const d = PANEL_DEFAULTS[id].options;
   if (id === 'standings') {
-    const columns = {};
-    for (const c of STANDINGS_COLUMNS) columns[c] = typeof o?.columns?.[c] === 'boolean' ? o.columns[c] : d.columns[c];
     const flag = (k) => (typeof o?.[k] === 'boolean' ? o[k] : d[k]);
-    // Known columns in the saved order, new ones appended in their default order.
-    const saved = Array.isArray(o?.order) ? o.order.filter((c) => STANDINGS_COLUMNS.includes(c)) : [];
-    const order = [...new Set([...saved, ...STANDINGS_COLUMNS])];
-    return { columns, order, lapping: flag('lapping'), duel: flag('duel') };
+    return { ...cleanColumns(STANDINGS_COLUMNS, o, d), lapping: flag('lapping'), duel: flag('duel') };
   }
+  if (PANEL_COLUMNS[id]) return cleanColumns(PANEL_COLUMNS[id], o, d);
   if (id === 'duel') return { traffic: typeof o?.traffic === 'boolean' ? o.traffic : d.traffic };
   return d;
 }

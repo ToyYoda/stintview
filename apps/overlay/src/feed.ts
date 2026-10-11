@@ -36,7 +36,14 @@ export interface StandingsOptions {
 }
 /** Duel panel: whether cars on another lap between us and the class neighbours are shown. */
 export interface DuelOptions { traffic: boolean }
-export type PanelOptions = StandingsOptions | DuelOptions;
+export type RelativeColumn = 'class' | 'pos' | 'num' | 'make' | 'flag' | 'team' | 'name' | 'irating' | 'sr' | 'gap';
+export type ClassesColumn = 'pos' | 'class' | 'gap' | 'num' | 'make' | 'team' | 'flag' | 'name' | 'irating' | 'sr' | 'fastest' | 'last' | 'tyre' | 'compound';
+/** Relative and class standings panels: which columns, in which order (since 0.22.1). */
+export interface ColumnOptions<C extends string> {
+  columns: Record<C, boolean>;
+  order?: C[];
+}
+export type PanelOptions = StandingsOptions | DuelOptions | ColumnOptions<RelativeColumn> | ColumnOptions<ClassesColumn>;
 
 export interface PanelSetting {
   shown: boolean;
