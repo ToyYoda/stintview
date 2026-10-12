@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { countryCode } from './country.ts';
-import { bestProjection, betweenRows, classBestStandings, focusCar, physicalGap, classStandings, computeBestStandings, relativeRows, computeStandings, isRaceSession, lappingRows, officialBestLaps, parseSessions, PitStopTracker, trackGap, type CarInfo, type CarProgress } from './standings.ts';
+import { bestProjection, betweenRows, classBestStandings, focusCar, physicalGap, classStandings, computeBestStandings, relativeRows, computeStandings, isRaceSession, lappingRows, officialBestLaps, parseSessions, PitStopTracker, RaceField, trackGap, type CarInfo, type CarProgress } from './standings.ts';
 
 const info = new Map<number, CarInfo>(
   Array.from({ length: 20 }, (_, i) => [i, { number: String(i + 1).padStart(2, '0'), name: `Driver ${i}` }]),
@@ -37,6 +37,47 @@ describe('computeStandings', () => {
 
 const car = (progress: number, estTime: number | null, lastLap: number | null = 100): CarProgress =>
   ({ carIdx: 0, progress, lastLap, classId: 0, estTime });
+
+describe('RaceField: cars that finished or left stay in the order', () => {
+  const order = (cars: CarProgress[], team = 2) => computeStandings(cars, team, info, 10, 10).map((r) => r.carIdx);
+  const without = (cars: CarProgress[], ...idx: number[]) => cars.filter((c) => !idx.includes(c.carIdx));
+
+  it('keeps a car that leaves the world during the race at its last place', () => {
+    const rf = new RaceField();
+    rf.update(field([5.5, 5.4, 5.3]), 100, 4);
+    const rows = computeStandings(rf.update(without(field([5.6, 5.5, 5.4]), 0), 101, 4), 2, info);
+    expect(rows.find((r) => r.isTeam)!.pos).toBe(3);
+  });
+
+  it('does not keep cars seen before the race is on', () => {
+    const rf = new RaceField();
+    rf.update(field([0.5, 0.4, 0.3]), 1, 1);
+    expect(rf.update(without(field([0.5, 0.4, 0.3]), 0), 2, 1).map((c) => c.carIdx)).toEqual([1, 2]);
+  });
+
+  it('freezes finishers at the line: the cool-down lap and leaving the car change nothing', () => {
+    const rf = new RaceField();
+    rf.update(field([9.99, 9.95, 9.9]), 100, 4);
+    rf.update(field([10.01, 9.97, 9.92]), 101, 5); // leader over the line as the flag comes out
+    rf.update(field([10.2, 10.02, 9.94]), 110, 5); // car 1 finishes too
+    expect(order(rf.update(field([10.3, 10.6, 9.96]), 140, 6))).toEqual([0, 1, 2]); // car 1 faster on the cool-down lap
+    const after = rf.update(without(field([0, 0, 9.98]), 0, 1), 150, 6); // both out of the car
+    expect(order(after)).toEqual([0, 1, 2]);
+    expect(computeStandings(after, 2, info).find((r) => r.carIdx === 1)!.gap).toBeGreaterThan(0);
+    const done = rf.update(field([0, 0, 10.01]).slice(2), 160, 6);
+    const rows = computeStandings(done, 2, info);
+    expect(rows.map((r) => r.carIdx)).toEqual([0, 1, 2]);
+    expect(rows.find((r) => r.carIdx === 1)!.gap).toBeCloseTo(50); // finish times 110 and 160
+  });
+
+  it('a lapped car finishes on its own lap, behind', () => {
+    const rf = new RaceField();
+    rf.update(field([9.99, 8.5]), 100, 4);
+    rf.update(field([10.01, 8.6]), 101, 5);
+    const out = rf.update(without(field([0, 9.01]), 0), 200, 5);
+    expect(computeStandings(out, 1, info).map((r) => [r.carIdx, r.lapsGap])).toEqual([[0, 1], [1, 0]]);
+  });
+});
 
 describe('trackGap', () => {
   it('uses the time estimate on the same lap', () => {
