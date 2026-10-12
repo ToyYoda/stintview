@@ -214,6 +214,7 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 | 5.2 | alle | Tastenkürzel zum Verschieben (steht im Fenster, z. B. Strg+Umschalt+O oder Strg+Alt+O bei AMD) | wie 5.1 | |
 | 5.2b | alle | Tray-Symbol → **Tastaturkürzel …** | Fenster öffnet mit der Übersicht oben; die Kürzel dort funktionieren (z. B. Verschieben); VR-Gruppe grau, solange VR aus | |
 | 5.2c | alle | StintView-Fenster → Anzeigen → **Hintergrund** auf 0 %, dann 100 %; in VR ca. 40 % (Brille auf) | Hintergrund verschwindet/wird deckend, sofort; VR: Panels halbdurchsichtig, Schrift gut lesbar | |
+| 5.2c2 | alle | Im Rennen Position, Relative und Wertung einige Minuten am Monitor und in VR beobachten (Überholmanöver, Autos in der Box) | Panels blitzen nicht auf und ändern ihre Größe nicht ständig; nach einer breiteren Zeile wird das Panel erst nach einigen Sekunden wieder schmaler | |
 | 5.2d | alle | Panel „Position“ aufklappen: Größe 150 %, Spalten Stint/Flagge abwählen | Panel größer, Spalten verschwinden sofort; auch in VR | |
 | 5.2e | alle | Panel „Position“ aufklappen, Spalte „Δ Runde“ am Griff ⠿ nach oben ziehen, dann „iRating“ ans Ende | rote Linie zeigt die Einfügestelle; das Panel zeigt die Spalten sofort in der neuen Reihenfolge, auch nach Neustart und in VR | |
 | 5.2e | alle | Ausgabe von Monitor auf VR umschalten und zurück | Panels wandern vom Monitor in die Brille und zurück, nie an beiden Orten | |

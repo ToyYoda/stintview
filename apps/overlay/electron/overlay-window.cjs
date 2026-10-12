@@ -9,6 +9,7 @@ const path = require('node:path');
 const { PRELOAD, loadRoute } = require('./renderer.cjs');
 const { brand } = require('./brand.cjs');
 const { dataDir } = require('./config.cjs');
+const { stableSize } = require('./stablesize.cjs');
 
 // Tried in order; the first one no other program holds wins (e.g. AMD Radeon Software
 // takes Ctrl+Shift+O for its metrics overlay).
@@ -195,18 +196,42 @@ function showBanner(on) {
   loadRoute(banner, '/banner');
 }
 
+/** Window size in steps, shrinking late (`stablesize.cjs`); a panel empty this long is hidden. */
+const SIZE_STEP = 16, SHRINK_MS = 5000, HIDE_MS = 1000;
+/** win -> { size, w, h, timer } */
+const sizing = new WeakMap();
+
+function applySize(win) {
+  const s = sizing.get(win);
+  if (!s || win.isDestroyed()) return;
+  clearTimeout(s.timer);
+  s.timer = null;
+  if (!(s.w > 0 && s.h > 0)) {
+    // Empty for a moment (data switching, a re-render) is not worth a hide and show.
+    s.timer = setTimeout(() => { if (!win.isDestroyed() && win.isVisible()) win.hide(); }, HIDE_MS);
+    return;
+  }
+  if (edit) s.size.reset(); // resizing at the handle: follow at once
+  const next = s.size.next(s.w, s.h);
+  if (next) {
+    const [x, y] = win.getPosition();
+    win.setBounds({ x, y, width: next.w, height: next.h });
+    if (win === banner) placeBanner();
+  }
+  const wait = s.size.pending();
+  if (wait !== null) s.timer = setTimeout(() => applySize(win), wait + 50);
+  if (!win.isVisible()) win.showInactive();
+}
+
 /** The page reports its content size (CSS px = DIP); 0 = nothing to show (window hidden). */
 ipcMain.on('overlay:size', (e, w, h) => {
   const win = BrowserWindow.fromWebContents(e.sender);
   if (!win || win.isDestroyed() || (win !== banner && ![...wins.values()].includes(win))) return;
-  if (!(w > 0 && h > 0)) {
-    if (win.isVisible()) win.hide();
-    return;
-  }
-  const [x, y] = win.getPosition();
-  win.setBounds({ x, y, width: Math.ceil(w), height: Math.ceil(h) });
-  if (win === banner) placeBanner();
-  if (!win.isVisible()) win.showInactive();
+  let s = sizing.get(win);
+  if (!s) sizing.set(win, (s = { size: stableSize({ step: SIZE_STEP, shrinkMs: SHRINK_MS }), w: 0, h: 0, timer: null }));
+  s.w = w;
+  s.h = h;
+  applySize(win);
 });
 
 // Buttons in a panel (camera jump, radio) must be clickable although the window is click-through:

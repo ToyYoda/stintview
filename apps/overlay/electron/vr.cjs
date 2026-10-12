@@ -10,6 +10,7 @@ const { OpenVR, TRANSIENT_ERRORS } = require('./openvr.cjs');
 const { anchorFromPose, IDENTITY, mul34, panelTransform } = require('./vrmath.cjs');
 const { PRELOAD, loadRoute } = require('./renderer.cjs');
 const { brand } = require('./brand.cjs');
+const { stableSize } = require('./stablesize.cjs');
 
 const FPS = Number(process.env.STINTVIEW_VR_FPS ?? 30);
 // Every painted frame is a texture upload to SteamVR. Only the inputs trace needs to be
@@ -158,6 +159,11 @@ async function createPanelWindow(id) {
   panel.fitTimer = setInterval(() => fitToWidget(win).catch(() => {}), 2000);
 }
 
+/** Texture size grid (px at ZOOM) and how long a widget must stay smaller before its panel shrinks. */
+const VR_SIZE_STEP = 8 * ZOOM, VR_SHRINK_MS = 30000;
+/** win -> stableSize */
+const fits = new WeakMap();
+
 /** Sizes the offscreen window to the widget's rendered box. */
 async function fitToWidget(win) {
   if (win.isDestroyed()) return;
@@ -166,10 +172,14 @@ async function fitToWidget(win) {
     return r ? { w: Math.ceil(r.width), h: Math.ceil(r.height) } : null;
   })()`);
   if (!rect || win.isDestroyed()) return;
-  const [w, h] = [Math.max(50, rect.w * ZOOM), Math.max(20, rect.h * ZOOM)];
+  // The width in metres is fixed: a texture a few pixels wider would shrink the whole panel.
+  // In steps, grow at once, shrink only after the widget stayed smaller for a while (stablesize.cjs).
+  if (!fits.has(win)) fits.set(win, stableSize({ step: VR_SIZE_STEP, shrinkMs: VR_SHRINK_MS }));
+  const next = fits.get(win).next(Math.max(50, rect.w * ZOOM), Math.max(20, rect.h * ZOOM));
+  if (!next) return;
   const [cw, ch] = win.getContentSize();
-  if (w === cw && h === ch) return;
-  win.setContentSize(w, h);
+  if (next.w === cw && next.h === ch) return;
+  win.setContentSize(next.w, next.h);
   win.webContents.invalidate();
 }
 
