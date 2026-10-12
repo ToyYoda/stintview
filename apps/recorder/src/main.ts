@@ -13,6 +13,7 @@ import { parseSessionCars } from './spectator.ts';
 import { PitModelStore, PitPlanner, type PitOverride } from './pitstop.ts';
 import { importArchive, type ImportProgress } from './pitlane-import.ts';
 import { LapLog, LapUploader } from './laps.ts';
+import { StintStateStore } from './stint-state.ts';
 import { importLapArchive, type LapImportProgress } from './lap-import.ts';
 
 const USAGE = `StintView recorder
@@ -79,8 +80,11 @@ async function register(path: string, body: CreateTeamRequest | JoinTeamRequest)
   console.log(`Saved to ${configPath()}`);
 }
 
-/** `recordLaps`: keep this PC's laps for the stint planner (live only – replays are no new laps). */
-async function record(source: TelemetrySource, label: string, spectator?: Spectator, hazard?: HazardDetector, recordLaps = false) {
+/**
+ * `recordLaps`: keep this PC's laps for the stint planner (live only – replays are no new laps).
+ * `live`: iRacing itself, not a replay (pit stop state kept on disk).
+ */
+async function record(source: TelemetrySource, label: string, spectator?: Spectator, hazard?: HazardDetector, recordLaps = false, live = false) {
   // Without a team the app's displays still show this PC's own sessions (see `send`).
   const config = loadConfig();
   if (!config && !parentPort) throw new Error(`Not set up yet – run create-team or join first.\n\n${USAGE}`);
@@ -140,7 +144,8 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
 
   console.log(`[source] ${label}`);
   conn?.connect();
-  const standings = new StandingsTracker((line) => console.log(line));
+  // Live only: the pit stop state survives a restart mid-race (a replay is not the real session).
+  const standings = new StandingsTracker((line) => console.log(line), live ? new StintStateStore() : null);
   const pit = new PitPlanner(undefined, (line) => console.log(line));
   source.start(
     (f) => {
@@ -164,6 +169,7 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
     },
     (yaml) => {
       recorder.onSessionInfo(yaml);
+      standings.setSessionId(recorder.sessionId);
       spectator?.onSessionInfo(yaml);
       const cars = parseSessionCars(yaml);
       const info = new Map([...cars.drivers].map(([idx, d]) => [idx, { number: d.label, name: d.name, country: countryCode(d.flair), team: d.team, car: d.car, irating: d.irating, license: d.license, estLap: d.estLap,
@@ -225,7 +231,7 @@ async function main() {
           onSourceLost?.();
         }
       });
-      return record(source, 'live iRacing telemetry', spectator, new HazardDetector((line) => console.log(line)), true);
+      return record(source, 'live iRacing telemetry', spectator, new HazardDetector((line) => console.log(line)), true, true);
     }
     case 'replay': {
       const file = rest[0];

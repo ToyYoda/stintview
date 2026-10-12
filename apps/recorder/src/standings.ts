@@ -538,6 +538,25 @@ export class PitStopTracker {
     this.sinceLap.clear();
     this.onPit.clear();
   }
+
+  /** What is known, to be kept across a restart of the recorder (`StintStateStore`). */
+  state(): PitState {
+    return { sinceLap: [...this.sinceLap], onPit: [...this.onPit] };
+  }
+
+  /** Takes over a kept state for every car not known yet. */
+  restore(s: PitState) {
+    for (const [idx, lap] of s.sinceLap) if (!this.sinceLap.has(idx)) this.sinceLap.set(idx, lap);
+    for (const [idx, on] of s.onPit) if (!this.onPit.has(idx)) this.onPit.set(idx, on);
+  }
+}
+
+export interface PitState { sinceLap: [number, number][]; onPit: [number, boolean][] }
+
+/** Where `StandingsTracker` keeps the pit stop state of a session (key = session and SessionNum). */
+export interface PitStateStore {
+  load(key: string): PitState | null;
+  save(key: string, state: PitState): void;
 }
 
 /**
@@ -677,6 +696,8 @@ export const isRaceSession = (type: string | undefined) => type === undefined ||
 const sessionLabel = (type: string) => (/qualify/i.test(type) ? 'Qualifying' : 'Training');
 
 const SEND_EVERY_S = 1;
+/** How often the pit stop state is written to disk at most (only when it changed). */
+const PIT_STATE_SAVE_S = 10;
 /** Class standings panel: every car of every class (wish 11.10.2026; before P1–3 + around us). */
 const ALL = 1000;
 /** Odd gaps logged per session (diagnostics). */
@@ -700,8 +721,43 @@ export class StandingsTracker {
   private field = new RaceField();
 
   private tires: string[] = [];
+  /** iRacing session of this PC (`SessionID/SubSessionID`), null before the session info. */
+  private sessionId: string | null = null;
+  private restoredKey: string | null = null;
+  private lastSave = -Infinity;
+  private lastSaved = '';
 
-  constructor(private readonly log: (line: string) => void = () => {}) {}
+  /**
+   * `store`: keeps the pit stop state (Stint column) of the session, so a restart of StintView
+   * mid-race doesn't lose it (12.10.2026: "–" until each car's next stop).
+   */
+  constructor(private readonly log: (line: string) => void = () => {}, private readonly store: PitStateStore | null = null) {}
+
+  setSessionId(id: string | null) {
+    this.sessionId = id;
+  }
+
+  /** Kept state of this session after a restart; then about every 10 s what is known now. */
+  private keepPits(t: number) {
+    if (!this.store || !this.sessionId) return;
+    const key = `${this.sessionId}#${this.sessionNum}`;
+    if (key !== this.restoredKey) {
+      this.restoredKey = key;
+      this.lastSaved = '';
+      const kept = this.store.load(key);
+      if (kept) {
+        this.pits.restore(kept);
+        this.log(`[standings] stint state of ${kept.sinceLap.length} cars taken over (${key})`);
+      }
+    }
+    if (t - this.lastSave < PIT_STATE_SAVE_S && t >= this.lastSave) return;
+    this.lastSave = t;
+    const state = this.pits.state();
+    const text = JSON.stringify(state);
+    if (text === this.lastSaved) return;
+    this.lastSaved = text;
+    this.store.save(key, state);
+  }
 
   /** Odd gaps for recorder.log, a limited number per session. */
   private note = (line: string) => {
@@ -752,6 +808,7 @@ export class StandingsTracker {
     this.pits.update(cars.map((c) => ({ carIdx: c.carIdx, laps: Math.floor(c.progress), onPitRoad: c.onPitRoad ?? false })));
 
     const t = f.num('SessionTime');
+    this.keepPits(t);
     const session = this.sessions.get(sessionNum);
     const bestMode = !isRaceSession(session?.type) && f.has('CarIdxBestLapTime');
     // Race order with the cars that finished or left the world – on every frame, so no finish is missed.

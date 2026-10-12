@@ -2,6 +2,13 @@
 
 Alle veröffentlichten Versionen, neueste zuerst. Installer und Updates: [GitHub Releases](https://github.com/ToyYoda/stintview/releases) – die App aktualisiert sich selbst.
 
+## 0.25.1 – 12.10.2026
+
+- **Position und Wertung am Rennende:** Fahrer, die vor dir ins Ziel kommen und aussteigen, bleiben in der Liste – du rückst dadurch nicht mehr auf. Wer im Ziel ist, bleibt in der Reihenfolge der Zieldurchfahrt, auch wenn ein Späterer auf der Auslaufrunde schneller fährt. Auch Autos, die während des Rennens die Verbindung verlieren, bleiben an ihrem Platz.
+- **Panels flackern nicht mehr:** Die Panels blitzten ab und an kurz auf und änderten dabei minimal ihre Größe – bei jedem längeren Namen oder jeder breiteren Zahl. Jetzt wachsen sie sofort, werden aber erst wieder kleiner, wenn der Inhalt einige Sekunden lang kleiner geblieben ist. Gilt am Monitor und in VR.
+- **Sprit-Panel zählt alle Runden:** Runde 1 fehlte, und nach dem Aus- und Wiedereinsteigen in der Box wurde im ganzen Stint keine Runde mehr gezählt. StintView erkennt die Runden jetzt am Überfahren der Ziellinie statt an iRacings Rundenzähler, der an diesen Stellen springt. Startplatz bis Linie, Einführungs- und Auslaufrunde zählen weiterhin nicht, Boxenrunden bleiben grau. Davon profitieren auch die Rundenzeiten für den Stintplaner.
+- **Stint-Spalte:** Bei manchen Autos stand bis zu ihrem ersten Boxenstopp nur „–“. Außerdem merkt sich StintView die Stopps jetzt auch über einen Neustart der App in derselben Session.
+
 ## 0.25.0 – 12.10.2026
 
 - **Weniger Last für iRacing:** StintView braucht deutlich weniger Rechenleistung – im Test etwa ein Viertel von vorher. Das soll iRacing wieder mehr fps lassen, vor allem am Monitor.

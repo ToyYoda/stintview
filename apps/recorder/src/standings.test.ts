@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { countryCode } from './country.ts';
-import { bestProjection, betweenRows, classBestStandings, focusCar, physicalGap, classStandings, computeBestStandings, relativeRows, computeStandings, isRaceSession, lappingRows, officialBestLaps, parseSessions, PitStopTracker, RaceField, trackGap, type CarInfo, type CarProgress } from './standings.ts';
+import { bestProjection, betweenRows, classBestStandings, focusCar, physicalGap, classStandings, computeBestStandings, relativeRows, computeStandings, isRaceSession, lappingRows, officialBestLaps, parseSessions, PitStopTracker, RaceField, StandingsTracker, trackGap, type CarInfo, type CarProgress, type PitState } from './standings.ts';
+import type { Standings } from '@stintview/protocol';
 
 const info = new Map<number, CarInfo>(
   Array.from({ length: 20 }, (_, i) => [i, { number: String(i + 1).padStart(2, '0'), name: `Driver ${i}` }]),
@@ -183,6 +184,39 @@ describe('computeStandings extras', () => {
     const rows = computeStandings(cars, 0, info, 3, 3, { tyreLaps: (i) => (i === 1 ? 12 : null) });
     expect(rows[0]).toMatchObject({ carIdx: 1, gap: 10, lapsGap: 0, tyreLaps: 12, inPit: true });
     expect(rows[1]).toMatchObject({ carIdx: 0, gap: 0, isTeam: true, tyreLaps: null, inPit: false });
+  });
+});
+
+describe('Stint column across a restart of StintView', () => {
+  const frame = (vars: Record<string, number | number[]>) => ({
+    num: (n: string, i = 0) => { const v = vars[n]; return Array.isArray(v) ? v[i]! : (v ?? NaN); },
+    has: (n: string) => n in vars,
+    count: (n: string) => { const v = vars[n]; return Array.isArray(v) ? v.length : 0; },
+    bool: (n: string) => vars[n] === 1,
+  }) as never;
+  const race = (t: number, laps: number[], pit: number[]) => frame({
+    SessionTime: t, SessionNum: 2, SessionState: 4, PlayerCarIdx: 0,
+    CarIdxLapCompleted: laps, CarIdxLapDistPct: laps.map(() => 0.5), CarIdxOnPitRoad: pit,
+  });
+  const memory = () => {
+    const kept = new Map<string, PitState>();
+    return { load: (k: string) => kept.get(k) ?? null, save: (k: string, s: PitState) => { kept.set(k, structuredClone(s)); } };
+  };
+  const stint = (s: Standings | null, carIdx: number) => s?.rows.find((r) => r.carIdx === carIdx)?.tyreLaps;
+
+  it('keeps the laps since the last stop for the same session', () => {
+    const store = memory();
+    const before = new StandingsTracker(() => {}, store);
+    before.setSessionId('100/200');
+    before.onFrame(race(1000, [5, 5], [0, 1]));
+    before.onFrame(race(1001, [5, 5], [0, 0])); // car 1 leaves the pits after lap 5
+    before.onFrame(race(1012, [6, 6], [0, 0])); // saved
+    const after = new StandingsTracker(() => {}, store);
+    after.setSessionId('100/200');
+    expect(stint(after.onFrame(race(1500, [9, 9], [0, 0])), 1)).toBe(4);
+    const other = new StandingsTracker(() => {}, store);
+    other.setSessionId('100/201'); // another race
+    expect(stint(other.onFrame(race(1500, [9, 9], [0, 0])), 1)).toBeNull();
   });
 });
 
