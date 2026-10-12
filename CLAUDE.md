@@ -25,7 +25,7 @@
 
 ## Daten für Tests
 
-- Demo-Werkzeuge in `apps/recorder/src/dev/` (mit `STINTVIEW_CONFIG=<testprofil>/config.json npx tsx …`): `demo-standings.ts [--best]` (Position, Boxenstopp, Sprit; `--best` = Qualifying), `fake-hazard.ts` (Unfall voraus), `pitloss-from-ibt.ts` (Boxengassen-Verlust aus .ibt).
+- Demo-Werkzeuge in `apps/recorder/src/dev/` (mit `STINTVIEW_CONFIG=<testprofil>/config.json npx tsx …`): `demo-standings.ts [--best]` (Position, Boxenstopp, Sprit; `--best` = Qualifying), `fake-hazard.ts` (Unfall voraus), `pitloss-from-ibt.ts` (Boxengassen-Verlust aus .ibt), `fuel-from-ibt.ts` (Sprit-Runden, die das Panel aus einer .ibt bekäme), `race-starts-from-ibt.ts` (wie iRacing beim Start zählt).
 - Echte Aufzeichnung abspielen: `npx tsx src/main.ts replay <datei.ibt> --speed 30 --start <min>` (in `apps/recorder`). Gute Datei: `D:\iRacing\telemetry\porsche992rgt3_suzuka grandprix 2026-05-16 11-12-21.ibt` (Boxenstopps Min. 62 und 123). Der Test-Server merkt sich die aktive Session: zwischen Wiedergabe, Demo und fake-hazard die Testversion neu starten.
 - Den Recorder **der App** eine Aufzeichnung abspielen lassen (z. B. Anzeigen ohne Team, SPEC A21): `STINTVIEW_REPLAY=<datei.ibt> STINTVIEW_REPLAY_OPTS="--speed 2 --start 58"` beim Start der Testversion setzen. Testprofil ohne Team = Ordner nur mit `app.json` (ohne `config.json`).
 - .ibt-Dateien enthalten keine `CarIdx*`-Werte – Position/Boxenstopp/Überrundungen nur mit Demo-Daten oder live testbar.

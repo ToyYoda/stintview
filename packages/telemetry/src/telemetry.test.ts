@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Triple, TyreMeasurement, Wheel } from '@stintview/protocol';
+import type { FuelLap, Triple, TyreMeasurement, Wheel } from '@stintview/protocol';
 import { FuelTracker, fuelPlan, fuelStats } from './fuel.ts';
 import { InputBatcher } from './inputs.ts';
 import { TyreTracker, estimateWear } from './tyres.ts';
@@ -7,46 +7,108 @@ import { TyreTracker, estimateWear } from './tyres.ts';
 const all = <T>(v: T): Record<Wheel, T> => ({ LF: v, RF: v, LR: v, RR: v });
 
 describe('FuelTracker', () => {
-  it('computes fuel per lap, flags pit laps and ignores refuelling', () => {
-    const t = new FuelTracker();
-    const done = [];
-    let fuel = 50;
-    let time = 0;
-    // start mid-lap 0 -> dropped; laps 1..3 green, lap 4 refuels on pit road
-    for (let lap = 0; lap <= 5; lap++) {
-      for (let i = lap === 0 ? 5 : 0; i < 10; i++) {
-        const onPitRoad = lap === 4 && i >= 8;
-        if (lap === 4 && i === 9) fuel += 40;
-        else fuel -= 0.3;
-        time += 10;
-        const r = t.feed({ sessionTime: time, lap, lapDistPct: i / 10, fuelLevel: fuel, onPitRoad });
+  /**
+   * Drives from `from` to `to` (laps completed + position on the lap) in 100 s laps, a sample every
+   * 0.5 s, 3 l per lap. iRacing's counters by default: LapCompleted = whole laps, Lap = one more.
+   */
+  function driver(t = new FuelTracker()) {
+    let time = 0, fuel = 80;
+    const done: FuelLap[] = [];
+    const drive = (from: number, to: number, o: {
+      state?: number; pit?: (p: number) => boolean; lap?: (p: number) => number; completed?: (p: number) => number | undefined;
+    } = {}) => {
+      for (let i = Math.round(from * 200); i <= Math.round(to * 200); i++) {
+        const p = i / 200;
+        fuel -= 0.015;
+        const r = t.feed({
+          sessionTime: time, lapDistPct: p - Math.floor(p), fuelLevel: fuel, onPitRoad: o.pit?.(p) ?? false,
+          lap: o.lap?.(p) ?? Math.floor(p) + 1,
+          lapsCompleted: o.completed ? o.completed(p) : Math.floor(p),
+          sessionState: o.state ?? 4,
+        });
         if (r) done.push(r);
+        time += 0.5;
       }
-    }
-    expect(done.map((l) => l.lap)).toEqual([1, 2, 3, 4]);
-    expect(done[0]!.used).toBeCloseTo(3.0);
-    expect(done[0]!.lapTime).toBe(100);
-    expect(done[3]!.pit).toBe(true);
-    expect(done[3]!.used).toBeGreaterThan(0);
+    };
+    return { t, done, drive, pause: (s: number) => { time += s; }, refuel: (l: number) => { fuel += l; } };
+  }
 
-    const stats = fuelStats(done, 30);
+  it('computes fuel per lap, flags pit laps and ignores refuelling', () => {
+    const d = driver();
+    d.drive(0.5, 3.995); // starts mid-lap: lap 1 dropped
+    d.drive(4, 4.9, { pit: (p) => p > 4.8 });
+    d.refuel(40);
+    d.drive(4.905, 6.2, { pit: (p) => p < 5.1 });
+    expect(d.done.map((l) => [l.lap, l.pit])).toEqual([[2, false], [3, false], [4, false], [5, true], [6, true]]);
+    expect(d.done[0]!.used).toBeCloseTo(3.0);
+    expect(d.done[0]!.lapTime).toBeCloseTo(100);
+    expect(d.done[3]!.used).toBeGreaterThan(0);
+
+    const stats = fuelStats(d.done, 30);
     expect(stats.avg3).toBeCloseTo(3.0);
     expect(stats.lapsRemaining).toBe(10);
   });
 
-  it('drops a lap when laps jump (reset/seek)', () => {
-    const t = new FuelTracker();
-    t.feed({ sessionTime: 0, lap: 1, lapDistPct: 0, fuelLevel: 10, onPitRoad: false });
-    expect(t.feed({ sessionTime: 5, lap: 3, lapDistPct: 0, fuelLevel: 9, onPitRoad: false })).toBeNull();
-    expect(t.feed({ sessionTime: 9, lap: 4, lapDistPct: 0, fuelLevel: 8, onPitRoad: false })?.used).toBeCloseTo(1);
+  it('drops the lap of a jump on track (tow, reset) or a gap in the samples (out of the car)', () => {
+    const d = driver();
+    d.drive(0.9, 2.3);
+    d.drive(2.7, 3.5); // jumped from 2.3 to 2.7
+    d.pause(120); // got out and back in
+    d.drive(3.5, 5.1, { completed: (p) => Math.floor(p) + 1 }); // and iRacing counts one more lap
+    expect(d.done.map((l) => l.lap)).toEqual([2, 6]);
   });
 
-  it('never counts lap 0 (formation lap, or grid to the line at a standing start)', () => {
+  it('standing start: grid to the line not counted, lap 1 counted', () => {
+    const d = driver();
+    d.drive(-0.03, 2.05, { completed: (p) => (p < 0 ? -1 : Math.floor(p)), lap: (p) => (p < 0 ? 0 : Math.floor(p) + 1) });
+    expect(d.done.map((l) => l.lap)).toEqual([1, 2]);
+  });
+
+  it('rolling start: formation lap not counted, lap 1 counted although Lap jumps back after the line (12.10.2026)', () => {
+    const d = driver();
+    // Pace laps (state 3) over the line, iRacing goes back to lap 0, green just after the line.
+    d.drive(-0.4, 0.035, { state: 3, completed: (p) => (p < 0 || p > 0.02 ? -1 : 0), lap: (p) => (p < 0 || p > 0.02 ? 0 : 1) });
+    // Lap stays 0 on the whole lap 1 – it used to count it as lap 0 and drop it.
+    d.drive(0.04, 0.995, { completed: () => -1, lap: () => 0 });
+    d.drive(1, 2.05);
+    expect(d.done.map((l) => l.lap)).toEqual([1, 2]);
+  });
+
+  it('green flag late in the lap after the pace car: that lap is not lap 1', () => {
+    const d = driver();
+    d.drive(0.6, 1.9, { state: 3, completed: () => -1, lap: () => 0 });
+    d.drive(1.905, 1.995, { completed: () => -1, lap: () => 0 });
+    d.drive(2, 3.05, { completed: (p) => Math.floor(p) - 2, lap: (p) => Math.floor(p) - 1 });
+    expect(d.done.map((l) => l.lap)).toEqual([1]);
+  });
+
+  it('no cool-down lap after the chequered flag', () => {
+    const d = driver();
+    d.drive(0.9, 2.995);
+    d.drive(3, 4.1, { state: 5 }); // lap 3 began before the flag: counts
+    expect(d.done.map((l) => l.lap)).toEqual([2, 3]);
+  });
+
+  it('a position just below 0 after the line (iRacing: −0.0001) is still on track', () => {
     const t = new FuelTracker();
-    t.feed({ sessionTime: 0, lap: 0, lapDistPct: 0, fuelLevel: 60, onPitRoad: false }); // observed from the start
-    expect(t.feed({ sessionTime: 120, lap: 1, lapDistPct: 0, fuelLevel: 58, onPitRoad: false })).toBeNull();
-    expect(t.feed({ sessionTime: 220, lap: 2, lapDistPct: 0, fuelLevel: 54.5, onPitRoad: false })).toMatchObject({ lap: 1, used: 3.5 });
-    expect(t.laps.map((l) => l.lap)).toEqual([1]);
+    const at = (time: number, pct: number, completed: number) =>
+      t.feed({ sessionTime: time, lap: completed + 1, lapDistPct: pct, fuelLevel: 50 - time / 100, onPitRoad: false, lapsCompleted: completed, sessionState: 4 });
+    at(0, 0.9998, 0);
+    at(0.02, -0.0001, 1);
+    for (let i = 1; i <= 100; i++) at(0.02 + i, i / 100 - 0.0002, 1);
+    expect(at(101.1, -0.0001, 2)).toMatchObject({ lap: 2 });
+  });
+
+  it('without LapCompleted and SessionState: numbered by Lap, lap 0 not counted', () => {
+    const t = new FuelTracker();
+    const done = [];
+    let time = 0;
+    for (let i = -4; i <= 410; i++, time += 0.5) {
+      const p = i / 200;
+      const r = t.feed({ sessionTime: time, lap: p < 0 ? 0 : Math.floor(p) + 1, lapDistPct: p - Math.floor(p), fuelLevel: 50 - p, onPitRoad: false });
+      if (r) done.push(r);
+    }
+    expect(done.map((l) => l.lap)).toEqual([1, 2]);
   });
 });
 

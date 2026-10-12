@@ -87,6 +87,8 @@ A fährt das Team-Auto, alle anderen schauen A in iRacing zu.
 | 2.1 | A | ins Auto, losfahren | bei allen: Kopfzeile **A** mit grünem Punkt, Auto · Strecke; A selbst: Status *Du fährst – dein Team sieht deine Daten* | |
 | 2.2 | Z | Eingaben-Anzeige beobachten | Lenkung/Gas/Bremse laufen flüssig, passen zu dem, was man im Bild sieht (Verzögerung < ~0,5 s gefühlt) | |
 | 2.2b | A | Rennen mit Einführungsrunde (fliegender Start) oder stehendem Start | Sprit-Panel: keine Runde 0 bei den Balken; Ø 3/Ø 5 und „Runden übrig“ erst ab Runde 1 | |
+| 2.2c | A | Rennstart (stehend und fliegend): Runde 1 zu Ende fahren | Sprit-Panel: Balken „1“ mit dem Verbrauch der ersten Rennrunde, *Letzte* gefüllt | |
+| 2.2d | A | in der Box aussteigen, wieder einsteigen, weiterfahren | nach Outlap (grau) zählt jede weitere Runde wieder, auch im Ø | |
 | 2.3 | A | 3 fliegende Runden fahren | Sprit: *Letzte*, *Ø 3* gefüllt, *Runden übrig* plausibel (Tank ÷ Verbrauch) | |
 | 2.4 | A | Boxenstopp **mit Tanken und 4 neuen Reifen** | Sprit: Box-Runde als **grauer Balken**, nicht im Durchschnitt, keine negativen Werte | |
 | 2.5 | Z | nach dem Stopp Reifen-Anzeige | „gemessen Stopp Runde X“, Karkasstemperaturen + „Stopp xx %“, km auf dem Satz startet bei ~0 | |

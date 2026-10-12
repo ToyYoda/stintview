@@ -82,7 +82,11 @@ export class Recorder {
       sessionTime: t, lap: f.num('Lap'), lapDistPct: f.num('LapDistPct'),
       fuelLevel: f.num('FuelLevel'), onPitRoad: f.bool('OnPitRoad'),
     };
-    const done = this.fuel.feed(fuelSample);
+    const done = this.fuel.feed({
+      ...fuelSample,
+      lapsCompleted: f.has('LapCompleted') ? f.num('LapCompleted') : undefined,
+      sessionState: f.has('SessionState') ? f.num('SessionState') : undefined,
+    });
     if (done) {
       this.emit(this.fuelMsg());
       const lap = this.lapRecord(done, f);

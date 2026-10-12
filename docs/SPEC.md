@@ -60,7 +60,7 @@ Eine einzige Electron-App auf jedem PC. Recorder läuft immer (auch ohne Team); 
 | Pfad | Inhalt |
 |---|---|
 | `packages/protocol` | Nachrichtentypen, `pack`/`unpack` (MessagePack), `PROTOCOL_VERSION` |
-| `packages/telemetry` | reine Logik: `FuelTracker`/`fuelStats` (Runde 0 = Einführungsrunde bzw. Startplatz bis Linie wird seit 0.20 nie gezählt, die Anzeige filtert sie auch bei älteren Recordern), `TyreTracker`/`estimateWear`, `InputBatcher` (+ Tests) |
+| `packages/telemetry` | reine Logik: `FuelTracker`/`fuelStats` (Runde = Linie bis Linie, erkannt am Sprung von `LapDistPct` nahe 1 → nahe 0, nicht an iRacings `Lap`; gezählt nur mit gesehenem Rundenbeginn und `SessionState` Racing zu Rundenbeginn bzw. Grün in den ersten 10 % – Startplatz bis Linie, Einführungsrunde und Auslaufrunde nie; Nummer = `LapCompleted`; Lücke > 2 s oder Sprung > ¼ Runde macht die laufende Runde ungültig. **Seit dem Rennen 12.10.2026:** vorher am `Lap`-Zähler – der sprang live beim Start zurück (Runde 1 fiel als „Runde 0“ weg) und nach Aus-/Einsteigen in der Box, danach zählte im ganzen Stint keine Runde mehr; Prüfwerkzeug `src/dev/fuel-from-ibt.ts`, Rennstarts `race-starts-from-ibt.ts`. `LapDistPct` ist direkt hinter der Linie manchmal −0,0001 – gilt als 0, nur −1 = nicht in der Welt), `TyreTracker`/`estimateWear`, `InputBatcher` (+ Tests) |
 | `packages/planner` | Stintplaner (A22): Typen (`LapRecord`, `Race`, `PlanStint`), `lapStats`/`combos`, `planContext`/`autoPlan`/`evaluatePlan` (+ Tests) – von Recorder, Server und Planer-Seite genutzt |
 | `apps/recorder` | iRacing-Leser (`irsdk/live.ts` Shared Memory, `irsdk/ibt.ts` Replay), `recorder.ts` (Fahrer-Erkennung, Nachrichten), `connection.ts` (WS + Reconnect), CLI `main.ts`; `team-feed.ts` = Team-Verbindung der Anzeigen (läuft im Hauptprozess der App, seit 0.25) |
 | `apps/server` | Relay: HTTP-API + WebSocket, `room.ts` (Übernahme-Regeln, + Tests), `store.ts` (Teams/Tokens als JSON), `planner-api.ts`/`planner-store.ts` (Stintplaner, + Tests) |
@@ -139,7 +139,7 @@ Gemessen an `D:\iRacing\telemetry\porsche992rgt3_nurburgring combinedshortb 2026
 | Daten | Live-Speicher (irsdk) | Bemerkung |
 |---|---|---|
 | `SteeringWheelAngle`, `Throttle`, `Brake`, `Clutch`, `Speed`, `Gear` | ✅ 60 Hz | |
-| `FuelLevel`, `Lap`, `LapDistPct`, `OnPitRoad` | ✅ | Verbrauch/Runde aus Differenz; nur Abnahmen zählen (Nachtanken!), Runde 0 und Box-Runden nicht in Ø |
+| `FuelLevel`, `Lap`, `LapDistPct`, `OnPitRoad` | ✅ | Verbrauch/Runde aus Differenz; nur Abnahmen zählen (Nachtanken!), Runde 0 und Box-Runden nicht in Ø; Rundengrenze aus `LapDistPct`, Nummer aus `LapCompleted`, Start/Auslauf über `SessionState` |
 | `xxtempCL/CM/CR` (Karkasse), `xxwearL/M/R` | ✅ aber **nur beim Stopp in der Box aktualisiert** | misst den **alten** Satz beim Einfahren in die Box; danach springt `xxodometer` auf 0, wenn Reifen gewechselt |
 | `xxodometer`, `xxcoldPressure` | ✅ | coldPressure = Garagen-Kaltdruck, nicht aktueller Druck |
 | `xxtempL/M/R` (Oberfläche), `xxpressure` (aktueller Druck) | ❌ **nicht live**, nur in `.ibt` | Dashboard-Werte (TPMS) zeigt iRacing nur intern an |
