@@ -203,6 +203,13 @@ describe('PitStopTracker', () => {
     p.reset();
     expect(p.laps(1, 7)).toBeNull();
   });
+
+  it('new session: a car first seen with the old lap count still counts from the start (12.10.2026)', () => {
+    const p = new PitStopTracker();
+    p.update([{ carIdx: 2, laps: 6, onPitRoad: false }]); // qualifying laps in the race's first frame
+    p.update([{ carIdx: 2, laps: 0, onPitRoad: false }]);
+    expect(p.laps(2, 5)).toBe(5);
+  });
 });
 
 describe('countryCode', () => {

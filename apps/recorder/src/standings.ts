@@ -508,8 +508,11 @@ export class RaceField {
 
 /**
  * Tyre age of other cars, approximated as laps since their last pit stop: iRacing does not
- * say whether a car got new tyres, only that it was on pit road. Counting starts when the
- * car is first seen; a car first seen before completing a lap counts from the start.
+ * say whether a car got new tyres, only that it was on pit road. Counting starts at the start
+ * (a car seen before completing a lap) or when the car leaves the pits; until then: unknown.
+ * Not only the first time a car is seen: in the first frames of a new session iRacing may still
+ * give a car its lap count from the session before (qualifying) – such cars stayed unknown until
+ * their first stop (race 12.10.2026: Stint "–" for some cars).
  */
 export class PitStopTracker {
   private sinceLap = new Map<number, number>();
@@ -518,7 +521,7 @@ export class PitStopTracker {
   update(cars: { carIdx: number; laps: number; onPitRoad: boolean }[]) {
     for (const c of cars) {
       const was = this.onPit.get(c.carIdx);
-      if (was === undefined && c.laps <= 0) this.sinceLap.set(c.carIdx, 0); // seen from the start
+      if (!this.sinceLap.has(c.carIdx) && c.laps <= 0) this.sinceLap.set(c.carIdx, 0); // seen from the start
       if (was === true && !c.onPitRoad) this.sinceLap.set(c.carIdx, c.laps); // left the pits
       const since = this.sinceLap.get(c.carIdx);
       if (since !== undefined && c.laps < since) this.sinceLap.set(c.carIdx, c.laps); // lap count went back (reset)
