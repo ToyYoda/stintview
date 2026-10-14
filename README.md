@@ -81,3 +81,7 @@ Remote control for tests: start with `--remote-debugging-port=9333`, then `node 
 - Tyres: iRacing provides carcass temperature and wear only during a pit stop; surface temperature and pressure not live at all. The widget shows the last measurement and estimates the current wear from the distance driven.
 - VR only via SteamVR. Headsets without SteamVR (e.g. Quest via Link/Air Link): OpenKneeboard with the single-widget URLs.
 - The connection to the relay is unencrypted (`ws://`).
+
+## License
+
+[MIT](LICENSE)
