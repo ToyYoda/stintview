@@ -5,6 +5,7 @@
   "description": "StintView – Team-Telemetrie für iRacing (Outcast Endurance)",
   "author": "Outcast Endurance",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "main": "electron/app.cjs",
   "scripts": {
