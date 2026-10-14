@@ -1,0 +1,43 @@
+name: Feature request / Wunsch
+description: An idea for StintView. – Eine Idee für StintView.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        English or German, whichever you prefer. – Gern auf Deutsch oder Englisch.
+        Note: StintView can only show what iRacing gives third-party apps. Some things (e.g. the weather forecast, live tyre temperatures) aren't available.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would help you? / Was würde dir helfen?
+      description: The situation in the race, not the solution yet – e.g. "As a spotter I don't notice when …".
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea / Deine Idee
+      description: How could StintView show or do it? Sketches or screenshots of other tools are welcome.
+    validations:
+      required: true
+  - type: dropdown
+    id: who
+    attributes:
+      label: Who would use it? / Wer würde es nutzen?
+      multiple: true
+      options:
+        - Driver / Fahrer
+        - Spotter / spectator / Spotter / Zuschauer
+        - Team manager / Teamchef
+        - Solo driver (no team) / Allein ohne Team
+  - type: dropdown
+    id: output
+    attributes:
+      label: Where? / Wo?
+      multiple: true
+      options:
+        - Monitor
+        - VR (SteamVR)
+        - StintView window / StintView-Fenster
+        - Stint planner / Stintplaner

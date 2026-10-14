@@ -1,0 +1,74 @@
+name: Bug report / Fehlerbericht
+description: Something doesn't work as expected. – Etwas funktioniert nicht wie erwartet.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! English or German, whichever you prefer. – Danke für die Meldung! Gern auf Deutsch oder Englisch.
+        Please check the [known limitations](https://github.com/ToyYoda/stintview#known-limitations) first (e.g. tyre data only at pit stops, VR only via SteamVR).
+  - type: input
+    id: version
+    attributes:
+      label: StintView version / Version
+      description: Shown at the bottom of the StintView window. – Steht unten im StintView-Fenster.
+      placeholder: "0.26.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: role
+    attributes:
+      label: Your situation / Deine Situation
+      options:
+        - Driving myself / Selbst gefahren
+        - Watching a teammate drive / Teamkollegen zugeschaut
+        - Team manager (team server on my PC) / Teamchef (Team-Server auf meinem PC)
+        - Without a team (solo) / Ohne Team (allein)
+        - Installation / update
+        - Other / Sonstiges
+    validations:
+      required: true
+  - type: dropdown
+    id: output
+    attributes:
+      label: Displays on / Anzeigen auf
+      options:
+        - Monitor
+        - VR (SteamVR)
+        - Not relevant / Egal
+    validations:
+      required: true
+  - type: input
+    id: setup
+    attributes:
+      label: Car, track, session type / Auto, Strecke, Sitzungsart
+      description: Optional, but helps a lot. For VR also the headset. – Optional, hilft aber sehr. Bei VR auch die Brille.
+      placeholder: "Porsche 911 GT3 R (992), Suzuka, race · Bigscreen Beyond 2e"
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened? / Was ist passiert?
+      description: Which panel, what did it show, when (e.g. right after a pit stop or driver change)?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect? / Was hättest du erwartet?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to reproduce / Wie lässt es sich nachstellen?
+      description: If you know. – Falls bekannt.
+      placeholder: |
+        1. …
+        2. …
+  - type: textarea
+    id: files
+    attributes:
+      label: Screenshots and logs / Screenshots und Protokolle
+      description: |
+        Drag files in here. Logs: tray icon menu → "Open logs" → `recorder.log` (and `server.log` for the team manager). Please check them for anything you don't want to share (names, addresses).
+        Dateien hier hineinziehen. Protokolle: Menü des Tray-Symbols → „Protokolle öffnen“ → `recorder.log` (beim Teamchef auch `server.log`). Bitte vorher auf Dinge prüfen, die du nicht teilen willst (Namen, Adressen).
