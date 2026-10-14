@@ -2,6 +2,17 @@
 
 Alle veröffentlichten Versionen, neueste zuerst. Installer und Updates: [GitHub Releases](https://github.com/ToyYoda/stintview/releases) – die App aktualisiert sich selbst.
 
+## 0.26.0 – 14.10.2026
+
+- **Verschlüsselte Verbindung zum Team-Server:** Alles, was zwischen euren PCs und dem Team-Server läuft – Telemetrie, Zugangsdaten, Funk, Rundenzeiten –, ist jetzt verschlüsselt. Mitlesen, z. B. im selben WLAN, ist nicht mehr möglich.
+  - Ihr müsst nichts tun: Die Einladung bleibt Adresse + Code, bestehende Teams wechseln nach dem Update von selbst, niemand muss neu beitreten.
+  - StintView merkt sich beim ersten Kontakt das Zertifikat eures Team-Servers und spricht danach nur noch mit genau diesem Server.
+  - Aktualisiert ein Teammitglied vor dem Teamchef, läuft die Verbindung so lange wie bisher weiter, bis auch der Team-Server aktualisiert ist.
+  - Im Reiter **Team** steht jetzt, ob die Verbindung verschlüsselt ist, dazu der Anfang des Zertifikat-Fingerabdrucks. Beim Teamchef steht zusätzlich das Zertifikat seines Servers zum Vergleichen.
+- **Für den Teamchef:** Neben `teams.json` liegen jetzt die Zertifikatsdateien `tls-key.pem` und `tls-cert.pem`. Den ganzen Ordner `%APPDATA%\StintView\server` sichern und beim PC-Wechsel mitnehmen – sonst meldet StintView bei allen „anderes Zertifikat“, und alle müssen neu beitreten.
+- Ältere StintView-Versionen erreichen einen aktualisierten Team-Server nicht mehr und melden „encrypted connection required – update StintView“. Ein Neustart der App holt das Update.
+- StintView steht jetzt unter der **MIT-Lizenz**.
+
 ## 0.25.1 – 12.10.2026
 
 - **Position und Wertung am Rennende:** Fahrer, die vor dir ins Ziel kommen und aussteigen, bleiben in der Liste – du rückst dadurch nicht mehr auf. Wer im Ziel ist, bleibt in der Reihenfolge der Zieldurchfahrt, auch wenn ein Späterer auf der Auslaufrunde schneller fährt. Auch Autos, die während des Rennens die Verbindung verlieren, bleiben an ihrem Platz.
