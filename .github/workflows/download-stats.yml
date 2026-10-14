@@ -1,0 +1,35 @@
+# Records the download counts of the release files once a day in docs/downloads.csv
+# (GitHub itself only shows the current totals). Also runnable by hand from the Actions tab.
+# The commit is made with GITHUB_TOKEN, so it doesn't start other workflows (website build).
+name: Download stats
+
+on:
+  schedule:
+    - cron: '17 5 * * *' # daily, 05:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write # commit docs/downloads.csv
+
+concurrency: download-stats
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Count downloads
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node .github/scripts/download-stats.mjs >> "$GITHUB_STEP_SUMMARY"
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/downloads.csv
+          git diff --cached --quiet && exit 0
+          git commit -m "Download stats $(date -u +%F)"
+          git push
