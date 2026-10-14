@@ -1,4 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { createServer as createTlsServer } from 'node:https';
+import { createServer as createNetServer } from 'node:net';
 import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -11,6 +13,7 @@ import { Room, type Peer } from './room.ts';
 import { TeamStore } from './store.ts';
 import { PlannerStore } from './planner-store.ts';
 import { plannerHandler } from './planner-api.ts';
+import { loadOrCreateCert } from './tls-cert.ts';
 
 const PORT = Number(process.env.PORT ?? 8787);
 // Outside the program folder so replacing it on update keeps the teams.
@@ -24,6 +27,8 @@ const planner = new PlannerStore(plannerFile);
 const devUi = resolve('..', 'overlay', 'dist'); // `pnpm relay` runs in apps/server
 const plannerDir = process.env.STINTVIEW_PLANNER_DIR ?? (existsSync(join(devUi, 'planner.html')) ? devUi : null);
 const plannerRoutes = plannerHandler({ teams: store, planner, staticDir: plannerDir, log: (m) => log(m) });
+// Own certificate next to teams.json (since 0.26): back up the whole folder, or everyone joins again.
+const tlsCert = loadOrCreateCert(dirname(dataFile));
 for (const sig of ['SIGINT', 'SIGTERM'] as const) process.on(sig, () => { planner.flush(); process.exit(0); });
 process.on('exit', () => planner.flush());
 
@@ -46,7 +51,16 @@ function reply(res: ServerResponse, status: number, body: unknown) {
 
 const validName = (s: unknown): s is string => typeof s === 'string' && s.trim().length > 0 && s.length <= 64;
 
-const http = createServer(async (req, res) => {
+/**
+ * Unencrypted only from this PC (the team manager's own app, health check). Everyone else needs
+ * TLS: an old app gets told to update instead of sending its token in clear text.
+ */
+const encryptedOrLocal = (req: IncomingMessage) =>
+  (req.socket as { encrypted?: boolean }).encrypted === true || /^(127\.|::1$|::ffff:127\.)/.test(req.socket.remoteAddress ?? '');
+const NEEDS_UPDATE = 'encrypted connection required – update StintView';
+
+async function handle(req: IncomingMessage, res: ServerResponse) {
+  if (!encryptedOrLocal(req)) return reply(res, 426, { error: NEEDS_UPDATE });
   try {
     if (req.method === 'GET' && req.url === '/health') return reply(res, 200, { ok: true, planner: true });
     if (await plannerRoutes(req, res)) return;
@@ -65,13 +79,28 @@ const http = createServer(async (req, res) => {
   } catch {
     reply(res, 400, { error: 'bad request' });
   }
+}
+
+const plain = createServer(handle);
+const secure = createTlsServer({ key: tlsCert.key, cert: tlsCert.cert }, handle);
+// One port for both: a TLS handshake starts with byte 0x16, plain HTTP with a letter.
+const front = createNetServer((socket) => {
+  socket.on('error', () => {});
+  socket.setTimeout(10_000, () => socket.destroy()); // connected but silent
+  socket.once('data', (head) => {
+    socket.setTimeout(0);
+    socket.pause();
+    socket.unshift(head);
+    (head[0] === 0x16 ? secure : plain).emit('connection', socket);
+    process.nextTick(() => socket.resume());
+  });
 });
 
 // ---------------------------------------------------------------------------
 // WebSocket: telemetry relay
 // ---------------------------------------------------------------------------
 
-const wss = new WebSocketServer({ server: http, path: '/ws', maxPayload: 256 * 1024 });
+const wsOptions = { path: '/ws', maxPayload: 256 * 1024 };
 let nextId = 1;
 
 /** Kept up to date by the recorders anyway: skipped for a connection that can't keep up. */
@@ -79,7 +108,14 @@ const DROPPABLE = new Set(['inputs', 'status', 'fuel', 'tyres', 'weather', 'stan
 /** Unsent bytes at which a slow overlay gets no more telemetry until it has caught up (since 0.20). */
 const BACKLOG_BYTES = 256 * 1024;
 
-wss.on('connection', (ws: WebSocket) => {
+for (const server of [plain, secure]) new WebSocketServer({ server, ...wsOptions }).on('connection', onConnection);
+
+function onConnection(ws: WebSocket, req: IncomingMessage) {
+  if (!encryptedOrLocal(req)) {
+    // Old app (before 0.26) over the internet: it shows this and stops retrying until updated.
+    ws.send(pack({ t: 'error', code: 'version', message: NEEDS_UPDATE } satisfies ServerMessage));
+    return ws.close(4003, 'version');
+  }
   const send = (msg: ServerMessage) => {
     if (ws.readyState !== ws.OPEN) return;
     // A busy PC (e.g. the driver's, in VR) reads its socket late: buffering everything delayed
@@ -158,7 +194,7 @@ wss.on('connection', (ws: WebSocket) => {
       log(`${role} disconnected: ${peer.memberName}`);
     }
   });
-});
+}
 
 // Free the "active driver" slot when its recorder went silent.
 setInterval(() => {
@@ -169,4 +205,4 @@ function log(msg: string) {
   console.log(`${new Date().toISOString()} ${msg}`);
 }
 
-http.listen(PORT, () => log(`StintView relay listening on :${PORT} (ws path /ws), teams: ${dataFile}, planner page: ${plannerDir ?? 'none'}`));
+front.listen(PORT, () => log(`StintView relay listening on :${PORT} (TLS, ws path /ws; unencrypted only from this PC), certificate ${tlsCert.fingerprint}, teams: ${dataFile}, planner page: ${plannerDir ?? 'none'}`));

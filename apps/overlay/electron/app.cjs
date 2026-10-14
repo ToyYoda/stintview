@@ -1,10 +1,11 @@
 // StintView desktop app: tray icon, setup window, and the background pieces –
 // recorder (always), desktop overlay / VR panels (per setting) and optionally the team relay.
 const { app, BrowserWindow, Menu, Tray, dialog, globalShortcut, ipcMain, nativeImage, shell, utilityProcess } = require('electron');
-const { createWriteStream, mkdirSync, readdirSync } = require('node:fs');
+const { createWriteStream, mkdirSync, readFileSync, readdirSync } = require('node:fs');
+const http = require('node:http');
 const path = require('node:path');
 const {
-  cleanLanguage, cleanMessages, cleanOpacity, cleanOutput, cleanPanels, cleanPitStop, cleanProfile, cleanProfileMode, cleanVrRecenter, clearConfig, PROFILE_IDS, configPath, dataDir, loadConfig, loadSettings, logDir, normalizeUrl, panelConfig, panelsFor, register, saveSettings,
+  cleanLanguage, cleanMessages, cleanOpacity, cleanOutput, cleanPanels, cleanPitStop, cleanProfile, cleanProfileMode, cleanVrRecenter, clearConfig, PROFILE_IDS, configPath, dataDir, loadConfig, loadSettings, logDir, normalizeUrl, panelConfig, panelsFor, register, saveSettings, serverLink, serverSecurity, serverTarget,
 } = require('./config.cjs');
 const {
   editHotkey, editing, onOverlayChange, overlayRunning, editHotkeyInfo, setEditMode, setOverlayLanguage, setOverlayOpacity, setOverlayPanelConfig, setOverlayPanels, setOverlayProfile, startOverlay, stopOverlay, toggleEdit,
@@ -197,10 +198,12 @@ const startLapImport = (choose) => startImport({
 async function openPlanner() {
   const config = loadConfig();
   if (!config) return { error: t('planner.noTeam') };
+  let target;
   let res;
   try {
-    res = await fetch(new URL('/api/planner/login', config.serverUrl), {
-      method: 'POST', headers: { authorization: `Bearer ${config.token}` }, signal: AbortSignal.timeout(8000),
+    target = await serverTarget();
+    res = await serverLink().request(target, '/api/planner/login', {
+      method: 'POST', headers: { authorization: `Bearer ${config.token}` }, timeoutMs: 8000,
     });
   } catch {
     return { error: t('planner.unreachable', { url: config.serverUrl }) };
@@ -208,12 +211,37 @@ async function openPlanner() {
   if (res.status === 404) return { error: t('planner.oldServer') };
   if (!res.ok) return { error: t('planner.error', { status: res.status }) };
   const { code } = await res.json();
-  const url = new URL('/planner/', config.serverUrl);
+  // The browser doesn't know the team server's own certificate: then the page comes through the app.
+  const url = new URL('/planner/', target.tls ? await plannerProxy() : target.base);
   // Brand as a query (the page reads it like the app's pages), the code only in the hash: not sent anywhere.
   if (brand.id !== 'stintview') url.search = `brand=${brand.id}`;
   url.hash = new URLSearchParams({ code, lang: settings.language }).toString();
   await shell.openExternal(url.toString());
   return { error: null };
+}
+
+let plannerProxyUrl = null;
+
+/**
+ * Stint planner page and its API on localhost, passed on to the team server with its remembered
+ * certificate (since 0.26). Started once; any free port (the page logs in with a new code each time).
+ */
+function plannerProxy() {
+  if (plannerProxyUrl) return plannerProxyUrl;
+  plannerProxyUrl = new Promise((resolve, reject) => {
+    const server = http.createServer(async (req, res) => {
+      const route = req.url ?? '/';
+      if (!/^\/(planner(\/|$)|api\/planner(\/|$))/.test(route)) return res.writeHead(404).end();
+      try {
+        serverLink().forward(await serverTarget(), route, req, res);
+      } catch {
+        res.writeHead(502, { 'content-type': 'application/json' }).end(JSON.stringify({ error: 'team server not reachable' }));
+      }
+    });
+    server.once('error', (e) => { plannerProxyUrl = null; reject(e); });
+    server.listen(0, '127.0.0.1', () => resolve(`http://127.0.0.1:${server.address().port}`));
+  });
+  return plannerProxyUrl;
 }
 
 /** Stint planner in the tray menu (and its tab in the StintView window): hidden until it works. */
@@ -230,7 +258,7 @@ let runningVrPanels = '';
 // Data for the display pages: team relay and this PC's own recorder (feed.cjs)
 // ---------------------------------------------------------------------------
 
-feed.init({ loadConfig });
+feed.init({ loadConfig, serverTarget });
 
 /** Team joined or left: the display pages connect again with the new access (or none). */
 function reloadDisplays() {
@@ -466,6 +494,8 @@ function updateSettings(patch) {
 function statusLine() {
   const config = loadConfig();
   if (!config) return !status.iracing ? t('status.noTeamNoIracing') : status.inCar ? t('status.noTeamDriving') : t('status.noTeam');
+  // The recorder's text for another certificate than the remembered one (connection.ts, CERT_CHANGED).
+  if (status.server === 'error' && status.serverText.includes('certificate has changed')) return t('status.certChanged');
   if (status.server === 'error') return t('status.server', { text: status.serverText.replace(/^server error: /, '') });
   if (status.server === 'offline') return t('status.offline');
   const team = config.teamName;
@@ -561,6 +591,14 @@ function openSetup(route = '/setup') {
   loadRoute(setupWin, route);
 }
 
+function hostFingerprint() {
+  try {
+    return serverLink().fingerprint(readFileSync(path.join(dataDir, 'server', 'tls-cert.pem'), 'utf8'));
+  } catch {
+    return null; // not started yet
+  }
+}
+
 function appState() {
   const config = loadConfig();
   return {
@@ -568,7 +606,9 @@ function appState() {
     // Started from the sources (npx electron .): the version is the placeholder from package.json.
     testInstance: !app.isPackaged,
     configured: Boolean(config),
-    team: config ? { teamName: config.teamName, memberName: config.memberName, serverUrl: config.serverUrl, inviteCode: config.inviteCode } : null,
+    team: config ? { teamName: config.teamName, memberName: config.memberName, serverUrl: config.serverUrl, inviteCode: config.inviteCode, ...serverSecurity(config) } : null,
+    // Team server on this PC: its certificate, so members can compare what their app remembered.
+    hostFingerprint: settings.server ? hostFingerprint() : null,
     settings,
     status: { ...status, otherSession: feed.otherSession(), profile: activeProfile(), autoProfile, profileHotkey: displayKey(profileHotkey), line: statusLine(), waitingForIracing: waitingForSim(), vr: vrStatus(), overlay: overlayRunning(), editing: editing(), editHotkey: editHotkey() },
     autostartAvailable: app.isPackaged,

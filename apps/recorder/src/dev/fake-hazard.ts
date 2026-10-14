@@ -6,11 +6,13 @@
  */
 import WebSocket from 'ws';
 import { PROTOCOL_VERSION, pack, type ClientMessage } from '@stintview/protocol';
-import { loadConfig, wsUrl } from '../config.ts';
+import { loadConfig, serverTarget } from '../config.ts';
+import { wsTarget } from '../server-link.ts';
 
 const config = loadConfig();
 if (!config) throw new Error('no config');
-const ws = new WebSocket(wsUrl(config.serverUrl));
+const target = wsTarget(await serverTarget(config));
+const ws = new WebSocket(target.url, target.options);
 const send = (m: ClientMessage) => ws.send(pack(m));
 const session = '999/999';
 const driver = process.env.STINTVIEW_DEMO_DRIVER ?? 'Test Fahrer';

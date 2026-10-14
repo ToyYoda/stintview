@@ -11,6 +11,8 @@ import wordmarkUrl from '../assets/wordmark-light.webp';
 import './setup.css';
 
 const api = () => window.stintview!;
+/** First 8 bytes of a certificate fingerprint ("AB:CD:…") – enough to compare by eye. */
+const shortPrint = (fp: string) => fp.split(':').slice(0, 8).join(':');
 
 /** Setup and status window of the desktop app (route #/setup). */
 export function SetupPage() {
@@ -326,6 +328,14 @@ function Dashboard({ state, onState }: { state: AppState; onState(s: AppState): 
           <dt>{t('set.you')}</dt><dd>{team?.memberName}</dd>
           <dt>{t('set.server')}</dt><dd className="mono">{team?.serverUrl}</dd>
           <dt>{t('set.inviteCode')}</dt><dd className="mono">{team?.inviteCode}</dd>
+          <dt>{t('set.connection')}</dt>
+          <dd className={team?.security === 'plain' ? 'warn-text' : undefined}>
+            {t(team?.security === 'encrypted' ? 'set.connEncrypted' : team?.security === 'local' ? 'set.connLocal' : 'set.connPlain')}
+            {team?.fingerprint && <div className="mono cert" title={team.fingerprint}>{t('set.certificate')} {shortPrint(team.fingerprint)}</div>}
+          </dd>
+          {state.hostFingerprint && (
+            <><dt>{t('set.hostCertificate')}</dt><dd className="mono cert" title={state.hostFingerprint}>{shortPrint(state.hostFingerprint)}</dd></>
+          )}
         </dl>
         <Toggle checked={settings.autostart} disabled={!state.autostartAvailable} onChange={(v) => set({ autostart: v })} label={t('set.autostart')} hint={t('set.autostartHint')} />
         <Toggle checked={settings.server} onChange={(v) => set({ server: v })} label={t('set.serverHere', { port: settings.serverPort })} hint={t('set.serverHereHint')} />

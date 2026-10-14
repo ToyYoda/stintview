@@ -3,6 +3,7 @@ import {
   PROTOCOL_VERSION, isTelemetry, pack, unpack,
   type ActiveDriver, type ServerMessage, type TeamMessage, type Telemetry,
 } from '@stintview/protocol';
+import { isCertError, wsTarget, type Target } from './server-link.ts';
 
 /**
  * The team relay's data for this PC's display pages, over one connection in the desktop app's main
@@ -17,6 +18,9 @@ export interface FeedState { t: 'feed-conn'; conn: FeedConn; error: string | nul
 
 /** What a page opening later gets first: the state so far, as the relay's snapshot would be. */
 export interface FeedSnapshot { state: FeedState; snapshot: Extract<ServerMessage, { t: 'snapshot' }> }
+
+/** Feed error: the server shows another certificate than the remembered one (pages translate it). */
+export const CERT_CHANGED_CODE = 'cert-changed';
 
 /** Telemetry types every page gets: who drives, which session (resets the rest) – few and small. */
 const ALWAYS = new Set<string>(['session', 'driving']);
@@ -55,7 +59,8 @@ export class TeamFeed {
   private latest = new Map<string, Telemetry>();
   private messages: TeamMessage[] = [];
 
-  constructor(private readonly serverUrl: string, private readonly token: string, private readonly events: TeamFeedEvents) {}
+  /** `target`: where the server is, asked before every attempt (see `serverTarget`). */
+  constructor(private readonly target: () => Promise<Target>, private readonly token: string, private readonly events: TeamFeedEvents) {}
 
   start() {
     this.stopped = false;
@@ -83,21 +88,39 @@ export class TeamFeed {
   }
 
   private connect() {
-    const url = new URL(this.serverUrl);
-    url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-    url.pathname = '/ws';
-    const ws = new WebSocket(url);
+    void this.open();
+  }
+
+  private retryLater() {
+    this.timer = setTimeout(() => this.connect(), this.retry);
+    this.retry = Math.min(this.retry * 2, 30_000);
+  }
+
+  private async open() {
+    let target: Target;
+    try {
+      target = await this.target();
+    } catch {
+      if (this.stopped) return;
+      if (this.state.conn !== 'error') this.setState({ conn: 'connecting' });
+      return this.retryLater();
+    }
+    if (this.stopped) return;
+    const { url, options } = wsTarget(target);
+    const ws = new WebSocket(url, options);
     this.ws = ws;
+    let certError = false;
     ws.binaryType = 'nodebuffer';
     ws.on('open', () => ws.send(pack({ t: 'hello', v: PROTOCOL_VERSION, token: this.token, role: 'overlay', features: ['messages'] })));
     ws.on('message', (data: Buffer) => this.onMessage(unpack<ServerMessage>(data)));
     ws.on('close', () => {
       if (this.ws !== ws || this.stopped) return;
-      if (this.state.conn !== 'error') this.setState({ conn: 'connecting' });
-      this.timer = setTimeout(() => this.connect(), this.retry);
-      this.retry = Math.min(this.retry * 2, 30_000);
+      // Not the remembered certificate (someone in between, or the server moved to another PC).
+      if (certError) this.setState({ conn: 'error', error: CERT_CHANGED_CODE });
+      else if (this.state.conn !== 'error') this.setState({ conn: 'connecting' });
+      this.retryLater();
     });
-    ws.on('error', () => {}); // 'close' follows and handles reconnect
+    ws.on('error', (e) => { certError ||= isCertError(e); }); // 'close' follows and handles reconnect
   }
 
   private onMessage(m: ServerMessage) {

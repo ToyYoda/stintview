@@ -54,7 +54,7 @@ describe('TeamFeed', () => {
     const got: string[] = [];
     let done!: () => void;
     const all = new Promise<void>((r) => { done = r; });
-    feed = new TeamFeed(`http://localhost:${port}`, 'token', {
+    feed = new TeamFeed(async () => ({ base: new URL(`http://localhost:${port}`), security: 'local' }), 'token', {
       onState: (s) => states.push(s),
       onMessage: (m) => { got.push(m.t); if (m.t === 'inputs') done(); },
     });

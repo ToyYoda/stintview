@@ -92,6 +92,7 @@ body.setup-body #root { height: auto; }
 .setup .team { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 0 0 14px; }
 .setup .team dt { color: var(--o-muted); }
 .setup .team dd { margin: 0; user-select: all; }
+.setup .team .cert { font-size: 11px; opacity: 0.75; }
 
 .setup .toggle { display: flex; align-items: flex-start; gap: 12px; padding: 8px 0; cursor: pointer; position: relative; }
 .setup .toggle.disabled { opacity: 0.5; cursor: default; }
