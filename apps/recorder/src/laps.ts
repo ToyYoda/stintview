@@ -7,7 +7,8 @@ import { randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import type { LapRecord, LapSession } from '@stintview/planner';
-import { configPath, type Config } from './config.ts';
+import { configPath, serverTarget, type Config } from './config.ts';
+import { request } from './server-link.ts';
 
 export const lapsPath = () => join(dirname(configPath()), 'laps.json');
 
@@ -105,11 +106,11 @@ export class LapUploader {
     this.busy = true;
     try {
       for (let laps = this.log.unsent(); laps.length; laps = this.log.unsent()) {
-        const res = await fetch(new URL('/api/laps', cfg.serverUrl), {
+        const res = await request(await serverTarget(cfg), '/api/laps', {
           method: 'POST',
           headers: { 'content-type': 'application/json', authorization: `Bearer ${cfg.token}` },
           body: JSON.stringify({ laps }),
-          signal: AbortSignal.timeout(20_000),
+          timeoutMs: 20_000,
         });
         if (res.status === 404) {
           this.pausedUntil = Date.now() + OLD_SERVER_PAUSE_MS;

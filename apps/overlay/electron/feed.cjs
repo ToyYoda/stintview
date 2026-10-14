@@ -13,6 +13,7 @@ const LINGER_MS = 10_000;
 /** webContents id -> Set of telemetry types (null = everything). */
 const subscribers = new Map();
 let loadConfig = () => null;
+let serverTarget = () => Promise.reject(new Error('no team'));
 let teamFeed = null;
 let lingerTimer = null;
 
@@ -53,7 +54,7 @@ function startTeamFeed() {
   const config = loadConfig();
   if (!config) return;
   const { TeamFeed } = bundle();
-  teamFeed = new TeamFeed(config.serverUrl, config.token, {
+  teamFeed = new TeamFeed(serverTarget, config.token, {
     onMessage: (m) => {
       teamCar(m);
       broadcast('feed', m);
@@ -126,7 +127,7 @@ function onTeamMessage(msg) {
 }
 
 module.exports = {
-  init: (opts) => { loadConfig = opts.loadConfig; },
+  init: (opts) => { ({ loadConfig, serverTarget } = opts); },
   restartTeamFeed,
   setOtherSession,
   onLocalTelemetry,

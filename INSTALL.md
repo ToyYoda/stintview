@@ -36,6 +36,8 @@ In the StintView window, under **Join team**, fill in:
 
 Then click **Join team**. Under *Status*, **Team server: connected** appears.
 
+The connection to the team server is **encrypted**. When you join, StintView remembers the team server's certificate and from then on only talks to exactly that server. The **Team** tab shows *Connection: encrypted*. There is no cloud: your data only goes to your team manager's team server.
+
 **Done.** You never need to set anything up again.
 
 **Without a team:** the displays also work without a team – or while the team server can't be reached. They then show your **own sessions** on this PC only; the header says "sessions on this PC only". As soon as the team connection is up, they show the teammate in the car again. The same applies when you drive in **another iRacing session** than your team (e.g. practice while the team races): your displays then show your own session ("The team is in another session – showing yours"); your team doesn't see it. **While you drive yourself, your displays always show your own car** – even when a teammate is out in the same session at the same time and streams to the team (e.g. two drivers in the same open practice). The header then says "… is driving for the team – showing your own car". Without a team, joining is in the StintView window under the **Team** tab.
@@ -160,6 +162,8 @@ Check right away: **"Check for updates"** in the menu or at the bottom of the St
 | "Server not reachable" when joining | Check the address (including `:8787`). Ask your team manager whether their server is running. |
 | "Unknown invite code" | Typo in the code – ask your team manager. |
 | Status: **No connection to the team server** | Server not reachable or not started. StintView reconnects automatically. |
+| Status: **encrypted connection required – update StintView** | The team server is newer than your StintView – quit and restart StintView (update), otherwise download the setup again. |
+| Status: **The team server shows a different certificate than when you joined** | Your team manager set up the team server again (e.g. a new PC without a backup) – then click **Leave team** in the **Team** tab and join again. If they didn't change anything, tell them: someone might be intercepting the connection. |
 | Status: **server speaks protocol v…** | Your version doesn't match the server – quit and restart StintView (update), otherwise download the setup again. |
 | Status: **In the car – standby** | Normal during a driver change: you are shown as soon as the previous driver has left the car. If it stays that way, you are in a different session than the team. |
 | Overlay invisible on the monitor | Set iRacing to borderless window. |
@@ -189,6 +193,6 @@ So your team can reach you from the internet:
 - Ideally set up a **DynDNS name**, so the address stays the same when your IP changes.
 - Your PC with StintView must be running for the whole race – even while someone else is driving.
 
-Team data is stored in `%APPDATA%\StintView\server\teams.json`. Back up this file – without it, everyone has to join again. Lap times and races of the stint planner are stored next to it in `planner.json`. The stint planner uses the same port forwarding (TCP 8787); there is nothing else to set up.
+Team data is stored in the folder `%APPDATA%\StintView\server`: `teams.json` (team and access), `planner.json` (lap times and races of the stint planner), and `tls-key.pem` and `tls-cert.pem` – the certificate the server encrypts connections with. **Back up the whole folder** and take it along when you move to a new PC: without `teams.json` everyone has to join again, and without the two certificate files your team's apps report "different certificate" and have to join again as well. In the **Team** tab, *This server's certificate* shows the start of its fingerprint – your team members see the same value under *Connection* when everything is right. The stint planner uses the same port forwarding (TCP 8787); there is nothing else to set up.
 
 **Publishing a new version** (in the project folder): `git tag v0.2.1` and `git push origin v0.2.1`. GitHub then builds `StintView-Setup.exe` and publishes it; all installed copies of StintView update themselves.

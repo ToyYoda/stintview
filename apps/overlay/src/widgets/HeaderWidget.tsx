@@ -18,13 +18,15 @@ export function HeaderWidget({ state, interactive = false }: { state: FeedState;
   const driver = state.active?.driverName;
   let dot = 'ok';
   let text = driver ? `${driver}` : t('header.nobody');
+  // 'cert-changed' (team-feed.ts): the server shows another certificate than the remembered one.
+  const error = state.error === 'cert-changed' ? t('header.certChanged') : state.error ?? t('header.error');
   // Own data (no team server): this PC's driver or nobody, and why it isn't the team's.
   if (state.local) {
     if (!driver) { dot = 'idle'; text = t('header.localIdle'); }
     else if (age !== null && age > 3) dot = 'warn';
   }
   else if (state.conn === 'no-config') { dot = 'bad'; text = t('header.noConfig'); }
-  else if (state.conn === 'error') { dot = 'bad'; text = state.error ?? t('header.error'); }
+  else if (state.conn === 'error') { dot = 'bad'; text = error; }
   else if (state.conn === 'connecting') { dot = 'warn'; text = t('header.connecting'); }
   else if (!driver) dot = 'idle';
   else if (age !== null && age > 3) dot = 'warn';
@@ -33,7 +35,7 @@ export function HeaderWidget({ state, interactive = false }: { state: FeedState;
       // We drive: always our own car. Only worth a word if the team shows someone else.
       : state.conn === 'connected' ? (state.teamDriver ? t('header.localOwnCar', { name: state.teamDriver }) : null)
         : state.conn === 'no-config' ? t('header.localNoTeam')
-          : state.conn === 'error' ? t('header.localError', { error: state.error ?? t('header.error') })
+          : state.conn === 'error' ? t('header.localError', { error })
             : t('header.localOffline');
 
   return (

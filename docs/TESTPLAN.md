@@ -255,6 +255,18 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 | 8.1 | alle | nach einer neuen Version StintView beenden und starten | Menü zeigt „Update … wird beim Beenden installiert“ | |
 | 8.2 | alle | erneut beenden und starten | neue Versionsnummer im Fenster, Team-Zugang und Einstellungen unverändert | |
 
+### Block 8b – Verschlüsselte Verbindung (Update auf 0.26)
+
+| # | Wer | Schritt | Erwartet | Ergebnis |
+|---|---|---|---|---|
+| 8b.1 | alle | vor dem Update: Reiter **Team** ansehen | *Verbindung: unverschlüsselt – der Team-Server ist noch eine alte Version* (Mitglieder) bzw. *Team-Server auf diesem PC* (H) | |
+| 8b.2 | Z | auf 0.26 aktualisieren, **bevor** H aktualisiert hat | weiter *verbunden*, Daten kommen wie vorher an (unverschlüsselt, bis H aktualisiert) | |
+| 8b.3 | H | auf 0.26 aktualisieren | `server.log`: „listening … (TLS …), certificate AB:CD:…“; Reiter **Team** zeigt *Zertifikat dieses Servers* | |
+| 8b.4 | alle | nach H's Update | ohne Zutun wieder *verbunden*; Reiter **Team**: *Verbindung: verschlüsselt*, *Zertifikat* = derselbe Anfang wie bei H | |
+| 8b.5 | Z | eine noch nicht aktualisierte StintView (falls vorhanden) mit H's neuem Server | Status „encrypted connection required – update StintView“, nach Update verbunden | |
+| 8b.6 | Z | **Team verlassen** und mit Adresse + Code neu beitreten | sofort *Verbindung: verschlüsselt* | |
+| 8b.7 | H | **Stintplaner öffnen** (nur Mitglieder: Adresse im Browser beginnt mit `http://127.0.0.1:`) | Planer-Seite ohne Zertifikatswarnung, angemeldet | |
+
 ---
 
 ## 5. Zeitplan für die Test-Session (~90 min)
@@ -301,4 +313,4 @@ Anhang: screenshot.png, recorder.log
 - **Kamera-Sprung** nur beim Zuschauer, der dieselbe Session in iRacing schaut; nie beim Fahrer.
 - **VR-Panels** sind nicht anklickbar (nur Tastenkürzel).
 - **SmartScreen-Warnung** bei der Installation (Programm noch nicht signiert).
-- Verbindung unverschlüsselt.
+- **Zertifikat geändert:** Richtet H den Team-Server neu ein, ohne den Ordner `%APPDATA%\StintView\server` mitzunehmen, melden alle „anderes Zertifikat“ und müssen neu beitreten – so gewollt.

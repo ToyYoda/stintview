@@ -244,25 +244,50 @@ const panelConfig = (settings) => Object.fromEntries(PANEL_IDS.map((id) => [id, 
 }]));
 const saveSettings = (s) => writeJson(settingsPath, s);
 
-/** Joins or creates a team on the relay and stores the credentials. */
+/** Encrypted link to the team server (since 0.26; recorder bundle, see server-link.ts). */
+const serverLink = () => require(path.join(__dirname, '..', 'dist-bundles', 'server-link.cjs'));
+
+/**
+ * Where to reach the team server for the next connection. A config from before 0.26 learns the
+ * server's certificate on the way (first connection after the update) and keeps it.
+ */
+function serverTarget() {
+  const c = loadConfig();
+  if (!c) return Promise.reject(new Error('no team'));
+  return serverLink().resolveServer(c, (access) => {
+    const now = loadConfig();
+    if (now?.token === c.token) saveConfig({ ...now, ...access });
+  });
+}
+
+/** 'local' | 'encrypted' | 'plain' and the remembered certificate's fingerprint (StintView window). */
+function serverSecurity(config) {
+  const { fingerprint, security } = serverLink();
+  return { security: security(config), fingerprint: config.serverCert ? fingerprint(config.serverCert) : null };
+}
+
+/** Joins or creates a team on the relay and stores the credentials (and the server's certificate). */
 async function register(serverUrl, kind, body) {
-  const url = new URL(kind === 'create' ? '/api/teams' : '/api/join', normalizeUrl(serverUrl));
+  const base = normalizeUrl(serverUrl);
+  const { firstContact, request } = serverLink();
   let res;
+  let contact;
   try {
-    res = await fetch(url, {
+    contact = await firstContact(base);
+    res = await request(contact.target, kind === 'create' ? '/api/teams' : '/api/join', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(8000),
+      timeoutMs: 8000,
     });
   } catch {
-    throw new Error(t('join.unreachable', { url: url.origin }));
+    throw new Error(t('join.unreachable', { url: base }));
   }
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(json.error === 'unknown invite code' ? t('join.unknownCode') : (json.error ?? t('join.error', { status: res.status })));
   }
-  const config = { ...json, serverUrl: url.origin };
+  const config = { ...json, ...contact.access };
   saveConfig(config);
   return config;
 }
@@ -280,6 +305,6 @@ function normalizeUrl(input) {
 }
 
 module.exports = {
-  dataDir, logDir, configPath, loadConfig, saveConfig, clearConfig, loadSettings, saveSettings, register, normalizeUrl,
+  dataDir, logDir, configPath, loadConfig, saveConfig, clearConfig, loadSettings, saveSettings, register, normalizeUrl, serverTarget, serverSecurity, serverLink,
   cleanLanguage, cleanPanels, cleanOpacity, cleanOutput, cleanPitStop, cleanMessages, cleanVrRecenter, cleanProfile, cleanProfileMode, PROFILE_IDS, panelsFor, panelConfig, MESSAGE_COLORS,
 };

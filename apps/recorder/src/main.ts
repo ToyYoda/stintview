@@ -1,6 +1,7 @@
 import { parseArgs } from 'node:util';
 import type { ClientMessage, CreateTeamRequest, JoinTeamRequest, SendMessage, ServerMessage, TeamCredentials } from '@stintview/protocol';
-import { configPath, loadConfig, saveConfig, wsUrl } from './config.ts';
+import { configPath, loadConfig, saveConfig, serverTarget } from './config.ts';
+import { firstContact, request } from './server-link.ts';
 import { Connection } from './connection.ts';
 import { IbtSource } from './irsdk/ibt.ts';
 import type { TelemetrySource } from './irsdk/layout.ts';
@@ -69,12 +70,14 @@ const STANDBY_GONE_MS = 5000;
 
 async function register(path: string, body: CreateTeamRequest | JoinTeamRequest) {
   if (!values.server) throw new Error('--server is required');
-  const res = await fetch(new URL(path, values.server), {
+  const { target, access } = await firstContact(new URL(/^https?:\/\//i.test(values.server) ? values.server : `http://${values.server}`).origin);
+  const res = await request(target, path, {
     method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
   });
-  const json = await res.json() as TeamCredentials & { error?: string };
-  if (!res.ok) throw new Error(json.error ?? res.statusText);
-  saveConfig({ ...json, serverUrl: values.server });
+  const json = await res.json<TeamCredentials & { error?: string }>();
+  if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
+  saveConfig({ ...json, ...access });
+  console.log(`Connection: ${target.security === 'encrypted' ? 'encrypted' : target.security === 'local' ? 'this PC' : 'NOT encrypted (old team server)'}`);
   console.log(`Team "${json.teamName}" – you are ${json.memberName}.`);
   console.log(`Invite code for teammates: ${json.inviteCode}`);
   console.log(`Saved to ${configPath()}`);
@@ -107,7 +110,7 @@ async function record(source: TelemetrySource, label: string, spectator?: Specta
   }, 1000);
   onSourceLost = () => setOtherSession(null);
 
-  const conn = config ? new Connection(wsUrl(config.serverUrl), config.token, {
+  const conn = config ? new Connection(() => serverTarget(config), config.token, {
     onOpen: () => recorder.stateMessages(),
     onStatus: (s) => {
       console.log(`[server] ${s}`);

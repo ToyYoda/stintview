@@ -69,7 +69,10 @@ export interface AppState {
   /** Started from the sources, not installed: shown as "Testinstanz" instead of the version. */
   testInstance?: boolean;
   configured: boolean;
-  team: { teamName: string; memberName: string; serverUrl: string; inviteCode: string } | null;
+  /** security: connection to the team server (since 0.26); fingerprint of its remembered certificate. */
+  team: { teamName: string; memberName: string; serverUrl: string; inviteCode: string; security: 'local' | 'encrypted' | 'plain'; fingerprint: string | null } | null;
+  /** Team server on this PC: fingerprint of its certificate (null = off or not started yet). */
+  hostFingerprint: string | null;
   settings: {
     /** Panels shown at all. */
     overlay: boolean;

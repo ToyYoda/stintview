@@ -36,6 +36,8 @@ Im StintView-Fenster unter **Team beitreten** ausfüllen:
 
 Dann **Team beitreten** klicken. Unter *Status* erscheint **Team-Server: verbunden**.
 
+Die Verbindung zum Team-Server ist **verschlüsselt**. StintView merkt sich beim Beitreten das Zertifikat des Team-Servers und spricht danach nur noch mit genau diesem Server. Im Reiter **Team** steht dazu *Verbindung: verschlüsselt*. Es gibt keine Cloud: Deine Daten gehen nur an den Team-Server deines Teamchefs.
+
 **Fertig.** Du musst nie wieder etwas einrichten.
 
 **Ohne Team:** Die Anzeigen funktionieren auch ohne Team – oder wenn der Team-Server gerade nicht erreichbar ist. Sie zeigen dann nur deine **eigenen Sessions** auf diesem PC; die Kopfzeile sagt dazu „nur Sessions auf diesem PC“. Sobald die Verbindung zum Team steht, zeigen sie wieder den Teamkollegen im Auto. Dasselbe gilt, wenn du in einer **anderen iRacing-Session** fährst als dein Team (z. B. Training, während das Team ein Rennen fährt): Deine Anzeigen zeigen dann deine eigene Session („Das Team fährt eine andere Session – hier deine eigene“), dein Team sieht davon nichts. **Wenn du selbst fährst, zeigen deine Anzeigen immer dein eigenes Auto** – auch wenn ein Teamkollege gleichzeitig in derselben Session unterwegs ist und fürs Team sendet (z. B. zwei Fahrer im selben offenen Training). Die Kopfzeile sagt dann „Im Team fährt gerade … – hier dein eigenes Auto“. Ohne Team findest du das Beitreten im StintView-Fenster im Reiter **Team**.
@@ -162,6 +164,8 @@ Sofort nachsehen: im Menü **„Nach Updates suchen“** (oder unten im StintVie
 | „Server nicht erreichbar“ beim Beitreten | Adresse prüfen (inkl. `:8787`). Teamchef fragen, ob sein Server läuft. |
 | „Unbekannter Einladungscode“ | Code vertippt – beim Teamchef nachfragen. |
 | Status: **Keine Verbindung zum Team-Server** | Server nicht erreichbar oder nicht gestartet. StintView verbindet sich automatisch neu. |
+| Status: **encrypted connection required – update StintView** | Der Team-Server ist neuer als deine StintView-Version – StintView beenden und neu starten (Update), sonst Setup neu herunterladen. |
+| Status: **Der Team-Server zeigt ein anderes Zertifikat als beim Beitreten** | Der Teamchef hat seinen Team-Server neu eingerichtet (z. B. neuer PC ohne Sicherung) – dann im Reiter **Team** auf **Team verlassen** und neu beitreten. Hat er nichts geändert, beim Teamchef melden: Dann könnte sich jemand in die Verbindung eingeschaltet haben. |
 | Status: **server speaks protocol v…** | Deine Version passt nicht zum Server – StintView beenden und neu starten (Update), sonst Setup neu herunterladen. |
 | Status: **Im Auto – Standby** | Normal beim Fahrerwechsel: du wirst angezeigt, sobald dein Vorgänger ausgestiegen ist. Bleibt es dabei, fährst du in einer anderen Session als das Team. |
 | Overlay am Monitor unsichtbar | iRacing auf randloses Fenster stellen. |
@@ -191,6 +195,6 @@ Damit dein Team dich aus dem Internet erreicht:
 - Am besten einen **DynDNS-Namen** einrichten, damit die Adresse gleich bleibt, auch wenn sich deine IP ändert.
 - Dein PC mit StintView muss während des ganzen Rennens laufen – auch wenn gerade jemand anderes fährt.
 
-Die Teamdaten liegen in `%APPDATA%\StintView\server\teams.json`. Diese Datei sichern – ohne sie müssen alle neu beitreten. Rundenzeiten und Rennen des Stintplaners liegen daneben in `planner.json`. Der Stintplaner läuft über dieselbe Portfreigabe (TCP 8787), es ist nichts weiter einzurichten.
+Die Teamdaten liegen im Ordner `%APPDATA%\StintView\server`: `teams.json` (Team und Zugänge), `planner.json` (Rundenzeiten und Rennen des Stintplaners) sowie `tls-key.pem` und `tls-cert.pem` – das Zertifikat, mit dem der Server die Verbindungen verschlüsselt. **Den ganzen Ordner sichern** und beim Umzug auf einen neuen PC mitnehmen: Ohne `teams.json` müssen alle neu beitreten, und ohne die beiden Zertifikatsdateien melden die Apps deines Teams „anderes Zertifikat“ und müssen ebenfalls neu beitreten. Im Reiter **Team** steht unter *Zertifikat dieses Servers* der Anfang des Fingerabdrucks – deine Teammitglieder sehen denselben Wert unter *Verbindung*, wenn alles stimmt. Der Stintplaner läuft über dieselbe Portfreigabe (TCP 8787), es ist nichts weiter einzurichten.
 
 **Neue Version veröffentlichen** (im Projektordner): `git tag v0.2.1` und `git push origin v0.2.1`. GitHub baut dann `StintView-Setup.exe` und veröffentlicht sie; alle installierten StintViews aktualisieren sich selbst.

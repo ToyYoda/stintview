@@ -2,11 +2,13 @@
 import WebSocket from 'ws';
 import { PROTOCOL_VERSION, pack, unpack, type ServerMessage, type Telemetry } from '@stintview/protocol';
 import { fuelStats, estimateWear } from '@stintview/telemetry';
-import { loadConfig, wsUrl } from '../config.ts';
+import { loadConfig, serverTarget } from '../config.ts';
+import { wsTarget } from '../server-link.ts';
 
 const config = loadConfig();
 if (!config) throw new Error('no config');
-const ws = new WebSocket(wsUrl(config.serverUrl));
+const target = wsTarget(await serverTarget(config));
+const ws = new WebSocket(target.url, target.options);
 const counts: Record<string, number> = {};
 let lastFuel: Extract<Telemetry, { t: 'fuel' }> | null = null;
 let lastTyres: Extract<Telemetry, { t: 'tyres' }> | null = null;
