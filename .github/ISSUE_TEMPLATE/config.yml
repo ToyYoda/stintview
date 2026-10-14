@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Manual and setup / Anleitung und Einrichtung
+    url: https://toyyoda.github.io/stintview/en/#anleitung
+    about: Installation, joining a team, troubleshooting. – Installation, Team beitreten, wenn etwas nicht klappt.
