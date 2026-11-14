@@ -41,7 +41,12 @@ const PANEL_DEFAULTS = {
   // Team messages: received ones (everyone) and buttons to send (hidden while you drive).
   messages: { shown: false, size: 100 },
   radio: { shown: false, size: 100 },
+  // Video of another window, e.g. Discord's pop-out stream (wish 14.11.2026): which window
+  // ({ id: desktopCapturer source id, name: its title }) and how much to cut off each side (percent).
+  video: { shown: false, size: 100, options: { window: null, crop: { top: 0, bottom: 0, left: 0, right: 0 } } },
 };
+/** Crop of the video panel: at most this many percent per side. */
+const VIDEO_CROP_MAX = 40;
 
 /** Colours a team message can have (same list as the protocol's MESSAGE_COLORS). */
 const MESSAGE_COLORS = ['red', 'amber', 'green', 'blue', 'purple', 'white'];
@@ -218,6 +223,12 @@ function cleanOptions(id, o) {
   }
   if (PANEL_COLUMNS[id]) return cleanColumns(PANEL_COLUMNS[id], o, d);
   if (id === 'duel') return { traffic: typeof o?.traffic === 'boolean' ? o.traffic : d.traffic };
+  if (id === 'video') {
+    const w = o?.window;
+    const window = w && typeof w.name === 'string' && w.name ? { id: typeof w.id === 'string' ? w.id.slice(0, 100) : null, name: w.name.slice(0, 300) } : null;
+    const side = (k) => (Number.isFinite(o?.crop?.[k]) ? Math.min(VIDEO_CROP_MAX, Math.max(0, Math.round(o.crop[k]))) : 0);
+    return { window, crop: { top: side('top'), bottom: side('bottom'), left: side('left'), right: side('right') } };
+  }
   return d;
 }
 

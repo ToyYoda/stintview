@@ -61,6 +61,9 @@ contextBridge.exposeInMainWorld('stintview', {
   sendMessage: (what) => ipcRenderer.invoke('app:send-message', what),
   getRadio: () => ipcRenderer.invoke('app:radio'),
   onRadio: (cb) => ipcRenderer.on('radio', (_e, state) => cb(state)),
+  // Video panel: windows to capture (with preview) and the chosen one's source id now (null = gone)
+  videoWindows: () => ipcRenderer.invoke('video:windows'),
+  videoSource: (want) => ipcRenderer.invoke('video:source', want),
   // Setup window
   getState: () => ipcRenderer.invoke('app:state'),
   onState: (cb) => ipcRenderer.on('app-state', (_e, state) => cb(state)),

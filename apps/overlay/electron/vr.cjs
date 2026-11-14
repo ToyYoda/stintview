@@ -16,7 +16,10 @@ const FPS = Number(process.env.STINTVIEW_VR_FPS ?? 30);
 // Every painted frame is a texture upload to SteamVR. Only the inputs trace needs to be
 // fluid; the other panels change a few times per second at most.
 const SLOW_FPS = Math.min(FPS, 10);
-const panelFps = (id) => (id === 'inputs' ? FPS : SLOW_FPS);
+// Video panel (another window, e.g. Discord): fluid enough for a camera, without uploading a large
+// texture 30 times a second.
+const VIDEO_FPS = Math.min(FPS, 15);
+const panelFps = (id) => (id === 'inputs' ? FPS : id === 'video' ? VIDEO_FPS : SLOW_FPS);
 const ZOOM = 2; // render at 2x for sharp text in the headset
 const RETRY_MS = 5000;
 const layoutPath = path.join(dataDir, 'vr.json');
@@ -39,6 +42,7 @@ const DEFAULT_LAYOUT = {
     pitstop: { enabled: true, distance: 0.8, down: 0.3, right: -0.3, width: 0.2 },
     messages: { enabled: true, distance: 0.8, down: 0.08, right: -0.55, width: 0.24 },
     radio: { enabled: true, distance: 0.8, down: 0.3, right: 0.55, width: 0.24 },
+    video: { enabled: true, distance: 0.8, down: -0.12, right: 0.55, width: 0.36 },
   },
 };
 

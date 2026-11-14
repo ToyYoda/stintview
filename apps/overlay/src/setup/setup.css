@@ -160,6 +160,12 @@ body.setup-body #root { height: auto; }
 .setup .panel-meta { color: var(--o-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 .setup .panel-body { padding: 0 4px 10px 30px; }
 .setup .panel-options { font-size: 13px; }
+.setup .video-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 10px 0; }
+.setup .video-choice { display: flex; flex-direction: column; gap: 4px; padding: 6px; background: var(--o-panel-2); color: var(--o-white); border: 1px solid transparent; border-radius: 6px; cursor: pointer; text-align: left; font: inherit; font-size: 12px; }
+.setup .video-choice:hover, .setup .video-choice.chosen { border-color: var(--o-red); }
+.setup .video-choice img, .setup .video-thumb-empty { width: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: #000; border-radius: 3px; }
+.setup .video-choice span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.setup .video-choices > .btn { grid-column: 1 / -1; justify-self: start; }
 .setup .options-title { font-weight: 600; margin: 4px 0; }
 .setup .options-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 12px; }
 .setup .options-grid label, .setup .option-line { display: flex; align-items: center; gap: 6px; cursor: pointer; }

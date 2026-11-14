@@ -33,6 +33,7 @@ const DEFAULT_POSITIONS = {
   // Off by default: where they show up when switched on (move them as needed).
   relative: { x: 40, y: 640 },
   classes: { x: 860, y: 40 },
+  video: { x: 1100, y: 40 },
 };
 
 let running = false;

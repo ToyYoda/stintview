@@ -16,6 +16,7 @@ const { alignToHead, recenterVr, resetPanelAnchor, setVrLanguage, setVrOpacity, 
 const { displayKey, hotkeyGroups } = require('./hotkeys.cjs');
 const { cancelLearnRecenter, learnRecenter, watchRecenter } = require('./rawinput.cjs');
 const { messageHotkeyInfo, radioState, sendMessage, setDriving, setMessages, startMessages, stopMessages } = require('./messages.cjs');
+const { registerVideoIpc } = require('./video.cjs');
 const { checkNow, installNow, setupUpdates, updateInfo, updateLabel } = require('./updates.cjs');
 const { setLanguage, t } = require('./i18n.cjs');
 const { brand } = require('./brand.cjs');
@@ -716,6 +717,8 @@ ipcMain.handle('app:camera-info', () => cameraInfo());
 ipcMain.handle('app:send-message', (_e, what) => sendMessage(
   typeof what === 'string' ? what : { text: String(what?.text ?? ''), color: String(what?.color ?? 'white') }));
 ipcMain.handle('app:radio', () => radioState());
+// Video panel: windows to choose from, and the chosen one's capture source now.
+registerVideoIpc();
 
 ipcMain.handle('app:leave', async () => {
   const { response } = await dialog.showMessageBox(setupWin ?? undefined, {

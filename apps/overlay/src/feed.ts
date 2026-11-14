@@ -43,7 +43,10 @@ export interface ColumnOptions<C extends string> {
   columns: Record<C, boolean>;
   order?: C[];
 }
-export type PanelOptions = StandingsOptions | DuelOptions | ColumnOptions<RelativeColumn> | ColumnOptions<ClassesColumn>;
+/** Video panel: the window shown (id = capture source when chosen, title to find it again) and the crop in percent per side. */
+export interface VideoWindow { id: string | null; name: string }
+export interface VideoOptions { window: VideoWindow | null; crop: { top: number; bottom: number; left: number; right: number } }
+export type PanelOptions = StandingsOptions | DuelOptions | ColumnOptions<RelativeColumn> | ColumnOptions<ClassesColumn> | VideoOptions;
 
 export type ProfileId = 'driving' | 'watching';
 /** One panel set-up: where (monitor or VR, one at a time), which panels, background opacity in percent. */
@@ -193,6 +196,10 @@ declare global {
       sendMessage?(what: string | { text: string; color: MessageColor }): Promise<boolean>;
       getRadio?(): Promise<RadioState>;
       onRadio?(cb: (state: RadioState) => void): void;
+      /** Video panel: windows to capture, with a preview (data URL). */
+      videoWindows?(): Promise<{ id: string; name: string; thumb: string | null }[]>;
+      /** Video panel: the chosen window's capture source now, null if it isn't there. */
+      videoSource?(want: VideoWindow): Promise<{ id: string; name: string } | null>;
     };
   }
 }

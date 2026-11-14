@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { MESSAGE_COLORS, MESSAGE_MAX_LENGTH, type MessageColor } from '@stintview/protocol';
-import type { AppState, ClassesColumn, ColumnOptions, HotkeyGroup, PanelSetting, DuelOptions, Profile, ProfileId, RadioState, RelativeColumn, StandingsOptions } from '../feed.ts';
+import type { AppState, ClassesColumn, ColumnOptions, HotkeyGroup, PanelSetting, DuelOptions, Profile, ProfileId, RadioState, RelativeColumn, StandingsOptions, VideoOptions } from '../feed.ts';
 import { setLang, t, useLang, type Lang } from '../i18n.ts';
 import { brand } from '../brand.ts';
 import { STANDINGS_COLUMNS } from '../widgets/StandingsWidget.tsx';
@@ -597,7 +597,7 @@ function PlannerCard({ state, onState }: { state: AppState; onState(s: AppState)
   );
 }
 
-const PANEL_IDS = ['header', 'inputs', 'fuel', 'tyres', 'weather', 'standings', 'duel', 'relative', 'classes', 'pitstop', 'messages', 'radio'] as const;
+const PANEL_IDS = ['header', 'inputs', 'fuel', 'tyres', 'weather', 'standings', 'duel', 'relative', 'classes', 'pitstop', 'messages', 'radio', 'video'] as const;
 
 /**
  * Every panel: on/off in the header, and when opened its size and panel-specific options.
@@ -668,6 +668,7 @@ function PanelList({ panels, onChange }: {
                     labels={{ gap: 'set.col.trackGap', pos: 'set.col.classPos' }} />
                 </div>
               )}
+              {id === 'video' && p.options && <VideoOptionsForm options={p.options as VideoOptions} onChange={(options) => update(id, { options })} />}
               {id === 'classes' && p.options && (
                 <div className="panel-options">
                   <ColumnList all={CLASSES_COLUMNS} options={p.options as ColumnOptions<ClassesColumn>} onChange={(options) => update(id, { options })}
@@ -777,6 +778,52 @@ function DuelOptionsForm({ options, onChange }: { options: DuelOptions; onChange
         <input type="checkbox" checked={options.traffic} onChange={() => onChange({ ...options, traffic: !options.traffic })} />
         {t('set.traffic')}
       </label>
+    </div>
+  );
+}
+
+/**
+ * Video panel: which window it shows (list with previews of the open windows) and how much to cut
+ * off each side. Discord: the video or screen share has to be in a window of its own (pop-out).
+ */
+function VideoOptionsForm({ options, onChange }: { options: VideoOptions; onChange(o: VideoOptions): void }) {
+  const [list, setList] = useState<{ id: string; name: string; thumb: string | null }[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const choose = async () => {
+    setLoading(true);
+    try {
+      setList((await api().videoWindows?.()) ?? []);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const crop = (side: keyof VideoOptions['crop']) => (v: number) => onChange({ ...options, crop: { ...options.crop, [side]: v } });
+  return (
+    <div className="panel-options">
+      <p className="hint">{t('set.videoHint')}</p>
+      <div className="edit-row">
+        <span>{options.window ? t('set.videoWindow', { name: options.window.name }) : t('set.videoNone')}</span>
+        <button className="btn ghost" onClick={choose} disabled={loading}>{loading ? t('set.videoLoading') : t('set.videoChoose')}</button>
+        {options.window && <button className="btn ghost" onClick={() => onChange({ ...options, window: null })}>{t('set.videoRemove')}</button>}
+      </div>
+      {list && (
+        <div className="video-choices">
+          {list.length === 0 && <p className="hint">{t('set.videoNoWindows')}</p>}
+          {list.map((w) => (
+            <button key={w.id} className={options.window?.id === w.id ? 'video-choice chosen' : 'video-choice'} title={w.name}
+              onClick={() => { onChange({ ...options, window: { id: w.id, name: w.name } }); setList(null); }}>
+              {w.thumb ? <img src={w.thumb} alt="" /> : <span className="video-thumb-empty" />}
+              <span>{w.name}</span>
+            </button>
+          ))}
+          <button className="btn ghost" onClick={() => setList(null)}>{t('set.videoClose')}</button>
+        </div>
+      )}
+      <div className="options-title">{t('set.videoCrop')}</div>
+      <Slider label={t('set.videoCropTop')} value={options.crop.top} min={0} max={40} step={1} onCommit={crop('top')} />
+      <Slider label={t('set.videoCropBottom')} value={options.crop.bottom} min={0} max={40} step={1} onCommit={crop('bottom')} />
+      <Slider label={t('set.videoCropLeft')} value={options.crop.left} min={0} max={40} step={1} onCommit={crop('left')} />
+      <Slider label={t('set.videoCropRight')} value={options.crop.right} min={0} max={40} step={1} onCommit={crop('right')} />
     </div>
   );
 }

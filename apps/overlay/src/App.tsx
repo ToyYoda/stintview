@@ -12,12 +12,13 @@ import { RelativeWidget } from './widgets/RelativeWidget.tsx';
 import { ClassStandingsWidget } from './widgets/ClassStandingsWidget.tsx';
 import { MessagesWidget } from './widgets/MessagesWidget.tsx';
 import { RadioWidget } from './widgets/RadioWidget.tsx';
-import type { ClassesColumn, ColumnOptions, DuelOptions, PanelConfig, RelativeColumn, StandingsOptions } from './feed.ts';
+import { VideoWidget } from './widgets/VideoWidget.tsx';
+import type { ClassesColumn, ColumnOptions, DuelOptions, PanelConfig, RelativeColumn, StandingsOptions, VideoOptions } from './feed.ts';
 import { setLang, t, useLang } from './i18n.ts';
 import { PitWidget } from './widgets/PitWidget.tsx';
 import { EditBanner, MonitorPanel } from './MonitorPanel.tsx';
 
-type WidgetId = 'header' | 'inputs' | 'fuel' | 'tyres' | 'weather' | 'standings' | 'duel' | 'relative' | 'classes' | 'pitstop' | 'messages' | 'radio';
+type WidgetId = 'header' | 'inputs' | 'fuel' | 'tyres' | 'weather' | 'standings' | 'duel' | 'relative' | 'classes' | 'pitstop' | 'messages' | 'radio' | 'video';
 type Positions = Record<WidgetId, { x: number; y: number }>;
 
 // Side by side on a 1920 px wide screen (panels are ~320 px, inputs ~440, standings ~500 wide).
@@ -35,6 +36,7 @@ const DEFAULT_POSITIONS: Positions = {
   // Off by default: where they show up when switched on (move them as needed).
   relative: { x: 40, y: 640 },
   classes: { x: 860, y: 40 },
+  video: { x: 1100, y: 40 },
 };
 /**
  * Telemetry each panel shows: in the desktop app a panel page gets only these (and who drives,
@@ -53,6 +55,7 @@ const FEED_TYPES: Record<WidgetId, Telemetry['t'][]> = {
   pitstop: ['pitplan', 'standings'],
   messages: [],
   radio: [],
+  video: [],
 };
 
 /** `#/panel/<id>`, `#/widget/<id>`: that panel's types; the banner none; all widgets: everything. */
@@ -133,6 +136,8 @@ export function App() {
     messages: <MessagesWidget messages={state.messages} placeholder={edit} />,
     // Clickable on the desktop overlay only; VR panels show the hotkeys.
     radio: <RadioWidget interactive={Boolean(window.stintview) && !location.hash.startsWith('#/widget/')} />,
+    // Another window's picture (e.g. Discord's pop-out), chosen in the StintView window.
+    video: <VideoWidget options={config?.video?.options as VideoOptions | null | undefined} />,
   };
 
   if (route.startsWith('#/banner')) return <EditBanner />;

@@ -235,6 +235,7 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 | 6.3c | Z (VR) | StintView-Fenster → Anzeigen → **Recenter mit iRacing koppeln** → Taste/Knopf festlegen, den iRacing-Recenter-Knopf (Lenkrad oder Taste) drücken; dann in iRacing Kopf zur Seite drehen und den Knopf drücken | Fenster zeigt „Gekoppelt: …“ mit Gerät und Knopf; nach dem Druck stehen iRacing-Sicht **und** Panels wieder geradeaus vor dir; iRacing reagiert weiter normal auf den Knopf | |
 | 6.4 | A (VR, falls möglich) | selbst in VR fahren | iRacing-Bildrate spürbar unverändert | |
 | 6.5 | A (VR) | Konfiguration *Automatisch*, iRacing starten und **sofort** ins Auto steigen (während die VR-Panels noch aufgebaut werden); mehrmals in verschiedenen Sessions | alle Panels der Konfiguration *Fahren* erscheinen, auch Position, Duell und Relative (bis 0.25.1 fehlten sie dann) | |
+| 6.6 | Z (VR oder Monitor) | In Discord eine Kamera oder Bildschirmübertragung per Pop-out in ein eigenes Fenster holen; StintView-Fenster → Anzeigen → **Discord-Video** einschalten → **Fenster wählen …** → das Pop-out-Fenster; Zuschneiden oben/unten, bis nur das Video bleibt; dann iRacing davor | Video im Panel, flüssig (bis 15 Bilder/s), auch wenn iRacing das Discord-Fenster verdeckt; Discord-Fenster schließen und neu öffnen → Bild kommt nach wenigen Sekunden wieder; iRacing-Bildrate spürbar unverändert | |
 
 ### Block 7 – Robustheit (10 min)
 

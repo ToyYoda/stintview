@@ -46,3 +46,19 @@ describe('profiles (driving / watching)', () => {
     expect(cleanProfileMode('nonsense')).toBe('auto');
   });
 });
+
+describe('video panel', () => {
+  it('off by default, no window, no crop', () => {
+    expect(cleanPanels({}).video).toEqual({ shown: false, size: 100, options: { window: null, crop: { top: 0, bottom: 0, left: 0, right: 0 } } });
+  });
+
+  it('keeps the chosen window, crop in whole percent up to 40', () => {
+    const v = cleanPanels({ video: { shown: true, options: { window: { id: 'window:123:0', name: 'Discord' }, crop: { top: 7.6, bottom: 90, left: -3, right: 'x' } } } }).video;
+    expect(v.shown).toBe(true);
+    expect(v.options).toEqual({ window: { id: 'window:123:0', name: 'Discord' }, crop: { top: 8, bottom: 40, left: 0, right: 0 } });
+  });
+
+  it('a window without a title is no window', () => {
+    expect(cleanPanels({ video: { options: { window: { id: 'window:1:0', name: '' } } } }).video.options.window).toBeNull();
+  });
+});
