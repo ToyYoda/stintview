@@ -2,6 +2,12 @@
 
 Alle veröffentlichten Versionen, neueste zuerst. Installer und Updates: [GitHub Releases](https://github.com/ToyYoda/stintview/releases) – die App aktualisiert sich selbst.
 
+## 0.27.0 – 14.11.2026
+
+- **Neues Panel „Discord-Video“:** zeigt das Bild eines anderen Fensters im Overlay oder in VR – gedacht für eine Kamera oder Bildschirmübertragung aus Discord. Hol das Video in Discord per Pop-out in ein eigenes Fenster und wähle es im StintView-Fenster unter **Anzeigen → Discord-Video → Fenster wählen …** (mit Vorschaubildern). Discords Rand lässt sich oben/unten/links/rechts abschneiden. Das Fenster darf nicht minimiert sein. Bis zu 15 Bilder pro Sekunde, ohne Ton.
+- **VR: Position, Relative und Duell fehlten manchmal:** Wer kurz nach dem Start von iRacing ins Auto stieg, während die VR-Panels noch aufgebaut wurden, sah einige Panels gar nicht in der Brille. Jetzt erscheinen alle.
+- **Sessions mit ungewöhnlichen Namen:** Ein Team- oder Fahrername wie „- TEAM -“ machte iRacings Session-Daten für StintView unlesbar – dann fehlten Namen, Session-Art und mehr. Solche Namen werden jetzt richtig gelesen.
+
 ## 0.26.0 – 14.10.2026
 
 - **Verschlüsselte Verbindung zum Team-Server:** Alles, was zwischen euren PCs und dem Team-Server läuft – Telemetrie, Zugangsdaten, Funk, Rundenzeiten –, ist jetzt verschlüsselt. Mitlesen, z. B. im selben WLAN, ist nicht mehr möglich.
