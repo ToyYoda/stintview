@@ -124,6 +124,6 @@ function Gap({ at, car, team, chips }: { at: At; car: StandingRow | undefined; t
 
 /** "Marco Rossi" -> "M. Rossi"; single names stay. */
 function shortName(name: string) {
-  const parts = name.trim().split(/\s+/);
+  const parts = String(name ?? '').trim().split(/\s+/);
   return parts.length < 2 ? name : `${parts[0]![0]}. ${parts[parts.length - 1]}`;
 }

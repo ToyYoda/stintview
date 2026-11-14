@@ -10,15 +10,35 @@ let lastYaml: unknown = {};
  */
 export function parseSessionYaml<T extends object>(text: string): T {
   if (text !== lastText) {
+    const opts = { strict: false, uniqueKeys: false, maxAliasCount: -1 } as const;
     try {
-      // iRacing YAML is occasionally not strictly valid (e.g. unquoted special characters in names).
-      lastYaml = parse(text, { strict: false, uniqueKeys: false, maxAliasCount: -1 }) ?? {};
+      lastYaml = parse(text, opts) ?? {};
     } catch {
-      lastYaml = {};
+      // iRacing writes names unquoted; one odd name broke the whole session info (no drivers, no
+      // session type – seen in 5 of 438 own .ibt files, 14.11.2026). Quote such values and retry.
+      try {
+        lastYaml = parse(quoteOddValues(text), opts) ?? {};
+      } catch {
+        lastYaml = {};
+      }
     }
     lastText = text;
   }
   return lastYaml as T;
+}
+
+/**
+ * Plain values YAML can't take as they are, in double quotes: e.g. "TeamName: - BLACKSUIT - …"
+ * (read as a list), "AbbrevName: , " (flow indicator), "UserName: Bob: the builder", a name
+ * starting with a quote it doesn't close. Everything else stays as it is (numbers stay numbers).
+ */
+export function quoteOddValues(text: string): string {
+  return text.replace(/^(\s*(?:- )?[A-Za-z0-9_]+:)[ \t]+(.*?)[ \t]*\r?$/gm, (line, key: string, value: string) => {
+    if (!value) return line;
+    const quoted = /^"(?:[^"\\]|\\.)*"$/.test(value) || /^'(?:[^']|'')*'$/.test(value);
+    const odd = !quoted && (/^(?:[,[\]{}#&*!|>%@`"']|[-?:](?:\s|$))/.test(value) || /:\s|\s#/.test(value));
+    return odd ? `${key} ${JSON.stringify(value)}` : line;
+  });
 }
 
 export interface SessionMeta {

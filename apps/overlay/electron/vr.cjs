@@ -79,6 +79,14 @@ let vr = null;
 let d3d = null;
 let retryTimer = null;
 let running = false;
+/**
+ * Counts starts and stops: a start still building its panels gives up once it changed. Without it,
+ * a profile switch while the panels were still being built (getting into the car right after
+ * iRacing started) let the old start carry on next to the new one – duplicate panel windows, and
+ * whichever start finished first connected SteamVR, so the panels the other one built afterwards
+ * (Position, Duel, Relative …, late in the list) never got an overlay: missing in the headset.
+ */
+let generation = 0;
 let selected = 0;
 let onChange = () => {};
 
@@ -155,8 +163,14 @@ async function createPanelWindow(id) {
   await new Promise((r) => setTimeout(r, 300));
   if (win.isDestroyed()) return;
   await fitToWidget(win);
+  if (win.isDestroyed()) return;
   // Widgets change size (e.g. hint lines appear/disappear); keep the panel tight.
   panel.fitTimer = setInterval(() => fitToWidget(win).catch(() => {}), 2000);
+  // Already connected to SteamVR (e.g. it came back while the panels were being built): show it too.
+  if (vr && !panel.handle && panels.get(id) === panel) {
+    openPanel(id);
+    updatePainting();
+  }
 }
 
 /** Texture size grid (px at ZOOM) and how long a widget must stay smaller before its panel shrinks. */
@@ -442,6 +456,7 @@ function resetPanelAnchor() {
 async function startVr(changed = () => {}, panelIds = null, profile = 'watching') {
   if (running) return;
   running = true;
+  const gen = ++generation;
   onChange = changed;
   layoutProfile = profile;
   layout = loadLayout(profile);
@@ -449,9 +464,16 @@ async function startVr(changed = () => {}, panelIds = null, profile = 'watching'
   ids = Object.keys(layout.panels).filter((id) => layout.panels[id].enabled && (!panelIds || panelIds.includes(id)));
   selected = 0;
   d3d = new D3D11();
-  for (const id of ids) {
-    await createPanelWindow(id);
-    if (!running) return; // stopped while starting
+  for (const id of [...ids]) {
+    try {
+      await createPanelWindow(id);
+    } catch (e) {
+      // Window destroyed by a stop while loading.
+      if (gen !== generation) return;
+      throw e;
+    }
+    // Stopped while starting – and maybe started again (profile switch): that start takes over.
+    if (gen !== generation) return;
   }
   for (const [key, fn] of Object.entries(HOTKEYS)) {
     failedHotkeys.delete(key);
@@ -470,6 +492,7 @@ async function startVr(changed = () => {}, panelIds = null, profile = 'watching'
 function stopVr() {
   if (!running) return;
   running = false;
+  generation++;
   clearInterval(retryTimer);
   retryTimer = null;
   clearInterval(statsTimer);

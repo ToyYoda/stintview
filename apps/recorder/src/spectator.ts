@@ -119,7 +119,7 @@ export function parseSessionCars(text: string): SessionCars {
     if (d.CarIdx === undefined) continue;
     const number = d.CarNumberRaw ?? -1;
     drivers.set(d.CarIdx, {
-      number, label: String(d.CarNumber ?? number), name: d.UserName ?? d.TeamName ?? '', flair: d.FlairName,
+      number, label: String(d.CarNumber ?? number), name: String(d.UserName ?? d.TeamName ?? ''), flair: d.FlairName,
       car: d.CarScreenName ? String(d.CarScreenName) : null,
       // Outside team races iRacing puts the driver's name here: only team races have a team.
       team: y.WeekendInfo?.TeamRacing === 1 && d.TeamName ? String(d.TeamName) : null,

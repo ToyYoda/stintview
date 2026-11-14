@@ -234,6 +234,7 @@ Absprache über Discord: B fährt ein Stück vor A her und stellt sein Auto dann
 | 6.3b | Z (VR) | Kopf zur Seite drehen, **Strg+Umschalt+R** | aktuelle Blickrichtung wird die Mitte; iRacing-Sicht und StintView-Panels rücken nach vorn | |
 | 6.3c | Z (VR) | StintView-Fenster → Anzeigen → **Recenter mit iRacing koppeln** → Taste/Knopf festlegen, den iRacing-Recenter-Knopf (Lenkrad oder Taste) drücken; dann in iRacing Kopf zur Seite drehen und den Knopf drücken | Fenster zeigt „Gekoppelt: …“ mit Gerät und Knopf; nach dem Druck stehen iRacing-Sicht **und** Panels wieder geradeaus vor dir; iRacing reagiert weiter normal auf den Knopf | |
 | 6.4 | A (VR, falls möglich) | selbst in VR fahren | iRacing-Bildrate spürbar unverändert | |
+| 6.5 | A (VR) | Konfiguration *Automatisch*, iRacing starten und **sofort** ins Auto steigen (während die VR-Panels noch aufgebaut werden); mehrmals in verschiedenen Sessions | alle Panels der Konfiguration *Fahren* erscheinen, auch Position, Duell und Relative (bis 0.25.1 fehlten sie dann) | |
 
 ### Block 7 – Robustheit (10 min)
 
