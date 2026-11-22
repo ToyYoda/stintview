@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { countryCode } from './country.ts';
-import { bestProjection, betweenRows, classBestStandings, focusCar, physicalGap, classStandings, computeBestStandings, relativeRows, computeStandings, isRaceSession, lappingRows, officialBestLaps, parseSessions, PitStopTracker, RaceField, StandingsTracker, trackGap, type CarInfo, type CarProgress, type PitState } from './standings.ts';
+import { bestClassPositions, bestProjection, betweenRows, classBestStandings, focusCar, physicalGap, classStandings, computeBestStandings, relativeRows, computeStandings, isRaceSession, lappingRows, officialBestLaps, parseSessions, PitStopTracker, RaceField, StandingsTracker, trackGap, type CarInfo, type CarProgress, type PitState } from './standings.ts';
 import type { Standings } from '@stintview/protocol';
 
 const info = new Map<number, CarInfo>(
@@ -218,6 +218,26 @@ describe('Stint column across a restart of StintView', () => {
     other.setSessionId('100/201'); // another race
     expect(stint(other.onFrame(race(1500, [9, 9], [0, 0])), 1)).toBeNull();
   });
+
+  it('a few frames with another SessionNum do not reset it (race 22.11.2026)', () => {
+    const lines: string[] = [];
+    const s = new StandingsTracker((l) => lines.push(l));
+    s.onFrame(race(1000, [0, 0], [0, 0])); // start: both counted from lap 0
+    s.onFrame(race(1001, [5, 5], [0, 1]));
+    s.onFrame(race(1002, [5, 5], [0, 0])); // car 1 left the pits after lap 5
+    for (let i = 0; i < 10; i++) expect(s.onFrame(frame({ SessionTime: 3 + i, SessionNum: 0, PlayerCarIdx: 0, CarIdxLapCompleted: [0, 0], CarIdxLapDistPct: [0.5, 0.5], CarIdxOnPitRoad: [0, 0] }))).toBeNull();
+    const after = s.onFrame(race(1010, [8, 8], [0, 0]));
+    expect([stint(after, 0), stint(after, 1)]).toEqual([8, 3]);
+    expect(lines.some((l) => l.includes('ignored 10 frame(s)'))).toBe(true);
+  });
+
+  it('a new SessionNum that lasts starts the counting anew', () => {
+    const s = new StandingsTracker(() => {});
+    s.onFrame(race(1000, [0, 0], [0, 0]));
+    const next = (t: number) => frame({ SessionTime: t, SessionNum: 3, SessionState: 4, PlayerCarIdx: 0, CarIdxLapCompleted: [7, 7], CarIdxLapDistPct: [0.5, 0.5], CarIdxOnPitRoad: [0, 0] });
+    for (let i = 0; i < 179; i++) s.onFrame(next(i / 60));
+    expect(stint(s.onFrame(next(10)), 1)).toBeNull(); // new session, seen mid-session: unknown
+  });
 });
 
 describe('PitStopTracker', () => {
@@ -368,6 +388,27 @@ describe('practice and qualifying: ranking by best lap', () => {
     const field = officialBestLaps([best(0, 100.8), best(1, 99.0), best(2, 102.0), best(4, 100.5)], results);
     const rows = computeBestStandings(field, 0, info);
     expect(rows.map((r) => [r.pos, r.carIdx, r.bestLap])).toEqual([[1, 4, 100.5], [2, 0, 101]]);
+  });
+
+  it('official class position from iRacing decides and is shown (23.11.2026)', () => {
+    // Live class positions (CarIdxClassPosition) differ from the order of the best laps.
+    const cars = [{ ...best(0, 100.0), official: 3 }, { ...best(1, 100.5), official: 1 }, { ...best(2, 99.8), official: 2 }, best(3, 101), best(4, null)];
+    const rows = computeBestStandings(cars, 0, info);
+    expect(rows.map((r) => [r.pos, r.carIdx])).toEqual([[1, 1], [2, 2], [3, 0], [4, 3]]);
+    expect(bestClassPositions(cars)).toEqual(new Map([[1, 1], [2, 2], [0, 3], [3, 4]]));
+    expect(bestProjection(cars, 0, info, null)!.pos).toBe(3);
+  });
+
+  it('class position from the YAML when the telemetry has none; the live one wins', () => {
+    const sessions = parseSessions([
+      'SessionInfo:', ' Sessions:', ' - SessionNum: 0', '   SessionType: Practice', '   ResultsPositions:',
+      '   - Position: 1', '     ClassPosition: 0', '     CarIdx: 4', '     FastestTime: 100.5',
+      '   - Position: 2', '     ClassPosition: 1', '     CarIdx: 0', '     FastestTime: 101.0', '',
+    ].join(String.fromCharCode(10)));
+    const results = sessions.get(0)!.results;
+    expect(results[1]).toEqual({ carIdx: 0, position: 2, classPosition: 2, fastest: 101 });
+    const field = officialBestLaps([best(0, 100.8), { ...best(1, 100.2), official: 1 }, best(4, 100.5)], results);
+    expect(field.map((c) => [c.carIdx, c.official, c.best])).toEqual([[0, 2, 101], [1, 1, 100.2], [4, 1, 100.5]]);
   });
 });
 
