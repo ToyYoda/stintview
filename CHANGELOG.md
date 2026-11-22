@@ -2,6 +2,11 @@
 
 Alle veröffentlichten Versionen, neueste zuerst. Installer und Updates: [GitHub Releases](https://github.com/ToyYoda/stintview/releases) – die App aktualisiert sich selbst.
 
+## 0.27.1 – 23.11.2026
+
+- **Spalte „Stint“ im Rennen:** zeigte meist nur „–“. StintView hat seine Zählung der Boxenstopps mitten im Rennen immer wieder verloren. Jetzt bleibt sie über das ganze Rennen erhalten – bei allen Autos, die seit dem Rennbeginn gesehen wurden. Wer StintView erst mitten im Rennen startet, sieht bei einem Auto weiter „–“, bis es an die Box fährt.
+- **Positionen im Training und Qualifying:** Position, Relative und Wertung zeigen jetzt immer die offizielle Platzierung von iRacing. Das Relative zeigte dort vorher die Reihenfolge auf der Strecke.
+
 ## 0.27.0 – 14.11.2026
 
 - **Neues Panel „Discord-Video“:** zeigt das Bild eines anderen Fensters im Overlay oder in VR – gedacht für eine Kamera oder Bildschirmübertragung aus Discord. Hol das Video in Discord per Pop-out in ein eigenes Fenster und wähle es im StintView-Fenster unter **Anzeigen → Discord-Video → Fenster wählen …** (mit Vorschaubildern). Discords Rand lässt sich oben/unten/links/rechts abschneiden. Das Fenster darf nicht minimiert sein. Bis zu 15 Bilder pro Sekunde, ohne Ton.
