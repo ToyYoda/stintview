@@ -2,6 +2,12 @@
 
 Alle veröffentlichten Versionen, neueste zuerst. Installer und Updates: [GitHub Releases](https://github.com/ToyYoda/stintview/releases) – die App aktualisiert sich selbst.
 
+## 0.27.2 – 23.11.2026
+
+- **Anzeigen kurz leer, Sprit-Panel oft ohne Daten:** iRacing liefert etwa einmal pro Minute einen leeren Datensatz. StintView hielt ihn für eine neue Session: Die Anzeigen waren dann kurz leer („Noch keine Daten“), und das Sprit-Panel verlor seine gemessenen Runden. Solche Datensätze werden jetzt übergangen.
+- **Spalte „Stint“ bei den anderen Autos:** Boxenstopps wurden zwar erkannt, gingen aber durch fehlerhafte Datensätze wieder verloren. Am Ende standen fast alle Autos so da, als wären sie seit dem Start ohne Stopp gefahren. Jetzt bleibt jeder Stopp erhalten.
+- **Spalte „Stint“ beim eigenen Auto:** Die Zahl war immer eine Runde höher als bei den anderen, weil die Einführungsrunde mitzählte. Jetzt wird das eigene Auto genauso gezählt wie die anderen. Nur ein Stopp mit neuen Reifen startet die Zählung neu, nach reinem Tanken zählt sie weiter.
+
 ## 0.27.1 – 23.11.2026
 
 - **Spalte „Stint“ im Rennen:** zeigte meist nur „–“. StintView hat seine Zählung der Boxenstopps mitten im Rennen immer wieder verloren. Jetzt bleibt sie über das ganze Rennen erhalten – bei allen Autos, die seit dem Rennbeginn gesehen wurden. Wer StintView erst mitten im Rennen startet, sieht bei einem Auto weiter „–“, bis es an die Box fährt.
