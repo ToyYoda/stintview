@@ -108,6 +108,18 @@ export class Frame {
   }
 }
 
+/**
+ * A frame with everything at zero (SessionNum, SessionTime, SessionState, SessionUniqueID): seen
+ * live about once a minute in the races of 22./23.11.2026, single frames between normal ones.
+ * Taken for a new session, it reset the fuel laps, the Stint column and the displays (empty for
+ * a moment, "no data"). A real frame never has SessionState 0 (invalid) at SessionTime 0 with
+ * SessionUniqueID 0.
+ */
+export function isBlankFrame(f: Frame): boolean {
+  return f.num('SessionTime') === 0 && f.num('SessionState') === 0
+    && (!f.has('SessionUniqueID') || f.num('SessionUniqueID') === 0);
+}
+
 export interface TelemetrySource {
   /** Starts delivering frames. `onSessionInfo` fires on start and whenever the YAML changes. */
   start(onFrame: (f: Frame) => void, onSessionInfo: (yaml: string) => void): void;

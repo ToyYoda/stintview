@@ -528,6 +528,16 @@ export class PitStopTracker {
     }
   }
 
+  /** Lap the car's count starts at (start or leaving the pits), undefined = unknown. */
+  since(carIdx: number): number | undefined {
+    return this.sinceLap.get(carIdx);
+  }
+
+  /** Puts back a starting lap (own car: a stop without new tyres doesn't count). */
+  keep(carIdx: number, lap: number) {
+    this.sinceLap.set(carIdx, lap);
+  }
+
   laps(carIdx: number, lapsNow: number): number | null {
     const since = this.sinceLap.get(carIdx);
     return since === undefined ? null : Math.max(0, lapsNow - since);
@@ -769,6 +779,9 @@ export class StandingsTracker {
   private pending: { num: number; frames: number; first: string } | null = null;
   private blips = 0;
   private trackLength = 0;
+  /** Own car: shortest tyre odometer last seen off pit road, and whether we were on pit road. */
+  private ownOdo: number | null = null;
+  private ownOnPit = false;
   private sessions = new Map<number, SessionResults>();
   private field = new RaceField();
 
@@ -852,7 +865,10 @@ export class StandingsTracker {
     const sessionNum = this.sessionNum;
     // Pace car and spectators are not in any standings.
     const cars = readProgress(f, (idx) => this.info.get(idx)?.estLap ?? null).filter((c) => !this.info.get(c.carIdx)?.notRacing);
+    const player = f.num('PlayerCarIdx');
+    const startBefore = this.pits.since(player);
     this.pits.update(cars.map((c) => ({ carIdx: c.carIdx, laps: Math.floor(c.progress), onPitRoad: c.onPitRoad ?? false })));
+    this.ownStop(f, cars.find((c) => c.carIdx === player), startBefore, driving);
 
     const t = f.num('SessionTime');
     this.keepPits(t);
@@ -864,9 +880,9 @@ export class StandingsTracker {
     this.lastSent = t;
     const teamIdx = focusCar(f, (idx) => this.info.get(idx)?.notRacing ?? false);
     const laps = new Map(cars.map((c) => [c.carIdx, Math.floor(c.progress)]));
-    // The tyre odometer is the player's own car: only while driving it.
-    const ownTyres = driving && teamIdx === f.num('PlayerCarIdx') ? this.ownTyreLaps(f) : null;
-    const tyreLaps = (idx: number) => (idx === teamIdx && ownTyres !== null ? ownTyres : this.pits.laps(idx, laps.get(idx) ?? 0));
+    // Own car without a known start (StintView started mid-race): from the tyre odometer.
+    const ownTyres = driving && teamIdx === player ? this.ownTyreLaps(f) : null;
+    const tyreLaps = (idx: number) => this.pits.laps(idx, laps.get(idx) ?? 0) ?? (idx === teamIdx ? ownTyres : null);
     const lapRef = lapRefOf(cars.find((c) => c.carIdx === teamIdx));
     // Relative panel: on track, in every session.
     // Practice/qualifying: iRacing's official class positions (by best lap), not the order on track.
@@ -936,10 +952,41 @@ export class StandingsTracker {
     return true;
   }
 
-  /** Own car: exact, from the distance the tyres have run since they were fitted (newest tyre). */
-  private ownTyreLaps(f: Frame): number | null {
-    if (this.trackLength <= 0 || !WHEELS.every((w) => f.has(`${w}odometer`))) return null;
+  /**
+   * Own car while driving: like the others, laps since the start or the last stop – but a stop
+   * without new tyres keeps counting (wish 23.11.2026; most daily races change no tyres). New
+   * tyres = the shortest tyre odometer is lower when leaving pit road than before entering it.
+   * Up to 0.27.1 the own count came from the odometer alone: one lap more than the others (the
+   * formation lap and the way out of the pits counted).
+   */
+  private ownStop(f: Frame, car: CarProgress | undefined, startBefore: number | undefined, driving: boolean) {
+    const odo = driving && car ? this.odometer(f) : null;
+    if (odo === null || !car) {
+      this.ownOdo = null;
+      this.ownOnPit = false;
+      return;
+    }
+    const onPit = car.onPitRoad ?? false;
+    if (!onPit) {
+      const start = this.pits.since(car.carIdx);
+      if (this.ownOnPit && startBefore !== undefined && start !== startBefore && this.ownOdo !== null && odo >= this.ownOdo - 1) {
+        this.pits.keep(car.carIdx, startBefore);
+      }
+      this.ownOdo = odo;
+    }
+    this.ownOnPit = onPit;
+  }
+
+  /** Shortest of the four tyre odometers in metres (newest tyre), null without. */
+  private odometer(f: Frame): number | null {
+    if (!WHEELS.every((w) => f.has(`${w}odometer`))) return null;
     const metres = Math.min(...WHEELS.map((w) => f.num(`${w}odometer`)));
-    return metres >= 0 ? Math.floor(metres / this.trackLength) : null;
+    return metres >= 0 ? metres : null;
+  }
+
+  /** Own car without a known start: from the distance the tyres have run since they were fitted. */
+  private ownTyreLaps(f: Frame): number | null {
+    const metres = this.trackLength > 0 ? this.odometer(f) : null;
+    return metres === null ? null : Math.floor(metres / this.trackLength);
   }
 }

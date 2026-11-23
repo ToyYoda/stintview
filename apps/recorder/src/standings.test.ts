@@ -231,6 +231,25 @@ describe('Stint column across a restart of StintView', () => {
     expect(lines.some((l) => l.includes('ignored 10 frame(s)'))).toBe(true);
   });
 
+  it('own car: one count with the others; a stop without new tyres keeps counting, new tyres start anew (23.11.2026)', () => {
+    const own = (t: number, laps: number, pit: number, odo: number) => frame({
+      SessionTime: t, SessionNum: 2, SessionState: 4, PlayerCarIdx: 0,
+      CarIdxLapCompleted: [laps, laps], CarIdxLapDistPct: [0.5, 0.5], CarIdxOnPitRoad: [pit, pit],
+      LFodometer: odo, RFodometer: odo, LRodometer: odo, RRodometer: odo,
+    });
+    const s = new StandingsTracker(() => {});
+    s.setDrivers(new Map(), 5000);
+    s.onFrame(own(1000, 0, 0, 9000)); // formation lap and the way out of the pits on the tyres
+    expect(stint(s.onFrame(own(1002, 3, 0, 26000)), 0)).toBe(3); // as the others, not 5
+    s.onFrame(own(1004, 5, 1, 36000)); // fuel only
+    s.onFrame(own(1006, 5, 0, 36400));
+    expect([stint(s.onFrame(own(1008, 7, 0, 46000)), 0), stint(s.onFrame(own(1010, 7, 0, 46100)), 1)]).toEqual([7, 2]);
+    s.onFrame(own(1012, 9, 1, 56000)); // new tyres
+    s.onFrame(own(1013, 9, 1, 0));
+    s.onFrame(own(1014, 9, 0, 300));
+    expect(stint(s.onFrame(own(1016, 11, 0, 10300)), 0)).toBe(2);
+  });
+
   it('a new SessionNum that lasts starts the counting anew', () => {
     const s = new StandingsTracker(() => {});
     s.onFrame(race(1000, [0, 0], [0, 0]));

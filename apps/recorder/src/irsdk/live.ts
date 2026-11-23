@@ -1,6 +1,6 @@
 import koffi from 'koffi';
 import {
-  Frame, HEADER_SIZE, STATUS_CONNECTED, VAR_HEADER_SIZE, readHeader, readVarHeaders,
+  Frame, HEADER_SIZE, STATUS_CONNECTED, VAR_HEADER_SIZE, isBlankFrame, readHeader, readVarHeaders,
   type Header, type TelemetrySource, type VarHeader,
 } from './layout.ts';
 
@@ -32,6 +32,8 @@ export class LiveSource implements TelemetrySource {
   private lastTickAt = 0;
   private lastSessionUpdate = -1;
   private connected = false;
+  /** Blank frames left out (`isBlankFrame`), for the log. */
+  private blanks = 0;
 
   constructor(private readonly onConnection: (connected: boolean) => void = () => {}) {}
 
@@ -80,7 +82,14 @@ export class LiveSource implements TelemetrySource {
     }
 
     const rec = this.latestRecord(h);
-    if (rec) onFrame(new Frame(this.vars, rec));
+    if (!rec) return;
+    const frame = new Frame(this.vars, rec);
+    if (isBlankFrame(frame)) {
+      // Logged: the first few, then every 100th.
+      if (++this.blanks <= 5 || this.blanks % 100 === 0) console.log(`[iracing] blank frame left out (${this.blanks} so far)`);
+      return;
+    }
+    onFrame(frame);
   }
 
   /** Copies the newest buffer, retrying if iRacing overwrote it while copying. */
