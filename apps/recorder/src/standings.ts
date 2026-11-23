@@ -512,13 +512,40 @@ export class RaceField {
  * Not only the first time a car is seen: in the first frames of a new session iRacing may still
  * give a car its lap count from the session before (qualifying) – such cars stayed unknown until
  * their first stop (race 12.10.2026: Stint "–" for some cars).
+ * A lower lap count counts only once it lasted `LAPS_BACK_UPDATES` updates (~0.5 s): in the race
+ * 23.11.2026 nine cars' stops were back at "since lap 0" by the end – single frames with lap
+ * count 0 (as the blank frames, `isBlankFrame`, but with the session number intact) set the
+ * start back to 0 ("lap count went back") and passed for "seen from the start".
  */
 export class PitStopTracker {
   private sinceLap = new Map<number, number>();
   private onPit = new Map<number, boolean>();
+  /** Lap count per car as confirmed (a lower one only after it lasted), and a lower one pending. */
+  private laps0 = new Map<number, number>();
+  private lower = new Map<number, { laps: number; n: number }>();
+
+  /** The car's lap count, a lower one only once it lasted. */
+  private confirmed(carIdx: number, laps: number): number {
+    const prev = this.laps0.get(carIdx);
+    if (prev === undefined || laps >= prev) {
+      this.lower.delete(carIdx);
+      this.laps0.set(carIdx, laps);
+      return laps;
+    }
+    const p = this.lower.get(carIdx);
+    const n = p?.laps === laps ? p.n + 1 : 1;
+    if (n < LAPS_BACK_UPDATES) {
+      this.lower.set(carIdx, { laps, n });
+      return prev;
+    }
+    this.lower.delete(carIdx);
+    this.laps0.set(carIdx, laps);
+    return laps;
+  }
 
   update(cars: { carIdx: number; laps: number; onPitRoad: boolean }[]) {
-    for (const c of cars) {
+    for (const car of cars) {
+      const c = { ...car, laps: this.confirmed(car.carIdx, car.laps) };
       const was = this.onPit.get(c.carIdx);
       if (!this.sinceLap.has(c.carIdx) && c.laps <= 0) this.sinceLap.set(c.carIdx, 0); // seen from the start
       if (was === true && !c.onPitRoad) this.sinceLap.set(c.carIdx, c.laps); // left the pits
@@ -540,12 +567,14 @@ export class PitStopTracker {
 
   laps(carIdx: number, lapsNow: number): number | null {
     const since = this.sinceLap.get(carIdx);
-    return since === undefined ? null : Math.max(0, lapsNow - since);
+    return since === undefined ? null : Math.max(0, Math.max(lapsNow, this.laps0.get(carIdx) ?? lapsNow) - since);
   }
 
   reset() {
     this.sinceLap.clear();
     this.onPit.clear();
+    this.laps0.clear();
+    this.lower.clear();
   }
 
   /** What is known, to be kept across a restart of the recorder (`StintStateStore`). */
@@ -762,6 +791,8 @@ const WHEELS = ['LF', 'RF', 'LR', 'RR'] as const;
  * another SessionNum. Such frames are left out.
  */
 const SESSION_CHANGE_FRAMES = 180;
+/** Updates a lower lap count of a car must last before it counts (~0.5 s at 60 Hz), `PitStopTracker`. */
+const LAPS_BACK_UPDATES = 30;
 /** Ignored SessionNum blips logged per session at most. */
 const MAX_BLIP_LOGS = 20;
 

@@ -280,8 +280,22 @@ describe('PitStopTracker', () => {
   it('new session: a car first seen with the old lap count still counts from the start (12.10.2026)', () => {
     const p = new PitStopTracker();
     p.update([{ carIdx: 2, laps: 6, onPitRoad: false }]); // qualifying laps in the race's first frame
-    p.update([{ carIdx: 2, laps: 0, onPitRoad: false }]);
+    for (let i = 0; i < 30; i++) p.update([{ carIdx: 2, laps: 0, onPitRoad: false }]); // lap 0 lasts
     expect(p.laps(2, 5)).toBe(5);
+  });
+
+  it('a single frame with lap count 0 does not undo a stop (race 23.11.2026)', () => {
+    const p = new PitStopTracker();
+    p.update([{ carIdx: 4, laps: 0, onPitRoad: false }]);
+    p.update([{ carIdx: 4, laps: 15, onPitRoad: true }]);
+    p.update([{ carIdx: 4, laps: 15, onPitRoad: false }]); // left the pits after lap 15
+    p.update([{ carIdx: 4, laps: 0, onPitRoad: false }]); // torn frame
+    p.update([{ carIdx: 4, laps: 16, onPitRoad: false }]);
+    expect(p.laps(4, 18)).toBe(3);
+    const q = new PitStopTracker();
+    q.update([{ carIdx: 5, laps: 12, onPitRoad: false }]); // seen mid-race
+    q.update([{ carIdx: 5, laps: 0, onPitRoad: false }]); // torn frame: not "seen from the start"
+    expect(q.laps(5, 13)).toBeNull();
   });
 });
 
